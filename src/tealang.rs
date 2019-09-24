@@ -863,7 +863,6 @@ fn expand_macro(body: &[ExpNode], head: &[ExpNode], args: &[ExpNode]) -> Vec<Exp
 }
 
 fn compile_macro(exp: &ExpNode, top_env: &ExpEnv) -> Result<ExpNode, ExpErr> {
-    println!("==={}", exp);
     if let ExpNode::TList(ref lst) = exp {
         if lst.len() >= 1 {
             if let ExpNode::TSymbol(ref macro_name) = lst[0] {
@@ -902,11 +901,13 @@ pub fn run(code : &String, env: &mut ExpEnv) -> String {
     for n in &nodes {
         let r = check_macro(n, env);
         if r.is_ok() {
+            // check defmacro
             let r = r.unwrap();
             if r {
                 continue;
             }
 
+            // compile macro
             let n = compile_macro(n, env);
             if let Err(e) = n {
                 let ExpErr::Reason(estr) = e;
@@ -914,7 +915,7 @@ pub fn run(code : &String, env: &mut ExpEnv) -> String {
             }
             let n = n.unwrap();
 
-            println!("==============={}", n);
+            // execute lisp code
             let r = eval(&n, env);
             if let Err(e) = r {
                 let ExpErr::Reason(estr) = e;
