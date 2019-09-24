@@ -41,6 +41,8 @@ pub struct ExpLambda {
 
 #[derive(Clone)]
 pub struct ExpEnv<'a> {
+    macros: Rc<RefCell<HashMap<String, (Vec<ExpNode>, Vec<ExpNode>)>>>,
+
     data:  HashMap<String, ExpNode>,
     outer: Option<&'a ExpEnv<'a>>,
 }
@@ -191,6 +193,7 @@ fn parse(expr: &String) -> Result<Vec<ExpNode>, ExpErr> {
               .replace("]", ")")
               .replace("(", " ( ")
               .replace(")", " ) ")
+              .replace("\n", " ")
               .split_whitespace()
               .map(|x| x.to_string())
               .collect()
@@ -238,14 +241,27 @@ impl<'a> ExpEnv<'a> {
              }
          }
     }
+    fn add_macro(&self, name: &String, head: &Vec<ExpNode>, body: &Vec<ExpNode>) {
+        let new_macro = (head.clone(), body.clone());
+        self.macros.borrow_mut().insert(name.clone(), new_macro);
+    }
+    fn find_macro(&self, name: &String) -> Option<(Vec<ExpNode>, Vec<ExpNode>)> {
+        match self.macros.borrow().get(name) {
+            None => None,
+            Some(ref v) => Some( (v.0.clone(), v.1.clone()) ),
+        }
+    }
 }
 
 pub fn env_new<'a>() -> ExpEnv<'a> {
     let mut data: HashMap<String, ExpNode> = HashMap::new();
     init_env(&mut data);
 
+    let macros:HashMap<String, (Vec<ExpNode>, Vec<ExpNode>)> = HashMap::new();
+    let macros = Rc::new(RefCell::new(macros));
+
     let outer = None;
-    let env = ExpEnv {data, outer};
+    let env = ExpEnv {macros, data, outer};
     env
 }
 
@@ -659,7 +675,6 @@ fn eval_lambda(args: &[ExpNode], _env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
             return Ok(ExpNode::TLambda(lambda));
         }
     }
-
     return builderr!("fn must include two list or symbol and list");
 }
 
@@ -691,6 +706,7 @@ fn eval_builtin(head: &ExpNode,
         _ => None
     }
 }
+
 
 fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
     match exp {
@@ -776,7 +792,9 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                             panic!("Find lambda with non symble args");
                         }
                     }
-                    let mut env2 = ExpEnv { data,  outer: Some(env)};
+                    let mut env2 = ExpEnv { macros: env.macros.clone(),
+                                            data,
+                                            outer: Some(env)};
                     eval( f.body.as_ref(), &mut env2)
                 }
                 _ => {
@@ -785,6 +803,91 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
             }
         }
     }
+}
+
+fn check_macro(exp: &ExpNode, top_env: &mut ExpEnv) -> Result<bool, String> {
+    if let ExpNode::TList(ref lst) = exp {
+        if lst.len() >= 1 {
+            if let ExpNode::TSymbol(ref defmacro) = lst[0] {
+                if defmacro == "defmacro" {
+                    if lst.len() != 4 {
+                        return Err("defmacro syntax error".to_string());
+                    }
+                    if let ExpNode::TSymbol(ref name) = lst[1] {
+                        if let ExpNode::TList(ref head) = lst[2] {
+                            if let ExpNode::TList(ref body) = lst[3] {
+                                top_env.add_macro(name, head, body);
+                                return Ok(true);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for i in 0..lst.len() {
+            if let ExpNode::TSymbol(ref defmacro) = lst[i] {
+                if defmacro == "defmacro" {
+                    return Err("defmacro must be used in global env".to_string());
+                }
+            }
+        }
+    }
+    Ok(false)
+}
+
+fn expand_macro(body: &[ExpNode], head: &[ExpNode], args: &[ExpNode]) -> Vec<ExpNode> {
+    let mut ret: Vec<ExpNode> = Vec::new();
+    for i in 0..body.len() {
+        if let ExpNode::TList(ref new_body) = body[i] {
+            ret.push(ExpNode::TList( expand_macro(new_body, head, args)));
+        } else if let ExpNode::TSymbol(ref item) = body[i] {
+            let mut find : i32 = -1;
+            for j in 0..head.len() {
+                if let ExpNode::TSymbol(ref arg) = head[j] {
+                    if item == arg {
+                        find = j as i32;
+                        break;
+                    }
+                }
+            }
+            if find == -1 {
+                ret.push(body[i].clone());
+            } else {
+                ret.push(args[find as usize].clone());
+            }
+        } else {
+            ret.push(args[i].clone());
+        }
+    }
+    ret
+}
+
+fn compile_macro(exp: &ExpNode, top_env: &ExpEnv) -> Result<ExpNode, ExpErr> {
+    println!("==={}", exp);
+    if let ExpNode::TList(ref lst) = exp {
+        if lst.len() >= 1 {
+            if let ExpNode::TSymbol(ref macro_name) = lst[0] {
+                if macro_name == "'" {
+                    return Ok(exp.clone());
+                }
+                if let Some((head, body)) = top_env.find_macro(macro_name) {
+                    if lst.len() != head.len() + 1 {
+                        return builderr!("macro expand error");
+                    }
+                    // macroexpand
+                    let expand = ExpNode::TList( expand_macro(&body, &head, &lst[1..]));
+                    return compile_macro(&expand, top_env)
+                }
+            }
+
+            let mut new_list:Vec<ExpNode> = vec![];
+            for i in 0.. lst.len() {
+                new_list.push( compile_macro(&lst[i], top_env)? );
+            }
+            return Ok( ExpNode::TList(new_list));
+        }
+    }
+    return Ok(exp.clone());
 }
 
 pub fn run(code : &String, env: &mut ExpEnv) -> String {
@@ -797,14 +900,31 @@ pub fn run(code : &String, env: &mut ExpEnv) -> String {
 
     let mut ret:ExpNode = ExpNode::TNull(());
     for n in &nodes {
-        let r = eval(n, env);
-        if let Err(e) = r {
-            let ExpErr::Reason(estr) = e;
-            return format!("ERR:{}", estr);
+        let r = check_macro(n, env);
+        if r.is_ok() {
+            let r = r.unwrap();
+            if r {
+                continue;
+            }
+
+            let n = compile_macro(n, env);
+            if let Err(e) = n {
+                let ExpErr::Reason(estr) = e;
+                return format!("ERR:{}", estr);
+            }
+            let n = n.unwrap();
+
+            println!("==============={}", n);
+            let r = eval(&n, env);
+            if let Err(e) = r {
+                let ExpErr::Reason(estr) = e;
+                return format!("ERR:{}", estr);
+            }
+            ret = r.unwrap();
+        } else if let Err(msg) = r {
+            return format!("ERR:{}", msg);
         }
-        ret = r.unwrap();
     }
     ret.to_string()
 }
-
 
