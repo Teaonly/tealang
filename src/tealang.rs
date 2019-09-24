@@ -106,7 +106,6 @@ fn parse_atom(token: &String) -> Result<ExpNode, ExpErr> {
        || token.contains("$")
        || token.contains("^")
        || token.contains("`")
-       || token.contains("@")
        || token.contains(",")
        || token.contains("|")
        || token.contains("\\")
@@ -114,9 +113,9 @@ fn parse_atom(token: &String) -> Result<ExpNode, ExpErr> {
         return builderr!("Token finds special symbol, like \" @ $ #")
     }
 
-    if token.starts_with("'") {
-        if token == "'" {
-            return builderr!("Pattern token must begin with ' and other charaters")
+    if token.starts_with("@") {
+        if token == "@" {
+            return builderr!("Pattern token must begin with @ and other charaters")
         }
         let mut pattern = token.clone();
         pattern.remove(0);
@@ -503,6 +502,14 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         Ok( ExpNode::TVec(vec))
     });
     data.insert("concat".to_string(), concat);
+
+    let evalfn = ExpNode::TFunc( |args: &[ExpNode], env: &mut ExpEnv| {
+        if args.len() != 1 {
+            return builderr!("eval only support onte item");
+        }
+        eval(&args[0], env)
+    });
+    data.insert("eval".to_string(), evalfn);
 }
 
 /*
@@ -636,6 +643,14 @@ fn eval_lambda(args: &[ExpNode], _env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     return builderr!("fn must include two list or symbol and list");
 }
 
+fn eval_quote(args: &[ExpNode], _env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
+    if args.len() != 1  {
+        return builderr!("quote must followed one symbol");
+    }
+
+    Ok(args[0].clone())
+}
+
 fn eval_builtin(head: &ExpNode,
                 args: &[ExpNode],
                 env: &mut ExpEnv) -> Option<Result<ExpNode, ExpErr>> {
@@ -649,6 +664,7 @@ fn eval_builtin(head: &ExpNode,
                 "map" => Some(eval_map(args, env)),
                 "vec" => Some(eval_vec(args, env)),
                 "fn" => Some(eval_lambda(args, env)),
+                "'" => Some(eval_quote(args, env)),
                 _ => None,
             }
         },
