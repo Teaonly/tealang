@@ -455,6 +455,15 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                         return builderr!("index out of vector");
                     }
                 }
+            } else if let ExpNode::TList(ref lst) = args[0] {
+                if let ExpNode::TLong(i) = args[1] {
+                    let i = i as usize;
+                    if i < lst.len() {
+                        return Ok( lst[i].clone() );
+                    } else {
+                        return builderr!("index out of vector");
+                    }
+                }
             }
         }
         builderr!("nth vector syntax error")
@@ -465,6 +474,8 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         if args.len() == 1 {
             if let ExpNode::TVec(ref vec) = args[0] {
                 return Ok(ExpNode::TLong( vec.borrow().len() as i64));
+            } else if let ExpNode::TList(ref lst) = args[0] {
+                return Ok(ExpNode::TLong( lst.len() as i64));
             }
         }
         builderr!("size of vector syntax error")
@@ -510,6 +521,15 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         eval(&args[0], env)
     });
     data.insert("eval".to_string(), evalfn);
+
+    let listfn = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
+        let mut lst:Vec<ExpNode> = vec![];
+        for arg in args.iter() {
+            lst.push(arg.clone());
+        }
+        return Ok(ExpNode::TList(lst));
+    });
+    data.insert("list".to_string(), listfn);
 }
 
 /*
@@ -680,6 +700,7 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
         ExpNode::TLong(_) => Ok(exp.clone()),
         ExpNode::TDouble(_) => Ok(exp.clone()),
         ExpNode::TPattern(_) => Ok(exp.clone()),
+        ExpNode::TLambda(_) => Ok(exp.clone()),
         // can't eval
         ExpNode::TVec(_) => {
             builderr!("Can't eval Vec directly, it is not atom type")
@@ -688,10 +709,7 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
             builderr!("Can't eval Map directly, it is not atom type")
         }
         ExpNode::TFunc(_) => {
-            builderr!("Can't eval Func directly, it is not atom type")
-        }
-        ExpNode::TLambda(_) => {
-            builderr!("Can't eval Lambda directly, it is not atom type")
+            builderr!("Can't eval TFunc directly, it is not atom type")
         }
         // from env
         ExpNode::TSymbol(v) => {
@@ -758,7 +776,6 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                             panic!("Find lambda with non symble args");
                         }
                     }
-
                     let mut env2 = ExpEnv { data,  outer: Some(env)};
                     eval( f.body.as_ref(), &mut env2)
                 }
