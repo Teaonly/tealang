@@ -1,2 +1,3 @@
-(defmacro build_map (pattern value) (map pattern value))
+(defmacro defn (name arg body) (def name (fn arg body)))
+
 

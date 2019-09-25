@@ -121,10 +121,10 @@ fn parse_atom(token: &String) -> Result<ExpNode, ExpErr> {
         }
         let mut pattern = token.clone();
         pattern.remove(0);
-        if pattern.contains("'") {
+        if pattern.contains("@") {
             return builderr!("Pattern token can't contain ', except begin")
         }
-        return Ok(ExpNode::TPattern( pattern));
+        return Ok(ExpNode::TPattern(pattern));
     }
 
     let lv = token.parse::<i64>();
