@@ -20,6 +20,14 @@ fn builderr(reason: &str) ->  Result<ExpNode, ExpErr> {
     Err(ExpErr{reason, stack})
 }
 
+fn builderr_(reason: &str) ->  ExpErr {
+    let reason = reason.to_string();
+    let stack:Vec<String> = Vec::new();
+
+    ExpErr{reason, stack}
+}
+
+
 #[derive(Clone)]
 pub enum ExpNode {
     TSymbol(String),
@@ -735,20 +743,28 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
         ExpNode::TLambda(_) => Ok(exp.clone()),
         // can't eval
         ExpNode::TVec(_) => {
-            builderr("Can't eval Vec directly, it is not atom type")
+            let mut err = builderr_("Can't eval Vec directly, it is not atom type");
+            err.stack.push(exp.to_string());
+            Err(err)
         },
         ExpNode::TMap(_) => {
-            builderr("Can't eval Map directly, it is not atom type")
+            let mut err = builderr_("Can't eval Map directly, it is not atom type");
+            err.stack.push(exp.to_string());
+            Err(err)
         }
         ExpNode::TFunc(_) => {
-            builderr("Can't eval TFunc directly, it is not atom type")
+            let mut err = builderr_("Can't eval TFunc directly, it is not atom type");
+            err.stack.push(exp.to_string());
+            Err(err)
         }
         // from env
         ExpNode::TSymbol(v) => {
             if let Some(node) = env.get(v) {
                 return Ok(node);
             }
-            builderr("Can't find symbol")
+            let mut err = builderr_("Can't find symbol");
+            err.stack.push(exp.to_string());
+            Err(err)
         },
         // execute
         ExpNode::TList(list) => {
@@ -761,7 +777,12 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
             // step.1 check is a builtin
             let args = &list[1..];
             if let Some(result) = eval_builtin(head, args, env) {
-                return result;
+                if let Err(mut err) = result {
+                    err.stack.push(exp.to_string());
+                    return Err(err);
+                } else {
+                    return result;
+                }
             }
 
             // step.2 eval all the args
@@ -769,14 +790,21 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
             for i in  1..list.len() {
                 match eval(&list[i], env) {
                     Ok(n) => args.push(n),
-                    Err(e) => {
-                        return Err(e);
+                    Err(mut err) => {
+                        err.stack.push(exp.to_string());
+                        return Err(err);
                     }
                 }
             }
 
             // step.3 apply function
-            let head : ExpNode = eval(&head, env)?;
+            let head = eval(&head, env);
+            if let Err(mut err) = head {
+                err.stack.push(exp.to_string());
+                return Err(err);
+            }
+            let head = head.unwrap();
+
             match head {
                 ExpNode::TPattern(k) => {
                     // map operator, unmutable reading
@@ -784,7 +812,9 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                         if let ExpNode::TMap(ref m) = args[0] {
                             match m.as_ref().get(&k) {
                                 None => {
-                                    return builderr("can't find patter(key) in map");
+                                    let mut err = builderr_("can't find patter(key) in map");
+                                    err.stack.push(exp.to_string());
+                                    return Err(err);
                                 },
                                 Some(node) => {
                                     return Ok(node.clone());
@@ -792,16 +822,27 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                             }
                         }
                     }
-                    return builderr("TPattern map syntax error");
+
+                    let mut err = builderr_("TPattern map syntax error");
+                    err.stack.push(exp.to_string());
+                    return Err(err);
                 },
                 ExpNode::TFunc(f) => {
-                    f(&args, env)
+                    let result = f(&args, env);
+                    if let Err(mut err) = result {
+                        err.stack.push(exp.to_string());
+                        return Err(err);
+                    } else {
+                        return result;
+                    }
                 },
                 ExpNode::TLambda(f) => {
                     // copy args to new env
                     let mut data: HashMap<String, ExpNode> = HashMap::new();
                     if f.head.len() != args.len() {
-                        return builderr("apply lambda must with same args number");
+                        let mut err = builderr_("apply lambda must with same args number");
+                        err.stack.push(exp.to_string());
+                        return Err(err);
                     }
                     for i in 0..args.len() {
                         if let ExpNode::TSymbol(ref name) = f.head.as_ref()[i] {
@@ -821,10 +862,18 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                     let mut env2 = ExpEnv{ macros:  env.macros.clone(),
                                            data:    Rc::new(RefCell::new(data)),
                                            outer:   Some(env)};
-                    eval( f.body.as_ref(), &mut env2)
+                    let result = eval( f.body.as_ref(), &mut env2);
+                    if let Err(mut err) = result {
+                        err.stack.push(exp.to_string());
+                        return Err(err);
+                    } else {
+                        return result;
+                    }
                 }
                 _ => {
-                    builderr("Can't eval none function in list first item")
+                    let mut err = builderr_("Can't eval none function in list first item");
+                    err.stack.push(exp.to_string());
+                    return Err(err);
                 }
             }
         }
@@ -945,6 +994,9 @@ pub fn run(code : &String, env: &mut ExpEnv) -> String {
             // execute lisp code
             let r = eval(&n, env);
             if let Err(e) = r {
+                for i in 0..e.stack.len() {
+                    println!("- {}", &(e.stack[i]));
+                }
                 return format!("EVAL_ERR:{}", e.reason);
             }
             ret = r.unwrap();
