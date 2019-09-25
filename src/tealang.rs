@@ -8,14 +8,16 @@ use std::fmt;
  */
 
 #[derive(Debug)]
-pub enum ExpErr {
-    Reason(String),
+pub struct ExpErr {
+    reason: String,
+    stack:  Vec<String>,
 }
 
-macro_rules! builderr {
-    ($msg: expr) => {
-        Err(ExpErr::Reason($msg.to_string()))
-    };
+fn builderr(reason: &str) ->  Result<ExpNode, ExpErr> {
+    let reason = reason.to_string();
+    let stack:Vec<String> = Vec::new();
+
+    Err(ExpErr{reason, stack})
 }
 
 #[derive(Clone)]
@@ -95,7 +97,7 @@ impl fmt::Display for ExpNode {
 /*
  *  Parser
  */
-fn parse_atom(token: &String) -> Result<ExpNode, ExpErr> {
+fn parse_atom(token: &String) -> Result<ExpNode, String> {
     if token == "false" {
         return Ok(ExpNode::TBool(false));
     }
@@ -113,17 +115,17 @@ fn parse_atom(token: &String) -> Result<ExpNode, ExpErr> {
        || token.contains("|")
        || token.contains("\\")
        || token.contains("~") {
-        return builderr!("Token finds special symbol, like \" @ $ #")
+        return Err("Token finds special symbol, like \" @ $ #".to_string())
     }
 
     if token.starts_with("@") {
         if token == "@" {
-            return builderr!("Pattern token must begin with @ and other charaters")
+            return Err("Pattern token must begin with @ and other charaters".to_string())
         }
         let mut pattern = token.clone();
         pattern.remove(0);
         if pattern.contains("@") {
-            return builderr!("Pattern token can't contain ', except begin")
+            return Err("Pattern token can't contain ', except begin".to_string())
         }
         return Ok(ExpNode::TPattern(pattern));
     }
@@ -141,12 +143,12 @@ fn parse_atom(token: &String) -> Result<ExpNode, ExpErr> {
     return Ok(ExpNode::TSymbol(token.clone()));
 }
 
-fn parse_tokens(pos: usize, tokens: &Vec<String>) -> Result<(ExpNode, usize), ExpErr> {
+fn parse_tokens(pos: usize, tokens: &Vec<String>) -> Result<(ExpNode, usize), String> {
     let mut ret:Vec<ExpNode> = vec![];
     let mut i = pos;
 
     if tokens[i] != "(" {
-        return builderr!("Tokens's paren not begin with '(' ");
+        return Err("Tokens's paren not begin with '(' ".to_string());
     }
     i = i + 1;
 
@@ -176,17 +178,17 @@ fn parse_tokens(pos: usize, tokens: &Vec<String>) -> Result<(ExpNode, usize), Ex
 
         // 2. an new symbol
         let node = parse_atom(&tokens[i]);
-        if let Err(reason) = node {
-            return Err(reason)
+        if let Err(e) = node {
+            return Err(e)
         }
         ret.push(node.unwrap());
         i = i + 1;
     }
 
-    return builderr!("Tokens not end with ')'");
+    return Err("Tokens not end with ')'".to_string());
 }
 
-fn parse(expr: &String) -> Result<Vec<ExpNode>, ExpErr> {
+fn parse(expr: &String) -> Result<Vec<ExpNode>, String> {
     fn tokenize(expr: &String) -> Vec<String> {
           expr.replace("{", "(map ")
               .replace("}", ")")
@@ -275,7 +277,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         for arg in args.iter() {
             match arg {
                 ExpNode::TLong(v) => { total = total + v},
-                _ => {return Err( ExpErr::Reason("+ only support TLong".to_string()) );}
+                _ => return builderr("+ only support TLong"),
             }
         }
         Ok( ExpNode::TLong( total))
@@ -290,7 +292,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr!("mod only support two Tlong")
+        builderr("mod only support two Tlong")
     });
     data.insert("-".to_string(), sub);
 
@@ -302,7 +304,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr!("mod only support two Tlong")
+        builderr("mod only support two Tlong")
     });
     data.insert("%".to_string(), mod_func);
 
@@ -311,7 +313,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         for arg in args.iter() {
             match arg {
                 ExpNode::TLong(v) => { acc = acc * v},
-                _ => {return Err( ExpErr::Reason("+ only support TLong".to_string()) );}
+                _ => return builderr("* only support TLong"),
             }
         }
         Ok( ExpNode::TLong(acc))
@@ -326,7 +328,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr!("div only support two Tlong")
+        builderr("div only support two Tlong")
     });
     data.insert("/".to_string(), div);
 
@@ -339,7 +341,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr!("> only support two Tlong")
+        builderr("> only support two Tlong")
     });
     data.insert(">".to_string(), gt);
 
@@ -351,7 +353,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr!(">= only support two Tlong")
+        builderr(">= only support two Tlong")
     });
     data.insert(">=".to_string(), gte);
 
@@ -363,7 +365,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr!("< only support two Tlong")
+        builderr("< only support two Tlong")
     });
     data.insert("<".to_string(), lt);
 
@@ -375,7 +377,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr!("<= only support two Tlong")
+        builderr("<= only support two Tlong")
     });
     data.insert("<=".to_string(), lte);
 
@@ -395,7 +397,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 _=> (),
             }
         }
-        builderr!("== only support two Tlong")
+        builderr("== only support two Tlong")
     });
     data.insert("==".to_string(), eq);
 
@@ -405,7 +407,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         for arg in args.iter() {
             match arg {
                 ExpNode::TBool(v) => { result = result && *v},
-                _ => {return Err( ExpErr::Reason("and only support TBool".to_string()) );}
+                _ => return builderr("and only support TBool"),
             }
         }
         Ok( ExpNode::TBool(result))
@@ -417,7 +419,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         for arg in args.iter() {
             match arg {
                 ExpNode::TBool(v) => { result = result || *v},
-                _ => {return Err( ExpErr::Reason("or only support TBool".to_string()) );}
+                _ => return builderr("or only support TBool"),
             }
         }
         Ok( ExpNode::TBool(result))
@@ -430,14 +432,14 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 return Ok( ExpNode::TBool(!v1) );
             }
         }
-        builderr!("! only support one TBool")
+        builderr("! only support one TBool")
     });
     data.insert("!".to_string(), not);
 
     // vector operators
     let push = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
         if args.len() < 2 {
-            return builderr!("push to vector must include 2 items");
+            return builderr("push to vector must include 2 items");
         }
         if let ExpNode::TVec(ref vec) = args[0] {
             for i in 1..args.len() {
@@ -445,7 +447,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
             }
             return Ok(args[0].clone());
         }
-        builderr!("push to vector syntax error")
+        builderr("push to vector syntax error")
     });
     data.insert("push".to_string(), push);
 
@@ -455,10 +457,10 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 if let Some(n) = vec.borrow_mut().pop() {
                     return Ok(n);
                 }
-                return builderr!("pop an empyt vector");
+                return builderr("pop an empyt vector");
             }
         }
-        builderr!("pop from vector syntax error")
+        builderr("pop from vector syntax error")
     });
     data.insert("pop".to_string(), pop);
 
@@ -470,7 +472,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                     if i < vec.borrow().len() {
                         return Ok(  vec.borrow()[i].clone() );
                     } else {
-                        return builderr!("index out of vector");
+                        return builderr("index out of vector");
                     }
                 }
             } else if let ExpNode::TList(ref lst) = args[0] {
@@ -479,12 +481,12 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                     if i < lst.len() {
                         return Ok( lst[i].clone() );
                     } else {
-                        return builderr!("index out of vector");
+                        return builderr("index out of vector");
                     }
                 }
             }
         }
-        builderr!("nth vector syntax error")
+        builderr("nth vector syntax error")
     });
     data.insert("nth".to_string(), nth);
 
@@ -496,36 +498,36 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 return Ok(ExpNode::TLong( lst.len() as i64));
             }
         }
-        builderr!("size of vector syntax error")
+        builderr("size of vector syntax error")
     });
     data.insert("size".to_string(), size);
 
     let append = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
         if args.len() < 2 {
-            return builderr!("append vector must include 2 items at least");
+            return builderr("append vector must include 2 items at least");
         }
         if let ExpNode::TVec(ref vec) = args[0] {
             for i in 1..args.len() {
                 match &args[i] {
                     ExpNode::TVec(ref nl) => vec.borrow_mut().extend( nl.borrow().iter().cloned() ),
-                    _ => return builderr!("concat support combin vector only")
+                    _ => return builderr("concat support combin vector only")
                 }
             }
             return Ok( args[0].clone() );
         }
-        builderr!("append to vector syntax error")
+        builderr("append to vector syntax error")
     });
     data.insert("append".to_string(), append);
 
     let concat = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
         if args.len() < 2 {
-            return builderr!("concat vector must include 2 items at least");
+            return builderr("concat vector must include 2 items at least");
         }
         let vec : Rc<RefCell<Vec<ExpNode>>>  = Rc::new(RefCell::new(Vec::new()));
         for i in 0..args.len() {
             match &args[i] {
                 ExpNode::TVec(ref nl) => vec.borrow_mut().extend( nl.borrow().iter().cloned() ),
-                _ => return builderr!("concat support combin vector only")
+                _ => return builderr("concat support combin vector only")
             }
         }
         Ok( ExpNode::TVec(vec))
@@ -534,7 +536,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
 
     let evalfn = ExpNode::TFunc( |args: &[ExpNode], env: &mut ExpEnv| {
         if args.len() != 1 {
-            return builderr!("eval only support onte item");
+            return builderr("eval only support onte item");
         }
         eval(&args[0], env)
     });
@@ -564,19 +566,19 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
 
 fn eval_def(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     if args.len() != 2 {
-        return builderr!("let must follow with two item");
+        return builderr("let must follow with two item");
     }
     if let ExpNode::TSymbol(ref name) = args[0] {
         let value = eval(&args[1], env)?;
         env.set(name, &value);
         return Ok(ExpNode::TNull(()));
     }
-    return builderr!("let syntax error!");
+    return builderr("let syntax error!");
 }
 
 fn eval_begin(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     if args.len() == 0 {
-        return builderr!("begin need at least one item to eval.");
+        return builderr("begin need at least one item to eval.");
     }
     for i in 0..args.len()-1 {
         eval(&args[i], env)?;
@@ -586,7 +588,7 @@ fn eval_begin(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
 
 fn eval_if(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     if args.len() < 2 || args.len() > 3 {
-        return builderr!("if need two or three item to eval.");
+        return builderr("if need two or three item to eval.");
     }
 
     if let ExpNode::TBool(b) = eval(&args[0], env)? {
@@ -599,12 +601,12 @@ fn eval_if(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
             return Ok(ExpNode::TNull(()))
         }
     }
-    builderr!("if first item must be an TBool")
+    builderr("if first item must be an TBool")
 }
 
 fn eval_while(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     if args.len() < 1 || args.len() > 2 {
-        return builderr!("while need one or two item to eval.");
+        return builderr("while need one or two item to eval.");
     }
 
     loop {
@@ -624,7 +626,7 @@ fn eval_while(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
 
 fn eval_map(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     if args.len() % 2 != 0 {
-        return builderr!("map must include even items");
+        return builderr("map must include even items");
     }
 
     let mut map: HashMap<String, ExpNode> = HashMap::new();
@@ -633,7 +635,7 @@ fn eval_map(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
             let value = eval(&args[i*2+1], env)?;
             map.insert(key, value);
         } else {
-            return builderr!("map only support @pattern as key")
+            return builderr("map only support @pattern as key")
         }
     }
 
@@ -653,12 +655,12 @@ fn eval_vec(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
 
 fn eval_lambda(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     if args.len() != 2 {
-        return builderr!("fn must include two list");
+        return builderr("fn must include two list");
     }
 
     if let ExpNode::TList(ref body) = args[1] {
         if body.len() == 0 {
-            return builderr!("fn body can't be empty");
+            return builderr("fn body can't be empty");
         }
         if let ExpNode::TSymbol(_) = args[0] {
             let mut head : Vec<ExpNode> = Vec::new();
@@ -676,7 +678,7 @@ fn eval_lambda(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
                 match &head[i] {
                     ExpNode::TSymbol(_) => (),
                     _ => {
-                        return builderr!("lambda's argment must be a symbol");
+                        return builderr("lambda's argment must be a symbol");
                     }
                 }
             }
@@ -689,12 +691,12 @@ fn eval_lambda(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
             return Ok(ExpNode::TLambda(lambda));
         }
     }
-    return builderr!("fn must include two list or symbol and list");
+    return builderr("fn must include two list or symbol and list");
 }
 
 fn eval_quote(args: &[ExpNode], _env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     if args.len() != 1  {
-        return builderr!("quote must followed one symbol");
+        return builderr("quote must followed one symbol");
     }
 
     Ok(args[0].clone())
@@ -733,27 +735,28 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
         ExpNode::TLambda(_) => Ok(exp.clone()),
         // can't eval
         ExpNode::TVec(_) => {
-            builderr!("Can't eval Vec directly, it is not atom type")
+            builderr("Can't eval Vec directly, it is not atom type")
         },
         ExpNode::TMap(_) => {
-            builderr!("Can't eval Map directly, it is not atom type")
+            builderr("Can't eval Map directly, it is not atom type")
         }
         ExpNode::TFunc(_) => {
-            builderr!("Can't eval TFunc directly, it is not atom type")
+            builderr("Can't eval TFunc directly, it is not atom type")
         }
         // from env
         ExpNode::TSymbol(v) => {
             if let Some(node) = env.get(v) {
                 return Ok(node);
             }
-            builderr!("Can't find symbol")
+            builderr("Can't find symbol")
         },
         // execute
         ExpNode::TList(list) => {
             // get head
-            let head = list
-                .first()
-                .ok_or(ExpErr::Reason("expected a non-empty list".to_string()))?;
+            if list.len() == 0 {
+                return Ok(ExpNode::TNull(()));
+            }
+            let head = &list[0];
 
             // step.1 check is a builtin
             let args = &list[1..];
@@ -781,7 +784,7 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                         if let ExpNode::TMap(ref m) = args[0] {
                             match m.as_ref().get(&k) {
                                 None => {
-                                    return builderr!("can't find patter(key) in map");
+                                    return builderr("can't find patter(key) in map");
                                 },
                                 Some(node) => {
                                     return Ok(node.clone());
@@ -789,7 +792,7 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                             }
                         }
                     }
-                    return builderr!("TPattern map syntax error");
+                    return builderr("TPattern map syntax error");
                 },
                 ExpNode::TFunc(f) => {
                     f(&args, env)
@@ -798,7 +801,7 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                     // copy args to new env
                     let mut data: HashMap<String, ExpNode> = HashMap::new();
                     if f.head.len() != args.len() {
-                        return builderr!("apply lambda must with same args number");
+                        return builderr("apply lambda must with same args number");
                     }
                     for i in 0..args.len() {
                         if let ExpNode::TSymbol(ref name) = f.head.as_ref()[i] {
@@ -821,7 +824,7 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                     eval( f.body.as_ref(), &mut env2)
                 }
                 _ => {
-                    builderr!("Can't eval none function in list first item")
+                    builderr("Can't eval none function in list first item")
                 }
             }
         }
@@ -897,7 +900,7 @@ fn compile_macro(exp: &ExpNode, top_env: &ExpEnv) -> Result<ExpNode, ExpErr> {
                 }
                 if let Some((head, body)) = top_env.find_macro(macro_name) {
                     if lst.len() != head.len() + 1 {
-                        return builderr!("macro expand error");
+                        return builderr("macro expand error");
                     }
                     // macroexpand
                     let expand = ExpNode::TList( expand_macro(&body, &head, &lst[1..]));
@@ -918,8 +921,7 @@ fn compile_macro(exp: &ExpNode, top_env: &ExpEnv) -> Result<ExpNode, ExpErr> {
 pub fn run(code : &String, env: &mut ExpEnv) -> String {
     let nodes = parse(code);
     if let Err(e) = nodes {
-        let ExpErr::Reason(estr) = e;
-        return format!("ERR:{}", estr);
+        return format!("PARSE_ERR:{}", e);
     }
     let nodes = nodes.unwrap();
 
@@ -936,20 +938,18 @@ pub fn run(code : &String, env: &mut ExpEnv) -> String {
             // compile macro
             let n = compile_macro(n, env);
             if let Err(e) = n {
-                let ExpErr::Reason(estr) = e;
-                return format!("ERR:{}", estr);
+                return format!("COMPILE_ERR:{}", e.reason);
             }
             let n = n.unwrap();
 
             // execute lisp code
             let r = eval(&n, env);
             if let Err(e) = r {
-                let ExpErr::Reason(estr) = e;
-                return format!("ERR:{}", estr);
+                return format!("EVAL_ERR:{}", e.reason);
             }
             ret = r.unwrap();
         } else if let Err(msg) = r {
-            return format!("ERR:{}", msg);
+            return format!("COMPILE_ERR:{}", msg);
         }
     }
     ret.to_string()
