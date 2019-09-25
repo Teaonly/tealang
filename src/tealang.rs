@@ -38,7 +38,7 @@ pub struct ExpLambda {
     head:       Rc<Vec<ExpNode>>,
     body:       Rc<ExpNode>,
 
-    //closure:    Rc<RefCell<HashMap<String, ExpNode>>>,
+    closure:    Rc<RefCell<HashMap<String, ExpNode>>>,
 }
 
 #[derive(Clone)]
@@ -232,9 +232,6 @@ impl<'a> ExpEnv<'a> {
         self.data.borrow_mut().insert(name.clone(), node.clone());
     }
     fn get(&self, name : &String) -> Option<ExpNode> {
-        if name == "x" {
-            println!("=====");
-        }
         match self.data.borrow().get(name) {
              Some(exp) => Some(exp.clone()),
              None => {
@@ -654,7 +651,7 @@ fn eval_vec(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     Ok(ExpNode::TVec(Rc::new(RefCell::new(vec))))
 }
 
-fn eval_lambda(args: &[ExpNode], _env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
+fn eval_lambda(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     if args.len() != 2 {
         return builderr!("fn must include two list");
     }
@@ -667,10 +664,11 @@ fn eval_lambda(args: &[ExpNode], _env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
             let mut head : Vec<ExpNode> = Vec::new();
             head.push( args[0].clone() );
 
-            let head = Rc::new(head);
+            let head = Rc::new(head.clone());
             let body = Rc::new(ExpNode::TList(body.clone()));
+            let closure = env.data.clone();
 
-            let lambda = ExpLambda{head, body};
+            let lambda = ExpLambda{head, body, closure};
             return Ok(ExpNode::TLambda(lambda));
         }
         if let ExpNode::TList(ref head) = args[0] {
@@ -685,8 +683,9 @@ fn eval_lambda(args: &[ExpNode], _env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
 
             let head = Rc::new(head.clone());
             let body = Rc::new(ExpNode::TList(body.clone()));
+            let closure = env.data.clone();
 
-            let lambda = ExpLambda{head, body};
+            let lambda = ExpLambda{head, body, closure};
             return Ok(ExpNode::TLambda(lambda));
         }
     }
@@ -796,7 +795,7 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                     f(&args, env)
                 },
                 ExpNode::TLambda(f) => {
-                    // copy args to head
+                    // copy args to new env
                     let mut data: HashMap<String, ExpNode> = HashMap::new();
                     if f.head.len() != args.len() {
                         return builderr!("apply lambda must with same args number");
@@ -808,6 +807,14 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                             panic!("Find lambda with non symble args");
                         }
                     }
+
+                    // copy closure to new env
+                    if !Rc::ptr_eq(&f.closure,  &env.data) {
+                        for (ref name, ref value) in f.closure.borrow().iter() {
+                            data.insert(name.to_string(), (*value).clone());
+                        }
+                    }
+
                     let mut env2 = ExpEnv{ macros:  env.macros.clone(),
                                            data:    Rc::new(RefCell::new(data)),
                                            outer:   Some(env)};

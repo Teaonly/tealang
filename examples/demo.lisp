@@ -32,9 +32,9 @@
         (begin
          (probe @here)
          (probe y)
-         (prboe x))))
+         (probe x))))
 
-(def x 3.14)
 (def myfn (OneObject 3.14))
 (myfn 1024)
+
 
