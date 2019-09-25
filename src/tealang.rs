@@ -828,6 +828,9 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
     }
 }
 
+/*
+ *  Macro
+ */
 fn check_macro(exp: &ExpNode, top_env: &mut ExpEnv) -> Result<bool, String> {
     if let ExpNode::TList(ref lst) = exp {
         if lst.len() >= 1 {
