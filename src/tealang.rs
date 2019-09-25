@@ -35,15 +35,16 @@ pub enum ExpNode {
 
 #[derive(Clone)]
 pub struct ExpLambda {
-    head: Rc<Vec<ExpNode>>,
-    body: Rc<ExpNode>,
+    head:       Rc<Vec<ExpNode>>,
+    body:       Rc<ExpNode>,
+
+    //closure:    Rc<RefCell<HashMap<String, ExpNode>>>,
 }
 
 #[derive(Clone)]
 pub struct ExpEnv<'a> {
     macros: Rc<RefCell<HashMap<String, (Vec<ExpNode>, Vec<ExpNode>)>>>,
-
-    data:  HashMap<String, ExpNode>,
+    data: Rc<RefCell<HashMap<String, ExpNode>>>,
     outer: Option<&'a ExpEnv<'a>>,
 }
 
@@ -228,10 +229,13 @@ fn parse(expr: &String) -> Result<Vec<ExpNode>, ExpErr> {
  */
 impl<'a> ExpEnv<'a> {
     fn set(&mut self, name : &String, node: &ExpNode) {
-        self.data.insert(name.clone(), node.clone());
+        self.data.borrow_mut().insert(name.clone(), node.clone());
     }
     fn get(&self, name : &String) -> Option<ExpNode> {
-         match self.data.get(name) {
+        if name == "x" {
+            println!("=====");
+        }
+        match self.data.borrow().get(name) {
              Some(exp) => Some(exp.clone()),
              None => {
                  match &self.outer {
@@ -256,6 +260,7 @@ impl<'a> ExpEnv<'a> {
 pub fn env_new<'a>() -> ExpEnv<'a> {
     let mut data: HashMap<String, ExpNode> = HashMap::new();
     init_env(&mut data);
+    let data = Rc::new(RefCell::new(data));
 
     let macros:HashMap<String, (Vec<ExpNode>, Vec<ExpNode>)> = HashMap::new();
     let macros = Rc::new(RefCell::new(macros));
@@ -803,9 +808,9 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                             panic!("Find lambda with non symble args");
                         }
                     }
-                    let mut env2 = ExpEnv{ macros: env.macros.clone(),
-                                           data,
-                                           outer: Some(env)};
+                    let mut env2 = ExpEnv{ macros:  env.macros.clone(),
+                                           data:    Rc::new(RefCell::new(data)),
+                                           outer:   Some(env)};
                     eval( f.body.as_ref(), &mut env2)
                 }
                 _ => {

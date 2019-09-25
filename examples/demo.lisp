@@ -9,8 +9,8 @@
     (probe i)
     (def i (+ i 1))))
 
-; a complex data struct
-(probe 
+; a nested data struct
+(def mystruct 
   {@person 
     {@name @kaka
      @value 3.14}
@@ -18,6 +18,23 @@
     {@name @haha
      @value 1024}})
 
+; a lambda
+(defn print x 
+    (begin
+      (probe @run_in_prin)
+      (probe x)
+      (probe (list (' a) (' b)))))
+(print mystruct)
 
+; a clousure demo
+(defn OneObject (x) 
+    (fn (y) 
+        (begin
+         (probe @here)
+         (probe y)
+         (prboe x))))
 
+(def x 3.14)
+(def myfn (OneObject 3.14))
+(myfn 1024)
 
