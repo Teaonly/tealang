@@ -546,6 +546,14 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         return Ok(ExpNode::TList(lst));
     });
     data.insert("list".to_string(), listfn);
+
+    let probe = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
+        for i in 0..args.len() {
+            println!("{}", args[i]);
+        }
+        Ok(ExpNode::TNull(()))
+    });
+    data.insert("probe".to_string(), probe);
 }
 
 /*
@@ -601,6 +609,8 @@ fn eval_while(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
         if let ExpNode::TBool(b) = eval(&args[0], env)? {
             if b && args.len() == 2 {
                 eval(&args[1], env)?;
+            } else if b == false {
+                break;
             }
         } else {
             break;
@@ -734,6 +744,7 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
             }
             builderr!("Can't find symbol")
         },
+        // execute
         ExpNode::TList(list) => {
             // get head
             let head = list
@@ -792,9 +803,9 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                             panic!("Find lambda with non symble args");
                         }
                     }
-                    let mut env2 = ExpEnv { macros: env.macros.clone(),
-                                            data,
-                                            outer: Some(env)};
+                    let mut env2 = ExpEnv{ macros: env.macros.clone(),
+                                           data,
+                                           outer: Some(env)};
                     eval( f.body.as_ref(), &mut env2)
                 }
                 _ => {
