@@ -13,6 +13,9 @@ pub struct ExpErr {
     stack:  Vec<String>,
 }
 
+//use todo:*;
+type ExternType = u64;
+
 #[derive(Clone)]
 pub enum ExpNode {
     TSymbol(String),
@@ -21,6 +24,7 @@ pub enum ExpNode {
     TLong(i64),
     TDouble(f64),
     TPattern(String),
+    TExtern(ExternType),
     TMap(Rc<HashMap<String, ExpNode>>),     //create once, readonly clone
     TVec(Rc<RefCell<Vec<ExpNode>>>),        //create once, mutable
     TList(Vec<ExpNode>),
@@ -69,6 +73,7 @@ impl fmt::Display for ExpNode {
       ExpNode::TDouble(v) => v.to_string(),
       ExpNode::TPattern(v) => v.to_string(),
       ExpNode::TNull(_) => "null".to_string(),
+      ExpNode::TExtern(v) => v.to_string(),
       ExpNode::TMap(m) => {
         let mut str = "{".to_string();
         for (k, v) in m.as_ref() {
@@ -743,6 +748,7 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
         ExpNode::TLong(_) => Ok(exp.clone()),
         ExpNode::TDouble(_) => Ok(exp.clone()),
         ExpNode::TPattern(_) => Ok(exp.clone()),
+        ExpNode::TExtern(_) => Ok(exp.clone()),
         ExpNode::TLambda(_) => Ok(exp.clone()),
         // can't eval
         ExpNode::TVec(_) => {
