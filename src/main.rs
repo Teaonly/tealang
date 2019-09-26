@@ -4,25 +4,31 @@ mod tealang;
 use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::collections::HashMap;
 
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 use tealang::*;
 
+fn build_extern(env: &mut ExpEnv) {
+    let mut data: HashMap<String, ExpNode> = HashMap::new();
+
+    let build = ExpNode::TFunc( |_args: &[ExpNode], _env: &mut ExpEnv| {
+        Ok(ExpNode::TExtern(0))
+    });
+    data.insert("build".to_string(), build);
+
+    env.extend(&data);
+}
+
 fn main() {
     let mut env:ExpEnv = env_new();
-    println!("TeaLang v0.1.0");
+    build_extern(&mut env);
 
+    println!("TeaLang v0.1.0");
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
-        /*
-        let contents = fs::read_to_string( &args[1] ).expect("");
-        if contents != "" {
-            tealang::run(&contents, &mut env);
-        }
-        */
-
         let input = File::open(&args[1]).unwrap();
         let buffered = BufReader::new(input);
 

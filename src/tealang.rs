@@ -270,7 +270,14 @@ impl<'a> ExpEnv<'a> {
             Some(ref v) => Some( (v.0.clone(), v.1.clone()) ),
         }
     }
+
+    pub fn extend(&mut self, data: &HashMap<String, ExpNode>) {
+        for (ref k, ref v) in data {
+            self.data.borrow_mut().insert((*k).clone(), (*v).clone());
+        }
+    }
 }
+
 
 pub fn env_new<'a>() -> ExpEnv<'a> {
     let mut data: HashMap<String, ExpNode> = HashMap::new();
@@ -285,6 +292,7 @@ pub fn env_new<'a>() -> ExpEnv<'a> {
     env
 }
 
+
 fn init_env(data: &mut HashMap<String, ExpNode>) {
 
     // math algorithm
@@ -296,7 +304,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 _ => return builderr( &format!("+ only support i64 type") ),
             }
         }
-        Ok( ExpNode::TLong( total))
+        Ok( ExpNode::TLong(total))
     });
     data.insert("+".to_string(), add);
 
