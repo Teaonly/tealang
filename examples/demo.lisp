@@ -28,13 +28,16 @@
 
 ; a clousure demo
 (defn OneObject (x) 
-    (fn (y) 
+    (begin
+      (defn internalfn () 
         (begin
-         (probe @here)
-         (probe y)
-         (probe x))))
+          (probe x)
+          (probe yy)))
+      (def yy 3.14)
+      {@myfn    internalfn
+       @value   yy}))
 
-(def myfn (OneObject 3.14))
-(myfn 1024)
-
+(def obj (OneObject 1024))
+((@myfn obj))
+(probe obj)
 

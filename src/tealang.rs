@@ -13,6 +13,39 @@ pub struct ExpErr {
     stack:  Vec<String>,
 }
 
+#[derive(Clone)]
+pub enum ExpNode {
+    TSymbol(String),
+    TNull(()),
+    TBool(bool),
+    TLong(i64),
+    TDouble(f64),
+    TPattern(String),
+    TMap(Rc<HashMap<String, ExpNode>>),     //create once, readonly clone
+    TVec(Rc<RefCell<Vec<ExpNode>>>),        //create once, mutable
+    TList(Vec<ExpNode>),
+    TFunc(fn(&[ExpNode], &mut ExpEnv) -> Result<ExpNode, ExpErr>),
+    TLambda(ExpLambda),
+}
+
+#[derive(Clone)]
+pub struct ExpLambda {
+    head:       Rc<Vec<ExpNode>>,
+    body:       Rc<ExpNode>,
+
+    closure:    Rc<RefCell<HashMap<String, ExpNode>>>,      // clone from env's data
+}
+
+#[derive(Clone)]
+pub struct ExpEnv<'a> {
+    macros: Rc<RefCell<HashMap<String, (Vec<ExpNode>, Vec<ExpNode>)>>>,
+    data: Rc<RefCell<HashMap<String, ExpNode>>>,
+    outer: Option<&'a ExpEnv<'a>>,
+}
+
+/*
+ * help functions
+ */
 fn builderr(reason: &str) ->  Result<ExpNode, ExpErr> {
     let reason = reason.to_string();
     let stack:Vec<String> = Vec::new();
@@ -25,37 +58,6 @@ fn builderr_(reason: &str) ->  ExpErr {
     let stack:Vec<String> = Vec::new();
 
     ExpErr{reason, stack}
-}
-
-
-#[derive(Clone)]
-pub enum ExpNode {
-    TSymbol(String),
-    TNull(()),
-    TBool(bool),
-    TLong(i64),
-    TDouble(f64),
-    TPattern(String),
-    TMap(Rc<HashMap<String, ExpNode>>),
-    TVec(Rc<RefCell<Vec<ExpNode>>>),
-    TList(Vec<ExpNode>),
-    TFunc(fn(&[ExpNode], &mut ExpEnv) -> Result<ExpNode, ExpErr>),
-    TLambda(ExpLambda),
-}
-
-#[derive(Clone)]
-pub struct ExpLambda {
-    head:       Rc<Vec<ExpNode>>,
-    body:       Rc<ExpNode>,
-
-    closure:    Rc<RefCell<HashMap<String, ExpNode>>>,
-}
-
-#[derive(Clone)]
-pub struct ExpEnv<'a> {
-    macros: Rc<RefCell<HashMap<String, (Vec<ExpNode>, Vec<ExpNode>)>>>,
-    data: Rc<RefCell<HashMap<String, ExpNode>>>,
-    outer: Option<&'a ExpEnv<'a>>,
 }
 
 impl fmt::Display for ExpNode {
@@ -93,8 +95,8 @@ impl fmt::Display for ExpNode {
           .collect();
         format!("({})", xs.join(","))
       },
-      ExpNode::TFunc(_) => "Func {}".to_string(),
-      ExpNode::TLambda(_) => "Lambda {}".to_string(),
+      ExpNode::TFunc(_) => "Func {...}".to_string(),
+      ExpNode::TLambda(_) => "Lambda {...}".to_string(),
     };
 
     write!(f, "{}", str)
@@ -114,6 +116,7 @@ fn parse_atom(token: &String) -> Result<ExpNode, String> {
         return Ok(ExpNode::TBool(true));
     }
 
+    // TODO: need more canonical way
     if    token.contains("\"")
        || token.contains("#")
        || token.contains("$")
@@ -123,7 +126,7 @@ fn parse_atom(token: &String) -> Result<ExpNode, String> {
        || token.contains("|")
        || token.contains("\\")
        || token.contains("~") {
-        return Err("Token finds special symbol, like \" @ $ #".to_string())
+        return Err( format!("token {} contains illegal characters.", token) );
     }
 
     if token.starts_with("@") {
@@ -133,7 +136,7 @@ fn parse_atom(token: &String) -> Result<ExpNode, String> {
         let mut pattern = token.clone();
         pattern.remove(0);
         if pattern.contains("@") {
-            return Err("Pattern token can't contain ', except begin".to_string())
+            return Err(format!("Pattern token '{}' can't contain @, except begin", pattern));
         }
         return Ok(ExpNode::TPattern(pattern));
     }
@@ -156,7 +159,7 @@ fn parse_tokens(pos: usize, tokens: &Vec<String>) -> Result<(ExpNode, usize), St
     let mut i = pos;
 
     if tokens[i] != "(" {
-        return Err("Tokens's paren not begin with '(' ".to_string());
+        return Err(format!("token '{}' not begin with '(' ", tokens[i]));
     }
     i = i + 1;
 
@@ -285,7 +288,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         for arg in args.iter() {
             match arg {
                 ExpNode::TLong(v) => { total = total + v},
-                _ => return builderr("+ only support TLong"),
+                _ => return builderr( &format!("+ only support i64 type") ),
             }
         }
         Ok( ExpNode::TLong( total))
@@ -300,7 +303,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr("mod only support two Tlong")
+        builderr("mod only support two long type")
     });
     data.insert("-".to_string(), sub);
 
@@ -312,7 +315,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr("mod only support two Tlong")
+        builderr("mod only support two long type")
     });
     data.insert("%".to_string(), mod_func);
 
@@ -321,7 +324,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         for arg in args.iter() {
             match arg {
                 ExpNode::TLong(v) => { acc = acc * v},
-                _ => return builderr("* only support TLong"),
+                _ => return builderr("* only support long type"),
             }
         }
         Ok( ExpNode::TLong(acc))
@@ -336,7 +339,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr("div only support two Tlong")
+        builderr("div only support two long type")
     });
     data.insert("/".to_string(), div);
 
@@ -349,7 +352,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr("> only support two Tlong")
+        builderr("> only support two long type")
     });
     data.insert(">".to_string(), gt);
 
@@ -361,7 +364,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr(">= only support two Tlong")
+        builderr(">= only support two long type")
     });
     data.insert(">=".to_string(), gte);
 
@@ -373,7 +376,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr("< only support two Tlong")
+        builderr("< only support two long type")
     });
     data.insert("<".to_string(), lt);
 
@@ -385,7 +388,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr("<= only support two Tlong")
+        builderr("<= only support two long type")
     });
     data.insert("<=".to_string(), lte);
 
@@ -405,7 +408,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 _=> (),
             }
         }
-        builderr("== only support two Tlong")
+        builderr("== only support two long type")
     });
     data.insert("==".to_string(), eq);
 
@@ -415,7 +418,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         for arg in args.iter() {
             match arg {
                 ExpNode::TBool(v) => { result = result && *v},
-                _ => return builderr("and only support TBool"),
+                _ => return builderr("and only support bool type"),
             }
         }
         Ok( ExpNode::TBool(result))
@@ -427,7 +430,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         for arg in args.iter() {
             match arg {
                 ExpNode::TBool(v) => { result = result || *v},
-                _ => return builderr("or only support TBool"),
+                _ => return builderr("or only support bool type"),
             }
         }
         Ok( ExpNode::TBool(result))
@@ -440,7 +443,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 return Ok( ExpNode::TBool(!v1) );
             }
         }
-        builderr("! only support one TBool")
+        builderr("! only support one bool type")
     });
     data.insert("!".to_string(), not);
 
@@ -465,7 +468,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 if let Some(n) = vec.borrow_mut().pop() {
                     return Ok(n);
                 }
-                return builderr("pop an empyt vector");
+                return builderr("pop an empty vector");
             }
         }
         builderr("pop from vector syntax error")
@@ -494,7 +497,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
                 }
             }
         }
-        builderr("nth vector syntax error")
+        builderr("nth of vector syntax error")
     });
     data.insert("nth".to_string(), nth);
 
@@ -544,7 +547,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
 
     let evalfn = ExpNode::TFunc( |args: &[ExpNode], env: &mut ExpEnv| {
         if args.len() != 1 {
-            return builderr("eval only support onte item");
+            return builderr("eval only support one item");
         }
         eval(&args[0], env)
     });
