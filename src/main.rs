@@ -28,17 +28,17 @@ fn main() {
 
         let mut contents = "".to_string();
         for line in buffered.lines() {
-            let line = line.unwrap().to_string();
-            let new_line = line.replace(" ", "");
-            if new_line.starts_with(";") {
-                continue;
+            let mut line = line.unwrap().to_string();
+            if let Some(pos) = line.find(";") {
+                let (code, _) = line.split_at(pos);
+                line = code.to_string();
             }
 
             contents.push_str( &line );
             contents.push_str("\n");
         }
 
-        tealang::run(&contents, &mut env);
+        println!("{}", tealang::run(&contents, &mut env));
     }
 
     let mut rl = Editor::<()>::new();

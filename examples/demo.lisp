@@ -32,7 +32,7 @@
       (defn internalfn () 
         (begin
           (probe x)
-          (probe yy)))
+          (probe yy)))      ;; yy is defind in local env
       (def yy 3.14)
       {@myfn    internalfn
        @value   yy}))
@@ -41,3 +41,4 @@
 ((@myfn obj))
 (probe obj)
 
+(+ obj 1)
