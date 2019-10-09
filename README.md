@@ -1,2 +1,2 @@
 # tealang
-Tealang a simple Lisp like DSL for Rust . 
+Tealang is a simple Lisp like DSL for Rust . 

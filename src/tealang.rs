@@ -869,16 +869,14 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                         }
                     }
 
-                    // copy closure to new env
-                    if !Rc::ptr_eq(&f.closure,  &env.data) {
-                        for (ref name, ref value) in f.closure.borrow().iter() {
-                            data.insert(name.to_string(), (*value).clone());
-                        }
-                    }
+                    let env_closure = ExpEnv{ macros:  env.macros.clone(),
+                                           data:    f.closure.clone(),
+                                           outer:   Some(env)};
 
                     let mut env2 = ExpEnv{ macros:  env.macros.clone(),
                                            data:    Rc::new(RefCell::new(data)),
-                                           outer:   Some(env)};
+                                           outer:   Some(&env_closure)};
+
                     let result = eval( f.body.as_ref(), &mut env2);
                     if let Err(mut err) = result {
                         err.stack.push(exp.to_string());
