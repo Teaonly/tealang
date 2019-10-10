@@ -9,8 +9,8 @@ use std::fmt;
 
 #[derive(Debug)]
 pub struct ExpErr {
-    reason: String,
-    stack:  Vec<String>,
+    pub reason: String,
+    pub stack:  Vec<String>,
 }
 
 //use todo:*;
@@ -25,7 +25,7 @@ pub enum ExpNode {
     TDouble(f64),
     TPattern(String),
     TExtern(ExternType),
-    TMap(Rc<HashMap<String, ExpNode>>),     //create once, readonly clone
+    TMap(Rc<HashMap<String, ExpNode>>),     //create once, readonly
     TVec(Rc<RefCell<Vec<ExpNode>>>),        //create once, mutable
     TList(Vec<ExpNode>),
     TFunc(fn(&[ExpNode], &mut ExpEnv) -> Result<ExpNode, ExpErr>),
@@ -123,7 +123,6 @@ fn parse_atom(token: &String) -> Result<ExpNode, String> {
 
     // TODO: need more canonical way
     if    token.contains("\"")
-       || token.contains("#")
        || token.contains("$")
        || token.contains("^")
        || token.contains("`")
@@ -292,7 +291,6 @@ pub fn env_new<'a>() -> ExpEnv<'a> {
     env
 }
 
-
 fn init_env(data: &mut HashMap<String, ExpNode>) {
 
     // math algorithm
@@ -459,6 +457,27 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         builderr("! only support one bool type")
     });
     data.insert("!".to_string(), not);
+
+    // map operators
+    let has = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
+        if args.len() < 2 {
+            return builderr("push to vector must include 2 items");
+        }
+        if let ExpNode::TMap(ref m) = args[0] {
+            if let ExpNode::TPattern(ref k) = args[1] {
+                match m.as_ref().get(k) {
+                    None => {
+                        return Ok(ExpNode::TBool(false));
+                    },
+                    Some(_) => {
+                        return Ok(ExpNode::TBool(true));
+                    }
+                }
+            }
+        }
+        builderr("has must apply to a map!")
+    });
+    data.insert("has".to_string(), has);
 
     // vector operators
     let push = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
@@ -870,8 +889,8 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                     }
 
                     let env_closure = ExpEnv{ macros:  env.macros.clone(),
-                                           data:    f.closure.clone(),
-                                           outer:   Some(env)};
+                                              data:    f.closure.clone(),
+                                              outer:   Some(env)};
 
                     let mut env2 = ExpEnv{ macros:  env.macros.clone(),
                                            data:    Rc::new(RefCell::new(data)),
@@ -949,7 +968,7 @@ fn expand_macro(body: &[ExpNode], head: &[ExpNode], args: &[ExpNode]) -> Vec<Exp
                 ret.push(args[find as usize].clone());
             }
         } else {
-            ret.push(args[i].clone());
+            ret.push(body[i].clone());
         }
     }
     ret
