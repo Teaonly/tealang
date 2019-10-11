@@ -875,14 +875,21 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                 ExpNode::TLambda(f) => {
                     // copy args to new env
                     let mut data: HashMap<String, ExpNode> = HashMap::new();
+                    /*
                     if f.head.len() != args.len() {
                         let mut err = builderr_("apply lambda must with same args number");
                         err.stack.push(exp.to_string());
                         return Err(err);
                     }
-                    for i in 0..args.len() {
+                    */
+
+                    for i in 0..f.head.as_ref().len() {
                         if let ExpNode::TSymbol(ref name) = f.head.as_ref()[i] {
-                            data.insert(name.clone(), args[i].clone());
+                            if i < args.len() {
+                                data.insert(name.clone(), args[i].clone());
+                            } else {
+                                data.insert(name.clone(), ExpNode::TNull(()));
+                            }
                         } else {
                             panic!("Find lambda with non symble args");
                         }
