@@ -245,6 +245,9 @@ fn parse(expr: &String) -> Result<Vec<ExpNode>, String> {
  *  Enviroment
  */
 impl<'a> ExpEnv<'a> {
+    fn is_top(&self) -> bool {
+        self.outer.is_none()
+    }
     fn set(&mut self, name : &String, node: &ExpNode) {
         self.data.borrow_mut().insert(name.clone(), node.clone());
     }
@@ -705,34 +708,36 @@ fn eval_lambda(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
         if body.len() == 0 {
             return builderr("fn body can't be empty");
         }
+
+        let mut head : Vec<ExpNode> = Vec::new();
+
         if let ExpNode::TSymbol(_) = args[0] {
-            let mut head : Vec<ExpNode> = Vec::new();
             head.push( args[0].clone() );
-
-            let head = Rc::new(head.clone());
-            let body = Rc::new(ExpNode::TList(body.clone()));
-            let closure = env.data.clone();
-
-            let lambda = ExpLambda{head, body, closure};
-            return Ok(ExpNode::TLambda(lambda));
         }
-        if let ExpNode::TList(ref head) = args[0] {
-            for i in 0..head.len() {
-                match &head[i] {
-                    ExpNode::TSymbol(_) => (),
+        if let ExpNode::TList(ref ahead) = args[0] {
+            for i in 0..ahead.len() {
+                match &ahead[i] {
+                    ExpNode::TSymbol(_) => {
+                        head.push(ahead[i].clone());
+                    },
                     _ => {
                         return builderr("lambda's argment must be a symbol");
                     }
                 }
             }
-
-            let head = Rc::new(head.clone());
-            let body = Rc::new(ExpNode::TList(body.clone()));
-            let closure = env.data.clone();
-
-            let lambda = ExpLambda{head, body, closure};
-            return Ok(ExpNode::TLambda(lambda));
         }
+
+        let head = Rc::new(head);
+        let body = Rc::new(ExpNode::TList(body.clone()));
+        let closure = if env.is_top() {
+            let data: HashMap<String, ExpNode> = HashMap::new();
+            Rc::new(RefCell::new(data))
+        } else {
+            env.data.clone()
+        };
+
+        let lambda = ExpLambda{head, body, closure};
+        return Ok(ExpNode::TLambda(lambda));
     }
     return builderr("fn must include two list or symbol and list");
 }
@@ -899,11 +904,17 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                                               data:    f.closure.clone(),
                                               outer:   Some(env)};
 
-                    let mut env2 = ExpEnv{ macros:  env.macros.clone(),
-                                           data:    Rc::new(RefCell::new(data)),
-                                           outer:   Some(&env_closure)};
+                    let mut env_new = if Rc::ptr_eq(&env.data, &f.closure) {
+                        ExpEnv{ macros:  env.macros.clone(),
+                                data:    Rc::new(RefCell::new(data)),
+                                outer:   Some(&env)}
+                    } else {
+                        ExpEnv{ macros:  env.macros.clone(),
+                                data:    Rc::new(RefCell::new(data)),
+                                outer:   Some(&env_closure)}
+                    };
 
-                    let result = eval( f.body.as_ref(), &mut env2);
+                    let result = eval( f.body.as_ref(), &mut env_new);
                     if let Err(mut err) = result {
                         err.stack.push(exp.to_string());
                         return Err(err);
