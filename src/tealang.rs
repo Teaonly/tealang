@@ -37,14 +37,16 @@ pub struct ExpLambda {
     head:       Rc<Vec<ExpNode>>,
     body:       Rc<ExpNode>,
 
-    closure:    Rc<RefCell<HashMap<String, ExpNode>>>,      // clone from env's data
+    closure:    Option<Rc<RefCell<HashMap<String, ExpNode>>>>,      // clone from env's data
 }
 
 #[derive(Clone)]
 pub struct ExpEnv<'a> {
-    macros: Rc<RefCell<HashMap<String, (Vec<ExpNode>, Vec<ExpNode>)>>>,
     data: Rc<RefCell<HashMap<String, ExpNode>>>,
-    outer: Option<&'a ExpEnv<'a>>,
+    macros: Option<RefCell<HashMap<String, (Vec<ExpNode>, Vec<ExpNode>)>>>,
+
+    closure: Option<Rc<RefCell<HashMap<String, ExpNode>>>>,
+    global: Option<&'a ExpEnv<'a>>,
 }
 
 /*
@@ -245,29 +247,42 @@ fn parse(expr: &String) -> Result<Vec<ExpNode>, String> {
  *  Enviroment
  */
 impl<'a> ExpEnv<'a> {
-    fn is_top(&self) -> bool {
-        self.outer.is_none()
+    fn is_global(&self) -> bool {
+        self.global.is_none()
     }
     fn set(&mut self, name : &String, node: &ExpNode) {
         self.data.borrow_mut().insert(name.clone(), node.clone());
     }
     fn get(&self, name : &String) -> Option<ExpNode> {
-        match self.data.borrow().get(name) {
-             Some(exp) => Some(exp.clone()),
-             None => {
-                 match &self.outer {
-                     Some(outer_env) => outer_env.get(name),
-                     None => None
-                 }
-             }
-         }
+        // find in self
+        if let Some(ref exp) = self.data.borrow().get(name) {
+            return Some((*exp).clone());
+        }
+
+        // find in closure
+        if let Some(ref closure) = self.closure {
+            if let Some(ref exp) = closure.borrow().get(name) {
+                return Some((*exp).clone());
+            }
+        }
+
+        // find in global
+        if let Some(ref global) = self.global {
+            return global.get(name);
+        }
+
+        None
     }
     fn add_macro(&self, name: &String, head: &Vec<ExpNode>, body: &Vec<ExpNode>) {
         let new_macro = (head.clone(), body.clone());
-        self.macros.borrow_mut().insert(name.clone(), new_macro);
+        if self.macros.is_some() {
+            self.macros.as_ref().unwrap().borrow_mut().insert(name.clone(), new_macro);
+        } else {
+            panic!("Can't call add_macro in none global env");
+        }
     }
     fn find_macro(&self, name: &String) -> Option<(Vec<ExpNode>, Vec<ExpNode>)> {
-        match self.macros.borrow().get(name) {
+        match self.macros.as_ref().unwrap().borrow().get(name) {
             None => None,
             Some(ref v) => Some( (v.0.clone(), v.1.clone()) ),
         }
@@ -287,10 +302,11 @@ pub fn env_new<'a>() -> ExpEnv<'a> {
     let data = Rc::new(RefCell::new(data));
 
     let macros:HashMap<String, (Vec<ExpNode>, Vec<ExpNode>)> = HashMap::new();
-    let macros = Rc::new(RefCell::new(macros));
+    let macros = Some(RefCell::new(macros));
 
-    let outer = None;
-    let env = ExpEnv {macros, data, outer};
+    let global = None;
+    let closure = None;
+    let env = ExpEnv {data, macros, closure, global};
     env
 }
 
@@ -729,11 +745,10 @@ fn eval_lambda(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
 
         let head = Rc::new(head);
         let body = Rc::new(ExpNode::TList(body.clone()));
-        let closure = if env.is_top() {
-            let data: HashMap<String, ExpNode> = HashMap::new();
-            Rc::new(RefCell::new(data))
+        let closure = if env.is_global() {
+            None
         } else {
-            env.data.clone()
+            Some(env.data.clone())
         };
 
         let lambda = ExpLambda{head, body, closure};
@@ -899,7 +914,7 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                             panic!("Find lambda with non symble args");
                         }
                     }
-
+                    /*
                     let env_closure = ExpEnv{ macros:  env.macros.clone(),
                                               data:    f.closure.clone(),
                                               outer:   Some(env)};
@@ -913,8 +928,20 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                                 data:    Rc::new(RefCell::new(data)),
                                 outer:   Some(&env_closure)}
                     };
+                    */
+                    let mut new_env = if env.is_global() {
+                        ExpEnv{ data:    Rc::new(RefCell::new(data)),
+                                macros:  None,
+                                closure: f.closure.clone(),
+                                global:  Some(env)}
+                    } else {
+                        ExpEnv{ data:    Rc::new(RefCell::new(data)),
+                                macros:  None,
+                                closure: f.closure.clone(),
+                                global:  env.global }
+                    };
 
-                    let result = eval( f.body.as_ref(), &mut env_new);
+                    let result = eval( f.body.as_ref(), &mut new_env);
                     if let Err(mut err) = result {
                         err.stack.push(exp.to_string());
                         return Err(err);

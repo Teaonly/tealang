@@ -31,14 +31,17 @@
     (begin
       (defn internalfn () 
         (begin
+          (probe @----------)
+          (print mystruct)  ;; global value is OK
           (probe x)
-          (probe yy)))      ;; yy is defind in local env
+          (probe yy)))      ;; yy is defind in local env (closre)
       (def yy 3.14)
       {@myfn    internalfn
        @value   yy}))
 
 (def obj (OneObject 1024))
 ((@myfn obj))
+(probe @---------------------)
 (probe obj)
 
 
