@@ -25,8 +25,7 @@ pub enum ExpNode {
     TDouble(f64),
     TPattern(String),
     TExtern(ExternType),
-    TMap(Rc<HashMap<String, ExpNode>>),     //create once, readonly
-    TVec(Rc<RefCell<Vec<ExpNode>>>),        //create once, mutable
+    TMap(Rc<HashMap<String, ExpNode>>),
     TList(Vec<ExpNode>),
     TFunc(fn(&[ExpNode], &mut ExpEnv) -> Result<ExpNode, ExpErr>),
     TLambda(ExpLambda),
@@ -87,14 +86,6 @@ impl fmt::Display for ExpNode {
         str.push_str("}");
         str
       }
-      ExpNode::TVec(v) => {
-        let xs: Vec<String> = v
-          .borrow()
-          .iter()
-          .map(|x| x.to_string())
-          .collect();
-        format!("[{}]", xs.join(","))
-      },
       ExpNode::TList(list) => {
         let xs: Vec<String> = list
           .iter()
@@ -209,7 +200,7 @@ fn parse(expr: &String) -> Result<Vec<ExpNode>, String> {
     fn tokenize(expr: &String) -> Vec<String> {
           expr.replace("{", "(map ")
               .replace("}", ")")
-              .replace("[", "(vec ")
+              .replace("[", "(list ")
               .replace("]", ")")
               .replace("(", " ( ")
               .replace(")", " ) ")
@@ -422,16 +413,11 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
     });
     data.insert("<=".to_string(), lte);
 
-    let eq = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
+    let eqeq = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
         if args.len() == 2 {
             match &args[0] {
                 ExpNode::TLong(ref v1) => {
                     if let ExpNode::TLong(ref v2) = args[1] {
-                        return Ok(ExpNode::TBool(v1 == v2));
-                    }
-                },
-                ExpNode::TPattern(ref v1) => {
-                    if let ExpNode::TPattern(ref v2) = args[1] {
                         return Ok(ExpNode::TBool(v1 == v2));
                     }
                 },
@@ -440,7 +426,22 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         }
         builderr("== only support two long type")
     });
-    data.insert("==".to_string(), eq);
+    data.insert("==".to_string(), eqeq);
+
+    let eq = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
+        if args.len() == 2 {
+            match &args[0] {
+                ExpNode::TPattern(ref v1) => {
+                    if let ExpNode::TPattern(ref v2) = args[1] {
+                        return Ok(ExpNode::TBool(v1 == v2));
+                    }
+                },
+                _=> (),
+            }
+        }
+        builderr("eq only support two pattern type")
+    });
+    data.insert("eq".to_string(), eq);
 
     // logic operator
     let and = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
@@ -498,120 +499,64 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
     });
     data.insert("has".to_string(), has);
 
-    // vector operators
+    // list operators
     let push = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
         if args.len() < 2 {
-            return builderr("push to vector must include 2 items");
+            return builderr("push to list must include 2 items");
         }
-        if let ExpNode::TVec(ref vec) = args[0] {
+        if let ExpNode::TList(ref vec) = args[0] {
+            let mut out: Vec<ExpNode> = vec.clone();
             for i in 1..args.len() {
-                vec.borrow_mut().push( args[i].clone() );
+                out.push( args[i].clone() );
             }
-            return Ok(args[0].clone());
+            return Ok(ExpNode::TList(out));
         }
-        builderr("push to vector syntax error")
+        builderr("push to list syntax error")
     });
     data.insert("push".to_string(), push);
-
-    let pop = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
-        if args.len() == 1 {
-            if let ExpNode::TVec(ref vec) = args[0] {
-                if let Some(n) = vec.borrow_mut().pop() {
-                    return Ok(n);
-                }
-                return builderr("pop an empty vector");
-            }
-        }
-        builderr("pop from vector syntax error")
-    });
-    data.insert("pop".to_string(), pop);
-
-    let nth = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
-        if args.len() == 2 {
-            if let ExpNode::TVec(ref vec) = args[0] {
-                if let ExpNode::TLong(i) = args[1] {
-                    let i = i as usize;
-                    if i < vec.borrow().len() {
-                        return Ok(  vec.borrow()[i].clone() );
-                    } else {
-                        return builderr("index out of vector");
-                    }
-                }
-            } else if let ExpNode::TList(ref lst) = args[0] {
-                if let ExpNode::TLong(i) = args[1] {
-                    let i = i as usize;
-                    if i < lst.len() {
-                        return Ok( lst[i].clone() );
-                    } else {
-                        return builderr("index out of vector");
-                    }
-                }
-            }
-        }
-        builderr("nth of vector syntax error")
-    });
-    data.insert("nth".to_string(), nth);
-
-    let size = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
-        if args.len() == 1 {
-            if let ExpNode::TVec(ref vec) = args[0] {
-                return Ok(ExpNode::TLong( vec.borrow().len() as i64));
-            } else if let ExpNode::TList(ref lst) = args[0] {
-                return Ok(ExpNode::TLong( lst.len() as i64));
-            }
-        }
-        builderr("size of vector syntax error")
-    });
-    data.insert("size".to_string(), size);
-
-    let append = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
-        if args.len() < 2 {
-            return builderr("append vector must include 2 items at least");
-        }
-        if let ExpNode::TVec(ref vec) = args[0] {
-            for i in 1..args.len() {
-                match &args[i] {
-                    ExpNode::TVec(ref nl) => vec.borrow_mut().extend( nl.borrow().iter().cloned() ),
-                    _ => return builderr("concat support combin vector only")
-                }
-            }
-            return Ok( args[0].clone() );
-        }
-        builderr("append to vector syntax error")
-    });
-    data.insert("append".to_string(), append);
 
     let concat = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
         if args.len() < 2 {
             return builderr("concat vector must include 2 items at least");
         }
-        let vec : Rc<RefCell<Vec<ExpNode>>>  = Rc::new(RefCell::new(Vec::new()));
+
+        let mut out: Vec<ExpNode> = Vec::new();
         for i in 0..args.len() {
             match &args[i] {
-                ExpNode::TVec(ref nl) => vec.borrow_mut().extend( nl.borrow().iter().cloned() ),
-                _ => return builderr("concat support combin vector only")
+                ExpNode::TList(ref nl) => out.extend( nl.iter().cloned() ),
+                _ => return builderr("concat support combin list only")
             }
         }
-        Ok( ExpNode::TVec(vec))
+        Ok( ExpNode::TList(out))
     });
     data.insert("concat".to_string(), concat);
 
-    let evalfn = ExpNode::TFunc( |args: &[ExpNode], env: &mut ExpEnv| {
-        if args.len() != 1 {
-            return builderr("eval only support one item");
+    let nth = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
+        if args.len() == 2 {
+            if let ExpNode::TList(ref lst) = args[0] {
+                if let ExpNode::TLong(i) = args[1] {
+                    let i = i as usize;
+                    if i < lst.len() {
+                        return Ok( lst[i].clone() );
+                    } else {
+                        return builderr("index out of list");
+                    }
+                }
+            }
         }
-        eval(&args[0], env)
+        builderr("nth of list syntax error")
     });
-    data.insert("eval".to_string(), evalfn);
+    data.insert("nth".to_string(), nth);
 
-    let listfn = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
-        let mut lst:Vec<ExpNode> = vec![];
-        for arg in args.iter() {
-            lst.push(arg.clone());
+    let size = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
+        if args.len() == 1 {
+            if let ExpNode::TList(ref lst) = args[0] {
+                return Ok(ExpNode::TLong( lst.len() as i64));
+            }
         }
-        return Ok(ExpNode::TList(lst));
+        builderr("size of list syntax error")
     });
-    data.insert("list".to_string(), listfn);
+    data.insert("size".to_string(), size);
 
     let probe = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
         for i in 0..args.len() {
@@ -635,7 +580,7 @@ fn eval_def(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
         env.set(name, &value);
         return Ok(ExpNode::TNull(()));
     }
-    return builderr("let syntax error!");
+    return builderr("def syntax error!");
 }
 
 fn eval_begin(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
@@ -704,7 +649,7 @@ fn eval_map(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     Ok(ExpNode::TMap(Rc::new(map)))
 }
 
-fn eval_vec(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
+fn eval_list(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     let mut vec: Vec<ExpNode> = Vec::new();
 
     for i in 0..args.len() {
@@ -712,7 +657,7 @@ fn eval_vec(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
         vec.push(n);
     }
 
-    Ok(ExpNode::TVec(Rc::new(RefCell::new(vec))))
+    Ok(ExpNode::TList(vec))
 }
 
 fn eval_lambda(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
@@ -757,14 +702,6 @@ fn eval_lambda(args: &[ExpNode], env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
     return builderr("fn must include two list or symbol and list");
 }
 
-fn eval_quote(args: &[ExpNode], _env: &mut ExpEnv) -> Result<ExpNode, ExpErr> {
-    if args.len() != 1  {
-        return builderr("quote must followed one symbol");
-    }
-
-    Ok(args[0].clone())
-}
-
 fn eval_builtin(head: &ExpNode,
                 args: &[ExpNode],
                 env: &mut ExpEnv) -> Option<Result<ExpNode, ExpErr>> {
@@ -776,9 +713,8 @@ fn eval_builtin(head: &ExpNode,
                 "if" => Some(eval_if(args, env)),
                 "while" => Some(eval_while(args, env)),
                 "map" => Some(eval_map(args, env)),
-                "vec" => Some(eval_vec(args, env)),
+                "list" => Some(eval_list(args, env)),
                 "fn" => Some(eval_lambda(args, env)),
-                "'" => Some(eval_quote(args, env)),
                 _ => None,
             }
         },
@@ -798,11 +734,6 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
         ExpNode::TExtern(_) => Ok(exp.clone()),
         ExpNode::TLambda(_) => Ok(exp.clone()),
         // can't eval
-        ExpNode::TVec(_) => {
-            let mut err = builderr_("Can't eval Vec directly, it is not atom type");
-            err.stack.push(exp.to_string());
-            Err(err)
-        },
         ExpNode::TMap(_) => {
             let mut err = builderr_("Can't eval Map directly, it is not atom type");
             err.stack.push(exp.to_string());
@@ -895,14 +826,6 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                 ExpNode::TLambda(f) => {
                     // copy args to new env
                     let mut data: HashMap<String, ExpNode> = HashMap::new();
-                    /*
-                    if f.head.len() != args.len() {
-                        let mut err = builderr_("apply lambda must with same args number");
-                        err.stack.push(exp.to_string());
-                        return Err(err);
-                    }
-                    */
-
                     for i in 0..f.head.as_ref().len() {
                         if let ExpNode::TSymbol(ref name) = f.head.as_ref()[i] {
                             if i < args.len() {
@@ -914,21 +837,7 @@ fn eval<'a>(exp: &ExpNode, env: &mut ExpEnv<'a>) -> Result<ExpNode, ExpErr> {
                             panic!("Find lambda with non symble args");
                         }
                     }
-                    /*
-                    let env_closure = ExpEnv{ macros:  env.macros.clone(),
-                                              data:    f.closure.clone(),
-                                              outer:   Some(env)};
 
-                    let mut env_new = if Rc::ptr_eq(&env.data, &f.closure) {
-                        ExpEnv{ macros:  env.macros.clone(),
-                                data:    Rc::new(RefCell::new(data)),
-                                outer:   Some(&env)}
-                    } else {
-                        ExpEnv{ macros:  env.macros.clone(),
-                                data:    Rc::new(RefCell::new(data)),
-                                outer:   Some(&env_closure)}
-                    };
-                    */
                     let mut new_env = if env.is_global() {
                         ExpEnv{ data:    Rc::new(RefCell::new(data)),
                                 macros:  None,

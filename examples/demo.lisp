@@ -23,7 +23,7 @@
     (begin
       (probe @run_in_prin)
       (probe x)
-      (probe (list (' a) (' b)))))
+      (probe (list 1949 1979))))
 (print mystruct)
 
 ; a clousure demo
@@ -44,5 +44,6 @@
 (probe @---------------------)
 (probe obj)
 
-
+(def xx (push [1 2 3] 4 5 6 [7 8]))
+(probe xx)
 
