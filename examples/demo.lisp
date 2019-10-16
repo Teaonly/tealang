@@ -21,7 +21,7 @@
 ; a lambda
 (defn print x 
     (begin
-      (probe @run_in_prin)
+      (probe @run_in_print)
       (probe x)
       (probe (list 1949 1979))))
 (print mystruct)
@@ -46,4 +46,6 @@
 
 (def xx (push [1 2 3] 4 5 6 [7 8]))
 (probe xx)
+
+(raise @MY_ERROR)
 

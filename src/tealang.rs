@@ -558,6 +558,7 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
     });
     data.insert("size".to_string(), size);
 
+    // debug tools
     let probe = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
         for i in 0..args.len() {
             println!("{}", args[i]);
@@ -565,6 +566,17 @@ fn init_env(data: &mut HashMap<String, ExpNode>) {
         Ok(ExpNode::TNull(()))
     });
     data.insert("probe".to_string(), probe);
+
+    let raise = ExpNode::TFunc( |args: &[ExpNode], _env: &mut ExpEnv| {
+        let mut msg = "User raising exception:".to_string();
+        if args.len() == 1 {
+            if let ExpNode::TPattern(ref msg_pattern) = &args[0] {
+                msg.push_str(msg_pattern);
+            }
+        }
+        builderr(&msg)
+    });
+    data.insert("raise".to_string(), raise);
 }
 
 /*
