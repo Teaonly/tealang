@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <iterator>
+#include <sstream>
 
 namespace tea {
 using namespace std;
@@ -77,7 +78,41 @@ struct TeaObject {
     }
 
     string to_string() {
-        return "TODO: to_string() ";
+        stringstream ss;
+        if (type == T_NULL) {
+            return "(nil)";
+        }
+        if (type == T_INT) {
+            ss << v_int;
+        }
+        if (type == T_FLOAT) {
+            ss << v_float;
+        }
+        if (type == T_BOOL) {
+            ss << v_bool;
+        }
+        if (type == T_PATTERN) {
+            ss << "@" << v_string;
+        }
+        if (type == T_EXT) {
+            ss << "(extern)";
+        }
+        if (type == T_LIST) {
+            ss << "(list with " << v_list->size() << " items)";
+        }
+        if (type == T_MAP) {
+            ss << "(map with " << v_map->size() << " items)";
+        }
+        if (type == T_SYMBOL) {
+            ss << v_string;
+        }
+        if (type == T_FUNC) {
+            ss << "(func)";
+        }
+        if (type == T_LAMBDA) {
+            ss << "(lambda)";
+        }
+        return ss.str();
     }
 
     static tobject build(const TeaObject& obj) {
@@ -162,6 +197,7 @@ struct TeaResult {
     TeaResult() {
         result = tea_null;
     }
+
     TeaResult(tobject obj) {
         result = obj;
     }
@@ -183,14 +219,6 @@ struct TeaResult {
 };
 
 struct TeaLang {
-public:
-    static tenv build_env() {
-        auto env = TeaEnvironment();
-        init(env.data);
-
-        return make_shared<TeaEnvironment>(env);
-    }
-
 private:
     // main functions
     static void init(shared_ptr<map<string, tobject>> data_) {
@@ -213,9 +241,17 @@ private:
         data["!"] = build_fobj(TeaLang::notnot);
 
         data["size"] = build_fobj(TeaLang::size);
+        data["push"] = build_fobj(TeaLang::push);
+        data["pop"] = build_fobj(TeaLang::pop);
+        data["nth"] = build_fobj(TeaLang::nth);
+
+        data["set"] = build_fobj(TeaLang::set);
+        data["has"] = build_fobj(TeaLang::has);
+        data["rm"] = build_fobj(TeaLang::rm);
     }
+
     static tobject build_fobj(TeaFunc f) {
-        return make_shared<TeaObject>(f);
+        return TeaObject::build(f);
     }
 
     // math
@@ -228,14 +264,14 @@ private:
             for (size_t i = 0; i < args.size(); i++) {
                 sum += args[i]->v_int;
             }
-            return make_shared<TeaObject>(sum);
+            return TeaObject::build(sum);
         }
         if (args[0]->type == TeaObject::T_FLOAT) {
             float sum = 0.0;
             for (size_t i = 0; i < args.size(); i++) {
                 sum += args[i]->v_int;
             }
-            return make_shared<TeaObject>(sum);
+            return TeaObject::build(sum);
         }
         return TeaResult("+ func synatax error, only support int/float");
     }
@@ -246,11 +282,11 @@ private:
         }
         if (args[0]->type == TeaObject::T_INT) {
             auto result = args[0]->v_int - args[1]->v_int;
-            return make_shared<TeaObject>(result);
+            return TeaObject::build(result);
         }
         if (args[0]->type == TeaObject::T_FLOAT) {
             auto result = args[0]->v_float - args[1]->v_float;
-            return make_shared<TeaObject>(result);
+            return TeaObject::build(result);
         }
         return TeaResult("+ func synatax error, only support int/float");
     }
@@ -471,6 +507,99 @@ private:
             return TeaResult( make_shared<TeaObject>( TeaObject(n) ));
         }
         return TeaResult("size func synatax error, only support list/map");
+    }
+
+    static TeaResult push(vector<tobject> &args, tenv& env) {
+        if (args.size() < 2) {
+            return TeaResult("push func synatax error, only support two more items");
+        }
+        if (args[0]->type == TeaObject::T_LIST) {
+            auto lst = args[0]->v_list;
+            for (size_t i = 1; i < args.size(); i++) {
+                lst->push_back(args[i]);
+            }
+            return TeaResult(tea_null);
+        }
+        return TeaResult("push func synatax error, only support list");
+    }
+
+    static TeaResult pop(vector<tobject> &args, tenv& env) {
+        if (args.size() != 1) {
+            return TeaResult("pop func synatax error, only support one");
+        }
+        if (args[0]->type == TeaObject::T_LIST) {
+            auto lst = args[0]->v_list;
+
+            if (lst->size() > 0) {
+                auto last = lst->back();
+                lst->pop_back();
+                return TeaResult(last);
+            }
+            return TeaResult( tea_null );
+        }
+        return TeaResult("pop func synatax error, only support list");
+    }
+
+    static TeaResult nth(vector<tobject> &args, tenv& env) {
+        if (args.size() != 2) {
+            return TeaResult("push func synatax error, only support two items");
+        }
+        if (args[0]->type == TeaObject::T_LIST) {
+            auto lst = args[0]->v_list;
+            if (args[1]->type == TeaObject::T_INT) {
+                auto pos = args[1]->v_int;
+                return TeaResult( (*lst)[pos] );
+            }
+        }
+        return TeaResult("nth func synatax error!");
+    }
+
+    static TeaResult set(vector<tobject> &args, tenv& env) {
+        if (args.size() != 3) {
+            return TeaResult("set func synatax error, only support two items");
+        }
+        if (args[0]->type == TeaObject::T_MAP) {
+            auto hash = args[0]->v_map;
+            if (args[1]->type == TeaObject::T_PATTERN) {
+                auto &key = args[1]->v_string;
+                (*hash)[key] = args[2];
+                return TeaResult( tea_null );
+            }
+        }
+        return TeaResult("set func synatax error!");
+    }
+
+    static TeaResult has(vector<tobject> &args, tenv& env) {
+        if (args.size() != 2) {
+            return TeaResult("has func synatax error, only support two items");
+        }
+        if (args[0]->type == TeaObject::T_MAP) {
+            auto hash = args[0]->v_map;
+            if (args[1]->type == TeaObject::T_PATTERN) {
+                auto &key = args[1]->v_string;
+                if (hash->find(key) == hash->end()) {
+                    return TeaResult(tea_false);
+                } else {
+                    return TeaResult(tea_true);
+                }
+            }
+        }
+        return TeaResult("has func synatax error!");
+    }
+
+    static TeaResult rm(vector<tobject> &args, tenv& env) {
+        if (args.size() != 2) {
+            return TeaResult("rm func synatax error, only support two items");
+        }
+        if (args[0]->type == TeaObject::T_MAP) {
+            auto hash = args[0]->v_map;
+            if (args[1]->type == TeaObject::T_PATTERN) {
+                auto &key = args[1]->v_string;
+                hash->erase(key);
+                return TeaResult(tea_null);
+            }
+        }
+        return TeaResult("set func synatax error!");
     }
 
 private:
@@ -830,6 +959,28 @@ private:
         }
         return eval(codes[last], env);
     }
+
+private:
+    // parser, compiler
+    static vector<tobject> parse_and_compile(string& code, tenv& env) {
+        vector<tobject> ret;
+
+        return ret;
+    }
+
+public:
+    static tenv new_env() {
+        auto env = TeaEnvironment();
+        init(env.data);
+        return make_shared<TeaEnvironment>(env);
+    }
+
+    static string run(string& code, tenv& env) {
+        vector<tobject> codes = std::move(parse_and_compile(code, env));
+        auto result = eval_all(codes, env);
+        return result.result->to_string();
+    }
+
 
 };
 
