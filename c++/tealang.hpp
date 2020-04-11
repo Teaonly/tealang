@@ -194,10 +194,6 @@ struct TeaResult {
         return !is_error();
     }
 
-    TeaResult() {
-        result = tea_null;
-    }
-
     TeaResult(tobject obj) {
         result = obj;
     }
@@ -300,14 +296,14 @@ private:
             for (size_t i = 0; i < args.size(); i++) {
                 result *= args[i]->v_int;
             }
-            return make_shared<TeaObject>(result);
+            return TeaObject::build(result);
         }
         if (args[0]->type == TeaObject::T_FLOAT) {
             float result = 1.0;
             for (size_t i = 0; i < args.size(); i++) {
                 result *= args[i]->v_float;
             }
-            return make_shared<TeaObject>(result);
+            return TeaObject::build(result);
         }
         return TeaResult("* func synatax error, only support int/float");
     }
@@ -318,11 +314,11 @@ private:
         }
         if (args[0]->type == TeaObject::T_INT) {
             auto result = args[0]->v_int / args[1]->v_int;
-            return make_shared<TeaObject>(result);
+            return TeaObject::build(result);
         }
         if (args[0]->type == TeaObject::T_FLOAT) {
             auto result = args[0]->v_float / args[1]->v_float;
-            return make_shared<TeaObject>(result);
+            return TeaObject::build(result);
         }
         return TeaResult("/ func synatax error, only support int/float");
     }
@@ -333,7 +329,7 @@ private:
         }
         if (args[0]->type == TeaObject::T_INT) {
             auto result = args[0]->v_int % args[1]->v_int;
-            return make_shared<TeaObject>(result);
+            return TeaObject::build(result);
         }
         return TeaResult("mod func synatax error, only support int/float");
     }
@@ -344,7 +340,7 @@ private:
         }
         if (args[0]->type == TeaObject::T_INT) {
             args[0]->v_int = args[0]->v_int + 1;
-            return TeaResult( args[0] );
+            return args[0];
         }
         return TeaResult("++ func synatax error, only support int");
     }
@@ -355,7 +351,7 @@ private:
         }
         if (args[0]->type == TeaObject::T_INT) {
             args[0]->v_int = args[0]->v_int - 1;
-            return TeaResult( args[0] );
+            return args[0];
         }
         return TeaResult("-- func synatax error, only support int");
     }
@@ -368,17 +364,17 @@ private:
         if (args[0]->type == TeaObject::T_INT) {
             bool result = args[0]->v_int < args[1]->v_int;
             if (result == true) {
-                return TeaResult( tea_true );
+                return tea_true;
             } else {
-                return TeaResult( tea_false );
+                return tea_false;
             }
         }
         if (args[0]->type == TeaObject::T_FLOAT) {
             bool result = args[0]->v_float < args[1]->v_float;
             if (result == true) {
-                return TeaResult( tea_true );
+                return tea_true;
             } else {
-                return TeaResult( tea_false );
+                return tea_false;
             }
         }
         return TeaResult("< func synatax error, only support int/float");
@@ -391,17 +387,17 @@ private:
         if (args[0]->type == TeaObject::T_INT) {
             bool result = args[0]->v_int > args[1]->v_int;
             if (result == true) {
-                return TeaResult( tea_true );
+                return tea_true;
             } else {
-                return TeaResult( tea_false );
+                return tea_false;
             }
         }
         if (args[0]->type == TeaObject::T_FLOAT) {
             bool result = args[0]->v_float > args[1]->v_float;
             if (result == true) {
-                return TeaResult( tea_true );
+                return tea_true;
             } else {
-                return TeaResult( tea_false );
+                return tea_false;
             }
         }
         return TeaResult("> func synatax error, only support int/float");
@@ -414,9 +410,9 @@ private:
         if (args[0]->type == TeaObject::T_INT) {
             bool result = args[0]->v_int <= args[1]->v_int;
             if (result == true) {
-                return TeaResult( tea_true );
+                return tea_true;
             } else {
-                return TeaResult( tea_false );
+                return tea_false;
             }
         }
         return TeaResult("<= func synatax error, only support int");
@@ -429,9 +425,9 @@ private:
         if (args[0]->type == TeaObject::T_INT) {
             bool result = args[0]->v_int >= args[1]->v_int;
             if (result == true) {
-                return TeaResult( tea_true );
+                return tea_true;
             } else {
-                return TeaResult( tea_false );
+                return tea_false;
             }
         }
         return TeaResult(">= func synatax error, only support int");
@@ -444,33 +440,33 @@ private:
         if (args[0]->type == TeaObject::T_INT) {
             bool result = args[0]->v_int == args[1]->v_int;
             if (result == true) {
-                return TeaResult( tea_true );
+                return tea_true;
             } else {
-                return TeaResult( tea_false );
+                return tea_false;
             }
         }
         if (args[0]->type == TeaObject::T_FLOAT) {
             bool result = args[0]->v_float == args[1]->v_float;
             if (result == true) {
-                return TeaResult( tea_true );
+                return tea_true;
             } else {
-                return TeaResult( tea_false );
+                return tea_false;
             }
         }
         if (args[0]->type == TeaObject::T_BOOL) {
             bool result = args[0]->v_bool == args[1]->v_bool;
             if (result == true) {
-                return TeaResult( tea_true );
+                return tea_true;
             } else {
-                return TeaResult( tea_false );
+                return tea_false;
             }
         }
         if (args[0]->type == TeaObject::T_PATTERN) {
             bool result = args[0]->v_string == args[1]->v_string;
             if (result == true) {
-                return TeaResult( tea_true );
+                return tea_true;
             } else {
-                return TeaResult( tea_false );
+                return tea_false;
             }
         }
 
@@ -484,9 +480,9 @@ private:
         }
         if (args[0]->type == TeaObject::T_BOOL) {
             if (args[0]->v_bool == true) {
-                return TeaResult( tea_false );
+                return tea_false;
             } else {
-                return TeaResult( tea_true );
+                return tea_true;
             }
         }
         return TeaResult("-- func synatax error, only support bool");
@@ -500,11 +496,11 @@ private:
 
         if (args[0]->type == TeaObject::T_LIST) {
             int64_t n = args[0]->v_list->size();
-            return TeaResult( make_shared<TeaObject>( TeaObject(n) ));
+            return TeaObject::build(n);
         }
         if (args[0]->type == TeaObject::T_MAP) {
             int64_t n = args[0]->v_map->size();
-            return TeaResult( make_shared<TeaObject>( TeaObject(n) ));
+            return TeaObject::build(n);
         }
         return TeaResult("size func synatax error, only support list/map");
     }
@@ -518,7 +514,7 @@ private:
             for (size_t i = 1; i < args.size(); i++) {
                 lst->push_back(args[i]);
             }
-            return TeaResult(tea_null);
+            return tea_null;
         }
         return TeaResult("push func synatax error, only support list");
     }
@@ -533,9 +529,9 @@ private:
             if (lst->size() > 0) {
                 auto last = lst->back();
                 lst->pop_back();
-                return TeaResult(last);
+                return last;
             }
-            return TeaResult( tea_null );
+            return tea_null;
         }
         return TeaResult("pop func synatax error, only support list");
     }
@@ -548,7 +544,7 @@ private:
             auto lst = args[0]->v_list;
             if (args[1]->type == TeaObject::T_INT) {
                 auto pos = args[1]->v_int;
-                return TeaResult( (*lst)[pos] );
+                return (*lst)[pos];
             }
         }
         return TeaResult("nth func synatax error!");
@@ -563,7 +559,7 @@ private:
             if (args[1]->type == TeaObject::T_PATTERN) {
                 auto &key = args[1]->v_string;
                 (*hash)[key] = args[2];
-                return TeaResult( tea_null );
+                return tea_null;
             }
         }
         return TeaResult("set func synatax error!");
@@ -578,9 +574,9 @@ private:
             if (args[1]->type == TeaObject::T_PATTERN) {
                 auto &key = args[1]->v_string;
                 if (hash->find(key) == hash->end()) {
-                    return TeaResult(tea_false);
+                    return tea_false;
                 } else {
-                    return TeaResult(tea_true);
+                    return tea_true;
                 }
             }
         }
@@ -596,7 +592,7 @@ private:
             if (args[1]->type == TeaObject::T_PATTERN) {
                 auto &key = args[1]->v_string;
                 hash->erase(key);
-                return TeaResult(tea_null);
+                return tea_null;
             }
         }
         return TeaResult("set func synatax error!");
