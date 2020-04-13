@@ -25,13 +25,12 @@ typedef shared_ptr<TeaEnvironment> tenv;
 
 typedef TeaResult (*TeaFunc) (vector<tobject> &args, tenv &env);
 struct TeaLambda {
-    shared_ptr<vector<tobject>>  head;
+    vector<tobject>  head;
     tobject body;
 
     shared_ptr<map<string, tobject>> closure;
 
     TeaLambda() {
-        head = make_shared<vector<tobject>>();
     }
 };
 
@@ -669,7 +668,7 @@ private:
         }
         for (size_t i = 0; i < lst[1]->v_list->size(); i++) {
             assert( (*lst[1]->v_list)[i]->type == TeaObject::T_SYMBOL);
-            lambda.head->push_back( (*lst[1]->v_list)[i] );
+            lambda.head.push_back( (*lst[1]->v_list)[i] );
         }
         lambda.body = lst[2];
 
@@ -846,12 +845,12 @@ private:
         auto lambda = head->v_lambda;
 
         TeaEnvironment new_env(env, lambda->closure);
-        for (size_t i = 0; i < lambda->head->size(); i++) {
-            assert((*lambda->head)[i]->type == TeaObject::T_SYMBOL);
+        for (size_t i = 0; i < lambda->head.size(); i++) {
+            assert(lambda->head[i]->type == TeaObject::T_SYMBOL);
             if ( i >= args.size() ) {
-                new_env.set((*lambda->head)[i]->v_string, tea_null);
+                new_env.set(lambda->head[i]->v_string, tea_null);
             } else {
-                new_env.set((*lambda->head)[i]->v_string, args[i]);
+                new_env.set(lambda->head[i]->v_string, args[i]);
             }
         }
 
@@ -1043,7 +1042,6 @@ private:
             ret->push_back( parse_atom(tokens[i]) );
             i++;
         }
-
 
         return nullptr;
     }
