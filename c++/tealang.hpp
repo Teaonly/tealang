@@ -207,12 +207,6 @@ struct TeaResult {
         trace = r.trace;
         trace.push_back(err_message);
     }
-
-    void check_error(tobject& obj) {
-        if ( is_error() ) {
-            trace.push_back(obj->to_string());
-        }
-    }
 };
 
 struct TeaLang {
@@ -223,8 +217,8 @@ private:
 
         data["+"] = build_fobj(TeaLang::add);
         data["-"] = build_fobj(TeaLang::sub);
-        data["*"] = build_fobj(TeaLang::add);
-        data["/"] = build_fobj(TeaLang::sub);
+        data["*"] = build_fobj(TeaLang::mul);
+        data["/"] = build_fobj(TeaLang::div);
         data["%"] = build_fobj(TeaLang::mod);
 
         data["++"] = build_fobj(TeaLang::inc);
@@ -259,6 +253,9 @@ private:
         if (args[0]->type == TeaObject::T_INT) {
             int64_t sum = 0;
             for (size_t i = 0; i < args.size(); i++) {
+                if ( args[i]->type != TeaObject::T_INT) {
+                    return TeaResult("+ func synatax error, only support int/float");
+                }
                 sum += args[i]->v_int;
             }
             return TeaObject::build(sum);
@@ -266,7 +263,10 @@ private:
         if (args[0]->type == TeaObject::T_FLOAT) {
             float sum = 0.0;
             for (size_t i = 0; i < args.size(); i++) {
-                sum += args[i]->v_int;
+                if ( args[i]->type != TeaObject::T_FLOAT) {
+                    return TeaResult("+ func synatax error, only support int/float");
+                }
+                sum += args[i]->v_float;
             }
             return TeaObject::build(sum);
         }
@@ -277,11 +277,11 @@ private:
         if (args.size() != 2) {
             return TeaResult("- func synatax error, need two items");
         }
-        if (args[0]->type == TeaObject::T_INT) {
+        if (args[0]->type == TeaObject::T_INT && args[1]->type == TeaObject::T_INT) {
             auto result = args[0]->v_int - args[1]->v_int;
             return TeaObject::build(result);
         }
-        if (args[0]->type == TeaObject::T_FLOAT) {
+        if (args[0]->type == TeaObject::T_FLOAT && args[1]->type == TeaObject::T_FLOAT) {
             auto result = args[0]->v_float - args[1]->v_float;
             return TeaObject::build(result);
         }
@@ -295,6 +295,9 @@ private:
         if (args[0]->type == TeaObject::T_INT) {
             int64_t result = 1;
             for (size_t i = 0; i < args.size(); i++) {
+                if (args[i]->type != TeaObject::T_INT) {
+                    return TeaResult("* func synatax error, only support int/float");
+                }
                 result *= args[i]->v_int;
             }
             return TeaObject::build(result);
@@ -302,6 +305,9 @@ private:
         if (args[0]->type == TeaObject::T_FLOAT) {
             float result = 1.0;
             for (size_t i = 0; i < args.size(); i++) {
+                if (args[i]->type != TeaObject::T_FLOAT) {
+                    return TeaResult("* func synatax error, only support int/float");
+                }
                 result *= args[i]->v_float;
             }
             return TeaObject::build(result);
@@ -313,11 +319,11 @@ private:
         if (args.size() != 2) {
             return TeaResult("/ func synatax error, need two items");
         }
-        if (args[0]->type == TeaObject::T_INT) {
+        if (args[0]->type == TeaObject::T_INT && args[1]->type == TeaObject::T_INT) {
             auto result = args[0]->v_int / args[1]->v_int;
             return TeaObject::build(result);
         }
-        if (args[0]->type == TeaObject::T_FLOAT) {
+        if (args[0]->type == TeaObject::T_FLOAT && args[1]->type == TeaObject::T_FLOAT) {
             auto result = args[0]->v_float / args[1]->v_float;
             return TeaObject::build(result);
         }
@@ -328,7 +334,7 @@ private:
         if (args.size() != 2) {
             return TeaResult("mod func synatax error, need two items");
         }
-        if (args[0]->type == TeaObject::T_INT) {
+        if (args[0]->type == TeaObject::T_INT && args[1]->type == TeaObject::T_INT) {
             auto result = args[0]->v_int % args[1]->v_int;
             return TeaObject::build(result);
         }
@@ -362,7 +368,7 @@ private:
         if (args.size() != 2) {
             return TeaResult("< func synatax error, need two items");
         }
-        if (args[0]->type == TeaObject::T_INT) {
+        if (args[0]->type == TeaObject::T_INT && args[1]->type == TeaObject::T_INT) {
             bool result = args[0]->v_int < args[1]->v_int;
             if (result == true) {
                 return tea_true;
@@ -370,7 +376,7 @@ private:
                 return tea_false;
             }
         }
-        if (args[0]->type == TeaObject::T_FLOAT) {
+        if (args[0]->type == TeaObject::T_FLOAT && args[1]->type == TeaObject::T_FLOAT) {
             bool result = args[0]->v_float < args[1]->v_float;
             if (result == true) {
                 return tea_true;
@@ -385,7 +391,7 @@ private:
         if (args.size() != 2) {
             return TeaResult("> func synatax error, need two items");
         }
-        if (args[0]->type == TeaObject::T_INT) {
+        if (args[0]->type == TeaObject::T_INT && args[1]->type == TeaObject::T_INT) {
             bool result = args[0]->v_int > args[1]->v_int;
             if (result == true) {
                 return tea_true;
@@ -393,7 +399,7 @@ private:
                 return tea_false;
             }
         }
-        if (args[0]->type == TeaObject::T_FLOAT) {
+        if (args[0]->type == TeaObject::T_FLOAT && args[1]->type == TeaObject::T_FLOAT) {
             bool result = args[0]->v_float > args[1]->v_float;
             if (result == true) {
                 return tea_true;
@@ -408,7 +414,7 @@ private:
         if (args.size() != 2) {
             return TeaResult("<= func synatax error, need two items");
         }
-        if (args[0]->type == TeaObject::T_INT) {
+        if (args[0]->type == TeaObject::T_INT && args[1]->type == TeaObject::T_INT) {
             bool result = args[0]->v_int <= args[1]->v_int;
             if (result == true) {
                 return tea_true;
@@ -423,7 +429,7 @@ private:
         if (args.size() != 2) {
             return TeaResult(">= func synatax error, need two items");
         }
-        if (args[0]->type == TeaObject::T_INT) {
+        if (args[0]->type == TeaObject::T_INT && args[1]->type == TeaObject::T_INT) {
             bool result = args[0]->v_int >= args[1]->v_int;
             if (result == true) {
                 return tea_true;
@@ -438,7 +444,7 @@ private:
         if (args.size() != 2) {
             return TeaResult(">= func synatax error, need two items");
         }
-        if (args[0]->type == TeaObject::T_INT) {
+        if (args[0]->type == TeaObject::T_INT && args[1]->type == TeaObject::T_INT) {
             bool result = args[0]->v_int == args[1]->v_int;
             if (result == true) {
                 return tea_true;
@@ -446,7 +452,7 @@ private:
                 return tea_false;
             }
         }
-        if (args[0]->type == TeaObject::T_FLOAT) {
+        if (args[0]->type == TeaObject::T_FLOAT && args[1]->type == TeaObject::T_FLOAT) {
             bool result = args[0]->v_float == args[1]->v_float;
             if (result == true) {
                 return tea_true;
@@ -454,7 +460,7 @@ private:
                 return tea_false;
             }
         }
-        if (args[0]->type == TeaObject::T_BOOL) {
+        if (args[0]->type == TeaObject::T_BOOL && args[1]->type == TeaObject::T_BOOL) {
             bool result = args[0]->v_bool == args[1]->v_bool;
             if (result == true) {
                 return tea_true;
@@ -462,7 +468,7 @@ private:
                 return tea_false;
             }
         }
-        if (args[0]->type == TeaObject::T_PATTERN) {
+        if (args[0]->type == TeaObject::T_PATTERN && args[1]->type == TeaObject::T_PATTERN) {
             bool result = args[0]->v_string == args[1]->v_string;
             if (result == true) {
                 return tea_true;
@@ -884,13 +890,15 @@ private:
             if (is_builtin(head->v_string)) {
                 // step.1 check builtin call or eval
                 auto tresult = eval_builtin(lst, env);
-                tresult.check_error(obj);
+                if (tresult.is_error()){
+                    tresult.trace.push_back(obj->to_string());
+                }
                 return tresult;
             } else {
                 // step.2 eval head of list
                 auto tresult  = eval(head, env);
-                tresult.check_error(obj);
                 if (tresult.is_error()) {
+                    tresult.trace.push_back(obj->to_string());
                     return tresult;
                 }
                 head = tresult.result;
@@ -900,8 +908,8 @@ private:
             vector<tobject> args;
             for (size_t i = 1; i < lst.size(); i++) {
                 TeaResult tresult = eval(lst[i], env);
-                tresult.check_error(obj);
                 if (tresult.is_error()) {
+                    tresult.trace.push_back(obj->to_string());
                     return tresult;
                 }
                 args.push_back(tresult.result);
@@ -928,18 +936,24 @@ private:
             }
             if ( head->type == TeaObject::T_FUNC ) {
                 auto tresult = head->v_func(args, env);
-                tresult.check_error(obj);
+                if ( tresult.is_error() ) {
+                    tresult.trace.push_back(obj->to_string());
+                }
                 return tresult;
             }
             if ( head->type == TeaObject::T_LAMBDA ) {
                 auto tresult =  eval_lambda(head, args, env);
-                tresult.check_error(obj);
+                if ( tresult.is_error() ) {
+                    tresult.trace.push_back(obj->to_string());
+                }
                 return tresult;
             }
         }
 
         auto tresult =  TeaResult("BUG!");
-        tresult.check_error(obj);
+        if ( tresult.is_error() ) {
+            tresult.trace.push_back(obj->to_string());
+        }
         return tresult;
     }
 
@@ -1100,9 +1114,11 @@ public:
         }
 
         auto ret = eval_all(codes, env);
+        if (ret.is_error()) {
+            return ret.trace[0];
+        }
         return ret.result->to_string();
     }
-
 };
 
 }
