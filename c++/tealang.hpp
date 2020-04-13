@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <iterator>
+#include <iostream>
 #include <sstream>
 
 namespace tea {
@@ -67,13 +68,13 @@ struct TeaObject {
     TeaObject(int64_t value):type(T_INT) {v_int = value;}
     TeaObject(float value):type(T_FLOAT) {v_float = value;}
     TeaObject(bool value):type(T_BOOL), v_bool(value) {}
-    TeaObject(string& value):type(T_PATTERN), v_string(value) {}
+    TeaObject(const string& value):type(T_PATTERN), v_string(value) {}
     TeaObject(shared_ptr<vector<tobject>> value):type(T_LIST), v_list(value) {}
     TeaObject(shared_ptr<map<string, tobject>> value):type(T_MAP), v_map(value) {}
     TeaObject(shared_ptr<TeaExtern> value):type(T_EXT), v_ext(value) {}
     TeaObject(shared_ptr<TeaLambda> value):type(T_LAMBDA), v_lambda(value) {}
     TeaObject(TeaFunc value):type(T_FUNC) {v_func = value;}
-    TeaObject(TeaType t, string& symbol):type(T_SYMBOL), v_string(symbol) {
+    TeaObject(TeaType t, const string& symbol):type(T_SYMBOL), v_string(symbol) {
         assert(t == T_SYMBOL);
     }
 
@@ -958,10 +959,130 @@ private:
 
 private:
     // parser, compiler
-    static vector<tobject> parse_and_compile(string& code, tenv& env) {
-        vector<tobject> ret;
+    static tobject parse_atom(const string& token) {
+        // true or false
+        if (token == "true") {
+            return tea_true;
+        }
+        if (token == "false") {
+            return tea_false;
+        }
 
-        return ret;
+        // number
+        if (isdigit(token.at(0)) || (token.at(0) == '-' && token.length() >= 2 && isdigit(token.at(1)))) {
+            if (token.find('.') != string::npos || token.find('e') != string::npos) { // double
+                float value = atof(token.c_str());
+                return TeaObject::build(value);
+            } else {
+                int64_t value = atol(token.c_str());
+                return TeaObject::build(value);
+            }
+        }
+
+        // pattern
+        if (token.at(0) == '@') {
+            string pattern = token;
+            pattern.erase(0, 1);
+            if (pattern == "") {
+                pattern = " ";
+            }
+            return TeaObject::build(pattern);
+        }
+
+        // symbol
+        return make_shared<TeaObject>( TeaObject(TeaObject::T_SYMBOL, token) );
+    }
+
+    static tobject parse_tokens(const vector<string>& tokens, size_t pos, size_t &next_pos) {
+        size_t i = pos;
+        if ( tokens[i] != "(") {
+            return nullptr;
+        }
+
+        auto ret = make_shared<vector<tobject>>();
+        i = i + 1;
+
+        for (;;) {
+            if ( i >= tokens.size() ) {
+                break;
+            }
+
+            // 0. check is end of a list
+            const string& token(tokens[i]);
+            if (token == ")") {
+                next_pos = i + 1;
+                return TeaObject::build(ret);
+            }
+
+            // 1. an new list begin
+            if (token == "(") {
+                size_t end_pos = 0;
+                auto next = parse_tokens(tokens, i, end_pos);
+                if (next == nullptr) {
+                    return nullptr;
+                }
+                ret->push_back(next);
+                i = end_pos;
+            }
+
+            // 2. an new symbol
+            ret->push_back( parse_atom(tokens[i]) );
+            i++;
+        }
+
+
+        return nullptr;
+    }
+
+    static string parse_and_compile(string& code, tenv& env, vector<tobject>& codes) {
+        struct _ {
+         	static void findAndReplaceAll(std::string & data, const std::string toSearch, const std::string replaceStr) {
+                size_t pos = data.find(toSearch);
+                while( pos != std::string::npos){
+                    data.replace(pos, toSearch.size(), replaceStr);
+                    pos =data.find(toSearch, pos + replaceStr.size());
+                }
+            }
+            static void tokenize(std::string const &str, const char delim,
+                        std::vector<std::string> &out) {
+
+                size_t start;
+                size_t end = 0;
+
+                while ((start = str.find_first_not_of(delim, end)) != std::string::npos) {
+                    end = str.find(delim, start);
+                    out.push_back(str.substr(start, end - start));
+                }
+            }
+        };
+
+        _::findAndReplaceAll(code, "{", "(map");
+        _::findAndReplaceAll(code, "}", ")");
+        _::findAndReplaceAll(code, "[", "(list");
+        _::findAndReplaceAll(code, "]", ")");
+        _::findAndReplaceAll(code, "(", " ( ");
+        _::findAndReplaceAll(code, ")", " ) ");
+        _::findAndReplaceAll(code, "\n"," ");
+
+        vector<string> tokens;
+        _::tokenize(code, ' ', tokens);
+
+        codes.clear();
+        if (tokens.size() == 1) {
+            codes.push_back( parse_atom( tokens[0] ));
+        } else {
+            size_t i = 0;
+            while ( i < tokens.size() ) {
+                size_t next = 0;
+                auto ret = parse_tokens(tokens, i, next);
+                if (ret == nullptr) {
+                    return "parse token error!";
+                }
+                codes.push_back(ret);
+                i = next;
+            }
+        }
+        return "";
     }
 
 public:
@@ -972,11 +1093,15 @@ public:
     }
 
     static string run(string& code, tenv& env) {
-        vector<tobject> codes = std::move(parse_and_compile(code, env));
-        auto result = eval_all(codes, env);
-        return result.result->to_string();
-    }
+        vector<tobject> codes;
+        auto result = parse_and_compile(code, env, codes);
+        if (result != "") {
+            return result;
+        }
 
+        auto ret = eval_all(codes, env);
+        return ret.result->to_string();
+    }
 
 };
 
