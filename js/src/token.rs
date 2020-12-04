@@ -1,106 +1,5 @@
 use std::char;
-
-/* token stuff */
-#[allow(non_camel_case_types)]
-#[derive(Clone, Debug, PartialEq)]
-pub enum TokenType {
-	/* immedial primitive */
-	TK_IDENTIFIER = 0,
-    TK_NUMBER,
-	TK_STRING,
-	TK_REGEXP,
-
-	/* single-character punctuators */
-    TK_BRACE_LEFT,
-    TK_BRACE_RIGHT,
-    TK_PAREN_LEFT,
-    TK_PAREN_RIGHT,
-    TK_BRACKET_LEFT,
-    TK_BRACKET_RIGHT,
-    TK_SEMICOLON,
-    TK_COMMA,
-    TK_POINT,
-    TK_NEWLN,
-
-	/* multi-character punctuators */
-	TK_LE,
-	TK_GE,
-	TK_EQ,
-	TK_NE,
-	TK_STRICTEQ,
-	TK_STRICTNE,
-	TK_SHL,
-	TK_SHR,
-	TK_USHR,
-	TK_AND,
-	TK_OR,
-	TK_ADD_ASS,
-	TK_SUB_ASS,
-	TK_MUL_ASS,
-	TK_DIV_ASS,
-	TK_MOD_ASS,
-	TK_SHL_ASS,
-	TK_SHR_ASS,
-	TK_USHR_ASS,
-	TK_AND_ASS,
-	TK_OR_ASS,
-	TK_XOR_ASS,
-	TK_INC,
-	TK_DEC,
-
-	/* keywords */
-	TK_BREAK,
-	TK_CASE,
-	TK_CATCH,
-	TK_CONTINUE,
-	TK_DEBUGGER,
-	TK_DEFAULT,
-	TK_DELETE,
-	TK_DO,
-	TK_ELSE,
-	TK_FALSE,
-	TK_FINALLY,
-	TK_FOR,
-	TK_FUNCTION,
-	TK_IF,
-	TK_IN,
-	TK_INSTANCEOF,
-	TK_NEW,
-	TK_NULL,
-	TK_RETURN,
-	TK_SWITCH,
-	TK_THIS,
-	TK_THROW,
-	TK_TRUE,
-	TK_TRY,
-	TK_TYPEOF,
-	TK_VAR,
-	TK_VOID,
-	TK_WHILE,
-	TK_WITH
-}
-
-#[derive(Clone, Debug)]
-pub struct Token {
-    pub tk_type:     TokenType,
-    pub tk_value:    Option<String>,
-}
-
-impl Token {
-    fn new(tt: TokenType) -> Self {
-        Token {
-            tk_type: tt,
-            tk_value: None
-        }
-    }
-
-    fn new_with(tt: TokenType, value: String) -> Self {
-        Token {
-            tk_type: tt,
-            tk_value: Some(value)
-        }
-    }
-}
+use crate::common::*;
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Debug, PartialEq)]
@@ -134,8 +33,8 @@ impl GeneralToken {
     }
 }
 
-
-/// Parsing token from code string, return next token.
+///
+/// Parsing general token from code string, return next general token.
 ///
 fn next_general_token (script: &str, cursor: usize) -> Result<(GeneralToken, usize), &'static str> {
     // local helper
@@ -352,7 +251,13 @@ fn next_general_token (script: &str, cursor: usize) -> Result<(GeneralToken, usi
         // state handler
         if ps == ps::PS_COMMENT_LINE {
             match ct {
-                ct::CT_EOF | ct::CT_NEWLN => {
+                ct::CT_NEWLN => {
+                    tkbuf.push( chr.unwrap());
+                    let value = tkbuf.into_iter().collect();
+                    let comment = GeneralToken::new_with(GeneralTokenType::TK_COMMENT_, value);
+                    return Ok((comment, pos));
+                },
+                ct::CT_EOF => {
                     let value = tkbuf.into_iter().collect();
                     let comment = GeneralToken::new_with(GeneralTokenType::TK_COMMENT_, value);
                     return Ok((comment, pos));
@@ -367,10 +272,15 @@ fn next_general_token (script: &str, cursor: usize) -> Result<(GeneralToken, usi
         // state handler
         if ps == ps::PS_PUNCT {
             match ct {
-                ct::CT_EOF | ct::CT_NEWLN | ct::CT_SPACE => {
+                ct::CT_EOF | ct::CT_SPACE => {
                     let value = tkbuf.into_iter().collect();
                     let punct = GeneralToken::new_with(GeneralTokenType::TK_PUNCT_, value);
                     return Ok((punct, pos));
+                },
+                ct::CT_NEWLN => {
+                    let value = tkbuf.into_iter().collect();
+                    let punct = GeneralToken::new_with(GeneralTokenType::TK_PUNCT_, value);
+                    return Ok((punct, pos-1));
                 },
                 ct::CT_LETTER => {
                     let value = tkbuf.into_iter().collect();
@@ -413,6 +323,146 @@ fn next_general_token (script: &str, cursor: usize) -> Result<(GeneralToken, usi
             }
         }
     }
+}
+
+impl Token {
+    fn new(tt: TokenType, line:u32) -> Self {
+        Token {
+            tk_type: tt,
+            tk_value: None,
+            src_line: line,
+        }
+    }
+
+    fn new_with(tt: TokenType, value: String, line:u32) -> Self {
+        Token {
+            tk_type: tt,
+            tk_value: Some(value),
+            src_line: line
+        }
+    }
+}
+
+
+///
+/// Parsing script to tokens
+///
+pub fn get_tokens(script: &str) -> Result<Vec<Token>, String> {
+    fn count_line(comment: &str) -> u32 {
+        let mut chars = comment.chars();
+        let mut line_count: u32 = 0;
+        loop {
+            let chr = chars.next();
+            if chr.is_some() {
+                if chr.unwrap() == '\n' {
+                    line_count = line_count + 1;
+                }
+                continue;
+            } else {
+                break;
+            }
+        }
+        line_count
+    }
+
+    fn get_token_type(punct: &str) -> Option<TokenType> {
+        match punct {
+            "(" => Some(TokenType::TK_PAREN_LEFT),
+            ")" => Some(TokenType::TK_PAREN_RIGHT),
+            "[" => Some(TokenType::TK_BRACKET_LEFT),
+            "]" => Some(TokenType::TK_BRACKET_RIGHT),
+            "{" => Some(TokenType::TK_BRACE_LEFT),
+            "}" => Some(TokenType::TK_BRACE_RIGHT),
+
+            "\n" => Some(TokenType::TK_NEWLN),
+            ";" => Some(TokenType::TK_SEMICOLON),
+            "," => Some(TokenType::TK_COMMA),
+            "." => Some(TokenType::TK_POINT),
+
+            "=" => Some(TokenType::TK_ASS),
+            "<" => Some(TokenType::TK_LESS),
+            ">" => Some(TokenType::TK_GREAT),
+            "!" => Some(TokenType::TK_NOT),
+            "&" => Some(TokenType::TK_AND),
+            "|" => Some(TokenType::TK_OR),
+            "^" => Some(TokenType::TK_XOR),
+            "+" => Some(TokenType::TK_ADD),
+            "-" => Some(TokenType::TK_SUB),
+            "*" => Some(TokenType::TK_MUL),
+            "/" => Some(TokenType::TK_DIV),
+            "%" => Some(TokenType::TK_MOD),
+
+            "<=" => Some(TokenType::TK_LE),
+            ">=" => Some(TokenType::TK_GE),
+            "==" => Some(TokenType::TK_EQ),
+            "!=" => Some(TokenType::TK_NE),
+            "<<" => Some(TokenType::TK_SHL),
+            ">>" => Some(TokenType::TK_SHR),
+            "&&" => Some(TokenType::TK_AND_AND),
+            "||" => Some(TokenType::TK_OR_OR),
+            "++" => Some(TokenType::TK_INC),
+            "--" => Some(TokenType::TK_DEC),
+            "+=" => Some(TokenType::TK_ADD_ASS),
+            "-=" => Some(TokenType::TK_SUB_ASS),
+            "*=" => Some(TokenType::TK_MUL_ASS),
+            "/=" => Some(TokenType::TK_DIV_ASS),
+            "%=" => Some(TokenType::TK_MOD_ASS),
+            "&=" => Some(TokenType::TK_AND_ASS),
+            "|=" => Some(TokenType::TK_OR_ASS),
+            "^=" => Some(TokenType::TK_XOR_ASS),
+
+            "===" => Some(TokenType::TK_STRICTEQ),
+            "!==" => Some(TokenType::TK_STRICTNE),
+            ">>>" => Some(TokenType::TK_USHR),
+            "<<=" => Some(TokenType::TK_SHL_ASS),
+            ">>=" => Some(TokenType::TK_SHR_ASS),
+            ">>>>=" => Some(TokenType::TK_USHR_ASS),
+            _ => None
+        }
+    }
+
+    let mut result:Vec<Token> = Vec::new();
+    let mut cursor:usize = 0;
+    let mut line:u32 = 0;
+
+    loop {
+        let next = next_general_token(&script, cursor);
+        if let Err(msg) = next {
+            let err_msg = format!("Parsing error @ {} : {}", line, msg);
+            return Err(err_msg);
+        }
+
+        // handling general token
+        let (tk, pos) = next.unwrap();
+        cursor = pos;
+
+        if tk.tk_type == GeneralTokenType::TK_EOF_ {
+            break;
+        }
+        if tk.tk_type == GeneralTokenType::TK_PUNCT_ {
+            let value = tk.tk_value.unwrap();
+            let tkt = get_token_type(&value).unwrap();
+            if tkt == TokenType::TK_NEWLN {
+                line = line + 1;
+            }
+            let ntk = Token::new_with(tkt, value, line);
+            result.push(ntk);
+            continue;
+        }
+        if tk.tk_type == GeneralTokenType::TK_STRING_ {
+            let value = tk.tk_value.unwrap();
+            line = line + count_line(&value);
+
+            let ntk = Token::new_with(TokenType::TK_STRING, value, line);
+            result.push(ntk);
+            continue;
+        }
+
+
+        continue;
+    }
+
+    return Ok(result);
 }
 
 #[cfg(test)]
@@ -477,4 +527,5 @@ mod tests {
         }
     }
 }
+
 
