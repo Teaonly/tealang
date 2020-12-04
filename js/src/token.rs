@@ -251,11 +251,10 @@ fn next_general_token (script: &str, cursor: usize) -> Result<(GeneralToken, usi
         // state handler
         if ps == ps::PS_COMMENT_LINE {
             match ct {
-                ct::CT_NEWLN => {
-                    tkbuf.push( chr.unwrap());
+                ct::CT_NEWLN => {                    
                     let value = tkbuf.into_iter().collect();
                     let comment = GeneralToken::new_with(GeneralTokenType::TK_COMMENT_, value);
-                    return Ok((comment, pos));
+                    return Ok((comment, pos-1));
                 },
                 ct::CT_EOF => {
                     let value = tkbuf.into_iter().collect();
@@ -365,6 +364,50 @@ pub fn get_tokens(script: &str) -> Result<Vec<Token>, String> {
         line_count
     }
 
+    /*    
+	"'break'", "'case'", "'catch'", "'continue'", "'debugger'",
+	"'default'", "'delete'", "'do'", "'else'", "'false'", "'finally'", "'for'",
+	"'function'", "'if'", "'in'", "'instanceof'", "'new'", "'null'", "'return'",
+	"'switch'", "'this'", "'throw'", "'true'", "'try'", "'typeof'", "'var'",
+    "'void'", "'while'", "'with'",
+    */
+
+    fn get_keyword(symbol: &str) -> Option<TokenType> {
+        match symbol {
+            "break" => Some(TokenType::TK_BREAK),
+            "case" => Some(TokenType::TK_CASE),
+            "catch" => Some(TokenType::TK_CATCH),
+            "continue" => Some(TokenType::TK_CONTINUE),
+            "defalut" => Some(TokenType::TK_DEFAULT),
+            "delete" => Some(TokenType::TK_DELETE),
+            "do" => Some(TokenType::TK_DO),
+            "else" => Some(TokenType::TK_ELSE),
+            "false" => Some(TokenType::TK_FALSE),
+            "finally" => Some(TokenType::TK_FINALLY),
+            "for" => Some(TokenType::TK_FOR),
+            "function" => Some(TokenType::TK_FUNCTION),
+            "if" => Some(TokenType::TK_IF),
+            "in" => Some(TokenType::TK_IN),
+            "instanceof" => Some(TokenType::TK_INSTANCEOF),
+            "new" => Some(TokenType::TK_NEW),
+
+            "null" => Some(TokenType::TK_NULL),
+            "return" => Some(TokenType::TK_RETURN),
+            "switch" => Some(TokenType::TK_SWITCH),
+            "this" => Some(TokenType::TK_THIS),
+            "throw" => Some(TokenType::TK_THROW),
+            "true" => Some(TokenType::TK_TRUE),
+
+            "try" => Some(TokenType::TK_TRY),
+            "typeof" => Some(TokenType::TK_TYPEOF),
+            "var" => Some(TokenType::TK_VAR),
+            "void" => Some(TokenType::TK_VOID),
+            "while" => Some(TokenType::TK_WHILE),
+            "with" => Some(TokenType::TK_WITH),
+            _ => None,
+        }
+    }
+
     fn get_token_type(punct: &str) -> Option<TokenType> {
         match punct {
             "(" => Some(TokenType::TK_PAREN_LEFT),
@@ -421,6 +464,18 @@ pub fn get_tokens(script: &str) -> Result<Vec<Token>, String> {
         }
     }
 
+    fn check_number(symbol: &str) -> i32 {
+        let mut symbol0:String = String::from(symbol);
+        symbol0.push_str("+0");
+        if symbol0.parse::<f64>().is_ok() {
+            return 0;
+        }
+        if symbol.parse::<f64>().is_ok() {
+            return 1;
+        }
+        return -1;
+    }
+
     let mut result:Vec<Token> = Vec::new();
     let mut cursor:usize = 0;
     let mut line:u32 = 0;
@@ -436,32 +491,77 @@ pub fn get_tokens(script: &str) -> Result<Vec<Token>, String> {
         let (tk, pos) = next.unwrap();
         cursor = pos;
 
-        if tk.tk_type == GeneralTokenType::TK_EOF_ {
-            break;
-        }
-        if tk.tk_type == GeneralTokenType::TK_PUNCT_ {
-            let value = tk.tk_value.unwrap();
-            let tkt = get_token_type(&value).unwrap();
-            if tkt == TokenType::TK_NEWLN {
-                line = line + 1;
+        match tk.tk_type {
+            GeneralTokenType::TK_EOF_ => {
+                break;
+            },
+            GeneralTokenType::TK_PUNCT_  => {
+                let value = tk.tk_value.unwrap();
+                let tkt = get_token_type(&value).unwrap();
+                if tkt == TokenType::TK_NEWLN {
+                    line = line + 1;
+                }                
+                let ntk = Token::new_with(tkt, value, line);
+                result.push(ntk);
+                continue;
+            },
+            GeneralTokenType::TK_STRING_ => {
+                let value = tk.tk_value.unwrap();
+                line = line + count_line(&value);
+
+                let ntk = Token::new_with(TokenType::TK_STRING, value, line);
+                result.push(ntk);
+                continue;
+            },
+            GeneralTokenType::TK_COMMENT_ => {
+                let value = tk.tk_value.unwrap();
+                line = line + count_line(&value);
+                continue;
+            },
+            GeneralTokenType::TK_SYMBOL_ => {
+                // handler primitive & keyword
+                let value = tk.tk_value.unwrap();
+                let isnum = check_number(&value);
+                if isnum == -1 {
+                    if let Some(tkt) = get_keyword(&value) {
+                        let ntk = Token::new(tkt, line);
+                        result.push(ntk);
+                    } else {
+                        let ntk = Token::new_with(TokenType::TK_IDENTIFIER, value, line);
+                        result.push(ntk);
+                    }
+                    continue;
+                }
+                if isnum == 1 {
+                    let ntk = Token::new_with(TokenType::TK_NUMBER, value, line);
+                    result.push(ntk);
+                    continue;
+                }
+                
+                // isnum == 0
+                // concat ieee float string            
+                if let Ok((tk2, pos2)) = next_general_token(&script, cursor){
+                    if tk2.tk_type == GeneralTokenType::TK_PUNCT_ {
+                        let value2 = tk2.tk_value.unwrap();
+                        if value2 == "+" || value2 == "-" {
+                            if let Ok((tk3, pos3)) = next_general_token(&script, pos2) {
+                                if tk3.tk_type == GeneralTokenType::TK_SYMBOL_ {
+                                    let value3 = tk3.tk_value.unwrap();
+                                    let value_all = format!("{}{}{}", value, value2, value3);
+                                    if value_all.parse::<f64>().is_ok() {
+                                        let ntk = Token::new_with(TokenType::TK_NUMBER, value_all, line);
+                                        result.push(ntk);
+                                        cursor = pos3;
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            let ntk = Token::new_with(tkt, value, line);
-            result.push(ntk);
-            continue;
-        }
-        if tk.tk_type == GeneralTokenType::TK_STRING_ {
-            let value = tk.tk_value.unwrap();
-            line = line + count_line(&value);
-
-            let ntk = Token::new_with(TokenType::TK_STRING, value, line);
-            result.push(ntk);
-            continue;
-        }
-
-
-        continue;
+        } 
     }
-
     return Ok(result);
 }
 
@@ -473,7 +573,6 @@ mod tests {
     fn test() {
         let script = r#"
             // program to check if a number is prime or not
-
             // take input from the user
             const number = parseInt(prompt("Enter a positive number: "));
             let isPrime = true;
@@ -499,9 +598,9 @@ mod tests {
                 }
 
                 if (isPrime) {
-                    console.log(`${number} is a prime number`);
+                    console.log('${number} is a prime number');
                 } else {
-                    console.log(`${number} is a not prime number`);
+                    console.log('${number} is a not prime number');
                 }
             }
 
@@ -511,19 +610,9 @@ mod tests {
             }
         "#;
 
-        let mut cursor = 0;
-        loop {
-            let result = next_general_token(&script, cursor);
-            if let Ok((tk, pos)) = result {
-                if tk.tk_type == GeneralTokenType::TK_EOF_ {
-                    break;
-                }
-                println!(">>>{} : {:?}", pos, tk);
-                cursor = pos;
-                continue;
-            }
-            println!(">>>*{:?}", result);
-            break;
+        let tokens = get_tokens(script).unwrap();
+        for i in 0..tokens.len() {
+            println!(">>> {:?}", tokens[i]);
         }
     }
 }
