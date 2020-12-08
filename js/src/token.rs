@@ -251,7 +251,7 @@ fn next_general_token (script: &str, cursor: usize) -> Result<(GeneralToken, usi
         // state handler
         if ps == ps::PS_COMMENT_LINE {
             match ct {
-                ct::CT_NEWLN => {                    
+                ct::CT_NEWLN => {
                     let value = tkbuf.into_iter().collect();
                     let comment = GeneralToken::new_with(GeneralTokenType::TK_COMMENT_, value);
                     return Ok((comment, pos-1));
@@ -346,7 +346,7 @@ impl Token {
 ///
 /// Parsing script to tokens
 ///
-pub fn get_tokens(script: &str) -> Result<Vec<Token>, String> {
+fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (usize, u32)), String> {
     fn count_line(comment: &str) -> u32 {
         let mut chars = comment.chars();
         let mut line_count: u32 = 0;
@@ -364,7 +364,7 @@ pub fn get_tokens(script: &str) -> Result<Vec<Token>, String> {
         line_count
     }
 
-    /*    
+    /*
 	"'break'", "'case'", "'catch'", "'continue'", "'debugger'",
 	"'default'", "'delete'", "'do'", "'else'", "'false'", "'finally'", "'for'",
 	"'function'", "'if'", "'in'", "'instanceof'", "'new'", "'null'", "'return'",
@@ -476,10 +476,10 @@ pub fn get_tokens(script: &str) -> Result<Vec<Token>, String> {
         return -1;
     }
 
-    let mut result:Vec<Token> = Vec::new();
-    let mut cursor:usize = 0;
-    let mut line:u32 = 0;
+    let mut line = line;
+    let mut cursor = cursor;
 
+    // handling general token
     loop {
         let next = next_general_token(&script, cursor);
         if let Err(msg) = next {
@@ -487,31 +487,28 @@ pub fn get_tokens(script: &str) -> Result<Vec<Token>, String> {
             return Err(err_msg);
         }
 
-        // handling general token
         let (tk, pos) = next.unwrap();
         cursor = pos;
-
         match tk.tk_type {
             GeneralTokenType::TK_EOF_ => {
-                break;
+                let eof = Token::new(TokenType::TK_EOF, line);
+                return Ok((eof, (cursor, line)));
             },
             GeneralTokenType::TK_PUNCT_  => {
                 let value = tk.tk_value.unwrap();
                 let tkt = get_token_type(&value).unwrap();
                 if tkt == TokenType::TK_NEWLN {
                     line = line + 1;
-                }                
-                let ntk = Token::new_with(tkt, value, line);
-                result.push(ntk);
-                continue;
+                }
+                let ntk = Token::new(tkt, line);            
+                return Ok((ntk, (cursor, line)));
             },
             GeneralTokenType::TK_STRING_ => {
                 let value = tk.tk_value.unwrap();
                 line = line + count_line(&value);
 
                 let ntk = Token::new_with(TokenType::TK_STRING, value, line);
-                result.push(ntk);
-                continue;
+                return Ok((ntk, (cursor, line)));
             },
             GeneralTokenType::TK_COMMENT_ => {
                 let value = tk.tk_value.unwrap();
@@ -525,21 +522,19 @@ pub fn get_tokens(script: &str) -> Result<Vec<Token>, String> {
                 if isnum == -1 {
                     if let Some(tkt) = get_keyword(&value) {
                         let ntk = Token::new(tkt, line);
-                        result.push(ntk);
+                        return Ok((ntk, (cursor, line)));
                     } else {
                         let ntk = Token::new_with(TokenType::TK_IDENTIFIER, value, line);
-                        result.push(ntk);
+                        return Ok((ntk, (cursor, line)));
                     }
-                    continue;
                 }
                 if isnum == 1 {
                     let ntk = Token::new_with(TokenType::TK_NUMBER, value, line);
-                    result.push(ntk);
-                    continue;
+                    return Ok((ntk, (cursor, line)));
                 }
-                
+
                 // isnum == 0
-                // concat ieee float string            
+                // concat ieee float string
                 if let Ok((tk2, pos2)) = next_general_token(&script, cursor){
                     if tk2.tk_type == GeneralTokenType::TK_PUNCT_ {
                         let value2 = tk2.tk_value.unwrap();
@@ -550,9 +545,8 @@ pub fn get_tokens(script: &str) -> Result<Vec<Token>, String> {
                                     let value_all = format!("{}{}{}", value, value2, value3);
                                     if value_all.parse::<f64>().is_ok() {
                                         let ntk = Token::new_with(TokenType::TK_NUMBER, value_all, line);
-                                        result.push(ntk);
                                         cursor = pos3;
-                                        continue;
+                                        return Ok((ntk, (cursor, line)));
                                     }
                                 }
                             }
@@ -560,9 +554,45 @@ pub fn get_tokens(script: &str) -> Result<Vec<Token>, String> {
                     }
                 }
             }
-        } 
+        }
     }
-    return Ok(result);
+}
+
+pub struct Tokenlizer<'a> {
+    filename: String,
+    script : &'a str,
+    cursor : usize,
+    line : u32, 
+} 
+
+impl<'a> Tokenlizer<'a> {
+    pub fn new(filename: &str, script:&'a str) -> Self {
+        return Tokenlizer {
+            filename: String::from(filename),
+            script: script,
+            cursor: 0,
+            line: 0
+        }
+    }
+
+    pub fn filename(&self) -> &str {
+        return &self.filename;
+    }
+
+    pub fn next(&mut self) -> Result<Token, String> {
+        let result = get_next_token(self.script, self.cursor, self.line);
+        if result.is_ok() {
+            let (token, (cursor, line)) = result.unwrap();
+            if token.tk_type != TokenType::TK_EOF {
+                self.cursor = cursor;
+                self.line = line;
+            }
+            return Ok(token);
+        }
+
+        let msg = result.err().unwrap();
+        return Err(msg);
+    }
 }
 
 #[cfg(test)]
@@ -610,9 +640,19 @@ mod tests {
             }
         "#;
 
-        let tokens = get_tokens(script).unwrap();
-        for i in 0..tokens.len() {
-            println!(">>> {:?}", tokens[i]);
+        let mut tokens = Tokenlizer::new("[script]", script);
+        loop {
+            let token = tokens.next();
+            if token.is_ok() {
+                let tk = token.unwrap();
+                println!(">> {:?}", tk);            
+                if tk.tk_type == TokenType::TK_EOF {
+                    break;
+                }
+            } else {
+                println!("** {:?}", token);
+                break;
+            }
         }
     }
 }
