@@ -109,7 +109,7 @@ fn tk_accept(tkr: &mut Tokenlizer, tkt: TokenType) -> Result<bool, String> {
     return Ok(true);
 }
 
-fn tk_except(tkr: &mut Tokenlizer, tkt: TokenType) -> Result<Token, String> {
+fn tk_expect(tkr: &mut Tokenlizer, tkt: TokenType) -> Result<Token, String> {
     let ntk = tkr.next()?;
     if ntk.tk_type != tkt {
         return Err(format!("AST error: except {:?} but got {:?} @ {}", tkt, ntk.tk_type, ntk.src_line));
@@ -118,7 +118,7 @@ fn tk_except(tkr: &mut Tokenlizer, tkt: TokenType) -> Result<Token, String> {
 }
 
 fn ast_identifier(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    let id = tk_except(tkr, TokenType::TK_IDENTIFIER)?;
+    let id = tk_expect(tkr, TokenType::TK_IDENTIFIER)?;
     let node = AstNode::new_string(AstType::AST_IDENTIFIER, id.src_line, &id.tk_value.unwrap());
     return Ok(node);
 }
@@ -132,7 +132,7 @@ fn ast_assignment(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
     if tk_accept(tkr, TokenType::TK_QUEST)? {
         let b = ast_assignment(tkr)?;
-        tk_except(tkr, TokenType::TK_COLON)?;
+        tk_expect(tkr, TokenType::TK_COLON)?;
         let c = ast_assignment(tkr)?;
         let node = AstNode::new_a_b_c(AstType::EXP_COND, a.src_line, a, b, c);
         return Ok(node);
@@ -230,7 +230,7 @@ fn ast_vardeclist(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let node = ast_vardec(tkr)?;
     let mut head = AstNode::new_list( node );
     let mut tail: &mut AstNode = &mut head;
-    while ( tk_accept(tkr, TokenType::TK_COMMA)? ) {
+    while tk_accept(tkr, TokenType::TK_COMMA)? {
         AstNode::list_tail_push(tail, ast_vardec(tkr)?);
         tail = tail.b.as_mut().unwrap();
     }
@@ -255,17 +255,17 @@ fn ast_semicolon(tkr: &mut Tokenlizer) -> Result<(), String> {
 }
 
 fn ast_funbody(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    tk_except(tkr, TokenType::TK_BRACE_LEFT)?;
+    tk_expect(tkr, TokenType::TK_BRACE_LEFT)?;
     let a = ast_script(tkr)?;
-    tk_except(tkr, TokenType::TK_BRACE_RIGHT)?;
+    tk_expect(tkr, TokenType::TK_BRACE_RIGHT)?;
     return Ok(a);
 }
 
 fn ast_fundec(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let a = ast_identifier(tkr)?;
-    tk_except(tkr, TokenType::TK_PAREN_LEFT)?;
+    tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
     let b = ast_parameters(tkr)?;
-    tk_except(tkr, TokenType::TK_PAREN_RIGHT)?;  
+    tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;  
     let c = ast_funbody(tkr)?;
 
     let func = AstNode::new_a_b_c(AstType::AST_FUNDEC, a.src_line, a, b, c);
@@ -293,32 +293,47 @@ fn ast_statement_list(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 }
 
 fn ast_block(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    let leftbrace = tk_except(tkr, TokenType::TK_BRACE_LEFT)?;
+    let leftbrace = tk_expect(tkr, TokenType::TK_BRACE_LEFT)?;
     let a = ast_statement_list(tkr)?;
-    tk_except(tkr, TokenType::TK_BRACE_RIGHT)?;
+    tk_expect(tkr, TokenType::TK_BRACE_RIGHT)?;
     return Ok( AstNode::new_a(AstType::STM_BLOCK, leftbrace.src_line, a) );
 }
 
 fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {        
-    if tkr.forward()?.tk_type == TokenType::TK_BRACE_LEFT {
+    if tkr.forward()?.tk_type == TokenType::TK_BRACE_LEFT {        
         return ast_block(tkr);
-    } else if tk_accept(tkr, TokenType::TK_VAR)? {
+
+    } else if tk_accept(tkr, TokenType::TK_VAR)? {        
         let a = ast_vardeclist(tkr)?;
         ast_semicolon(tkr)?;
         let stm = AstNode::new_a(AstType::STM_VAR, a.src_line, a);
         return Ok(stm);  
-    } else if tk_accept(tkr, TokenType::TK_SEMICOLON)? {
+
+    } else if tk_accept(tkr, TokenType::TK_SEMICOLON)? {        
         return Ok( AstNode::new(AstType::STM_EMPTY, tkr.line()) );
-    } else if tk_accept(tkr, TokenType::TK_IF)? {        
-        tk_except(tkr, TokenType::TK_PAREN_LEFT)?;
+
+    } else if tk_accept(tkr, TokenType::TK_IF)? {      
+        tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
         let a = ast_expression(tkr)?;
-        tk_except(tkr, TokenType::TK_PAREN_RIGHT)?;
+        tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
         let b = ast_statement(tkr)?;
         if tk_accept(tkr, TokenType::TK_ELSE)? {
             let c = ast_statement(tkr)?;
             return Ok(AstNode::new_a_b_c(AstType::STM_IF, tkr.line(), a, b, c));
         }
         return Ok(AstNode::new_a_b(AstType::STM_IF, tkr.line(), a, b));
+
+    } else if tk_accept(tkr, TokenType::TK_DO)? {
+        let a = ast_statement(tkr)?;
+        tk_expect(tkr, TokenType::TK_WHILE)?;
+        tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
+        let b = ast_expression(tkr)?;
+        tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+        ast_semicolon(tkr)?;
+        
+        let stm = AstNode::new_a_b(AstType::STM_DO, tkr.line(), a, b);
+        return Ok(stm);
+
     }
     panic!("TODO")
 }
