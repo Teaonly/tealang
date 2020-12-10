@@ -563,6 +563,7 @@ pub struct Tokenlizer<'a> {
     script : &'a str,
     cursor : usize,
     line : u32, 
+    forward_: Option<Token>
 } 
 
 impl<'a> Tokenlizer<'a> {
@@ -571,7 +572,8 @@ impl<'a> Tokenlizer<'a> {
             filename: String::from(filename),
             script: script,
             cursor: 0,
-            line: 0
+            line: 1,
+            forward_: None,
         }
     }
 
@@ -579,7 +581,9 @@ impl<'a> Tokenlizer<'a> {
         return &self.filename;
     }
 
-    pub fn next(&mut self) -> Result<Token, String> {
+    pub fn next(&mut self) -> Result<Token, String> {        
+        self.forward_ = None;
+
         let result = get_next_token(self.script, self.cursor, self.line);
         if result.is_ok() {
             let (token, (cursor, line)) = result.unwrap();
@@ -593,6 +597,22 @@ impl<'a> Tokenlizer<'a> {
         let msg = result.err().unwrap();
         return Err(msg);
     }
+    
+    pub fn forward(&mut self) -> Result<Token, String> {
+        if self.forward_.is_some() {
+            return Ok(self.forward_.as_ref().unwrap().clone());
+        }
+        let result = get_next_token(self.script, self.cursor, self.line);
+        if result.is_ok() {
+            let (token, (_, _)) = result.unwrap();
+            self.forward_ = Some(token.clone());
+            return Ok(token);
+        }
+
+        let msg = result.err().unwrap();
+        return Err(msg);
+    }
+
 }
 
 #[cfg(test)]
@@ -656,5 +676,3 @@ mod tests {
         }
     }
 }
-
-

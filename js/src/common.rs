@@ -45,11 +45,11 @@ pub enum TokenType {
 	TK_WITH,
 
 	/* single-character punctuators */
-    TK_BRACE_LEFT,
+    TK_BRACE_LEFT,		// {}
     TK_BRACE_RIGHT,
-    TK_PAREN_LEFT,
+    TK_PAREN_LEFT,		// ()
     TK_PAREN_RIGHT,
-    TK_BRACKET_LEFT,
+    TK_BRACKET_LEFT,	// []
     TK_BRACKET_RIGHT,
 
     TK_NEWLN,
@@ -108,6 +108,7 @@ pub struct Token {
 #[allow(non_camel_case_types)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum AstType {
+	AST_EMPTY,
     AST_LIST,
 	AST_FUNDEC,
 	AST_IDENTIFIER,
@@ -219,18 +220,16 @@ pub enum AstType {
 	STM_DEFAULT,
 }
 
-#[derive(Debug)]
-pub struct ASTNode<'a> {
+#[derive(Debug, Clone)]
+pub struct AstNode {
     pub ast_type:   AstType,
     pub src_line:   u32,
     pub num_value:  Option<f64>,
-    pub str_value:  Option<String>,
-
-    pub parent: Option<&'a ASTNode<'a>>,
-
-    pub a:      Option<Box<ASTNode<'a>>>,
-    pub b:      Option<Box<ASTNode<'a>>>,
-    pub c:      Option<Box<ASTNode<'a>>>,
-    pub d:      Option<Box<ASTNode<'a>>>,
+	pub str_value:  Option<String>,
+	
+    pub a:      Option<Box<AstNode>>,
+    pub b:      Option<Box<AstNode>>,
+    pub c:      Option<Box<AstNode>>,
+    pub d:      Option<Box<AstNode>>,
 }
 
