@@ -55,7 +55,9 @@ pub enum TokenType {
     TK_NEWLN,
     TK_SEMICOLON,
     TK_COMMA,
-    TK_POINT,
+	TK_POINT,
+	TK_QUEST,
+	TK_COLON,
 
     TK_ASS,
     TK_ADD,
@@ -187,9 +189,9 @@ pub enum AstType {
 	EXP_ASS_SHL,
 	EXP_ASS_SHR,
 	EXP_ASS_USHR,
-	EXP_ASS_BITAND,
-	EXP_ASS_BITXOR,
-	EXP_ASS_BITOR,
+	EXP_ASS_AND,
+	EXP_ASS_XOR,
+	EXP_ASS_OR,
 
 	EXP_COMMA,
 

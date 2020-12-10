@@ -421,6 +421,8 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
             ";" => Some(TokenType::TK_SEMICOLON),
             "," => Some(TokenType::TK_COMMA),
             "." => Some(TokenType::TK_POINT),
+            "?" => Some(TokenType::TK_QUEST),
+            ":" => Some(TokenType::TK_COLON),
 
             "=" => Some(TokenType::TK_ASS),
             "<" => Some(TokenType::TK_LESS),
@@ -611,6 +613,10 @@ impl<'a> Tokenlizer<'a> {
 
         let msg = result.err().unwrap();
         return Err(msg);
+    }
+
+    pub fn line(&self) -> u32 {
+        return self.line;
     }
 
 }
