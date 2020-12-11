@@ -295,10 +295,6 @@ fn ast_fundec(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     return Ok(func);
 }
 
-fn ast_funstm(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    panic!("TODO")
-}
-
 fn ast_forstatement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     panic!("TODO")
 }
@@ -471,7 +467,18 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         return Ok(stm);
 
     } else if tk_accept(tkr, TokenType::TK_FUNCTION)? {                
-        let stm = ast_funstm(tkr)?;
+        let a = ast_identifier(tkr)?;
+        tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
+        let b = ast_parameters(tkr)?;
+        tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+        let c = ast_funbody(tkr)?;
+        
+        /* rewrite function statement as "var X = function X() {}" */        
+        let aa = a.clone();
+        let fun = AstNode::new_a_b_c(AstType::EXP_FUN, tkr.line(), a, b, c);
+        let var = AstNode::new_a_b(AstType::EXP_VAR, tkr.line(), aa, fun);
+        let lst = AstNode::new_list(var);
+        let stm = AstNode::new_a(AstType::STM_VAR, tkr.line(), lst);
         return Ok(stm);
     
     } else if tk_accept(tkr, TokenType::TK_IDENTIFIER)? {                
