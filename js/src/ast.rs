@@ -85,6 +85,19 @@ impl AstNode {
         }          
     }
 
+    fn new_a_b_c_d(ntype: AstType, line: u32, a: Self, b: Self, c: Self, d: Self) -> Self {
+        AstNode {
+            ast_type: ntype,
+            src_line: line, 
+            num_value: None,
+            str_value: None,
+            a: Some(Box::new(a)),
+            b: Some(Box::new(b)),
+            c: Some(Box::new(c)),
+            d: Some(Box::new(d)),
+        }          
+    }
+
     // linked list
     fn new_list(anode: AstNode) -> Self {
         let mut new_list_item = AstNode::new(AstType::AST_LIST, anode.src_line);
@@ -286,6 +299,10 @@ fn ast_forstatement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     panic!("TODO")
 }
 
+fn ast_caselist(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    panic!("TODO")    
+}
+
 fn ast_statement_list(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let tk = tkr.forward()?;
     if tk.tk_type == TokenType::TK_BRACE_RIGHT || tk.tk_type == TokenType::TK_CASE || tk.tk_type == TokenType::TK_DEFAULT {
@@ -402,6 +419,65 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         
         let stm = AstNode::new_a_b(AstType::STM_WITH, tkr.line(), a, b);
         return Ok(stm);
+
+    } else if tk_accept(tkr, TokenType::TK_SWITCH)? {                
+        tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
+        let a = ast_expression(tkr)?;
+        tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+        tk_expect(tkr, TokenType::TK_BRACE_LEFT)?;
+        let b = ast_caselist(tkr)?;
+        tk_expect(tkr, TokenType::TK_BRACE_RIGHT)?;
+        let stm = AstNode::new_a_b(AstType::STM_SWITCH, tkr.line(), a, b);
+        return Ok(stm);
+
+    } else if tk_accept(tkr, TokenType::TK_THROW)? {                
+        let a = ast_expression(tkr)?;
+        ast_semicolon(tkr)?;
+
+        let stm = AstNode::new_a(AstType::STM_THROW, tkr.line(), a);
+        return Ok(stm);
+
+    } else if tk_accept(tkr, TokenType::TK_TRY)? {                
+       /*
+       	a = block(J);
+		b = c = d = NULL;
+		if (jsP_accept(J, TK_CATCH)) {
+			jsP_expect(J, '(');
+			b = identifier(J);
+			jsP_expect(J, ')');
+			c = block(J);
+		}
+		if (jsP_accept(J, TK_FINALLY)) {
+			d = block(J);
+		}
+		if (!b && !d)
+			jsP_error(J, "unexpected token in try: %s (expected 'catch' or 'finally')", jsY_tokenstring(J->lookahead));
+        stm = STM4(TRY, a, b, c, d);
+        */
+
+        let a = ast_block(tkr)?;        
+        if tk_accept(tkr, TokenType::TK_CATCH)? {
+            tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
+            let b = ast_identifier(tkr)?;
+            tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+            let c = ast_block(tkr)?;
+            
+            if tk_accept(tkr, TokenType::TK_FINALLY)? {
+                let d = ast_block(tkr)?;
+                let stm = AstNode::new_a_b_c_d(AstType::STM_THROW, tkr.line(), a, b, c, d);
+                return Ok(stm);
+            }
+            
+            let stm = AstNode::new_a_b_c(AstType::STM_THROW, tkr.line(), a, b, c);
+            return Ok(stm);
+        }
+        if tk_accept(tkr, TokenType::TK_FINALLY)? {
+            let a = ast_block(tkr)?;
+            let stm = AstNode::new_a(AstType::STM_THROW, tkr.line(), a);
+            return Ok(stm);
+        }
+
+        return Err(format!("unexpected token in try: {:?} (expected 'catch' or 'finally')", tkr.forward()? ));
     }
 
     panic!("TODO")
