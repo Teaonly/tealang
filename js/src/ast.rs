@@ -231,6 +231,17 @@ fn ast_vardec(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     return Ok(exp);
 }
 
+fn ast_vardeclist(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let node = ast_vardec(tkr)?;
+    let mut head = AstNode::new_list( node );
+    let mut tail: &mut AstNode = &mut head;
+    while tk_accept(tkr, TokenType::TK_COMMA)? {
+        AstNode::list_tail_push(tail, ast_vardec(tkr)?);
+        tail = tail.b.as_mut().unwrap();
+    }
+    return Ok(head);
+}
+
 fn ast_parameters(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let n = tkr.forward()?;
     if n.tk_type == TokenType::TK_PAREN_RIGHT {
@@ -246,17 +257,6 @@ fn ast_parameters(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         tail = tail.b.as_mut().unwrap();
     }
 
-    return Ok(head);
-}
-
-fn ast_vardeclist(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    let node = ast_vardec(tkr)?;
-    let mut head = AstNode::new_list( node );
-    let mut tail: &mut AstNode = &mut head;
-    while tk_accept(tkr, TokenType::TK_COMMA)? {
-        AstNode::list_tail_push(tail, ast_vardec(tkr)?);
-        tail = tail.b.as_mut().unwrap();
-    }
     return Ok(head);
 }
 
@@ -293,6 +293,10 @@ fn ast_fundec(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
     let func = AstNode::new_a_b_c(AstType::AST_FUNDEC, a.src_line, a, b, c);
     return Ok(func);
+}
+
+fn ast_funstm(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    panic!("TODO")
 }
 
 fn ast_forstatement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
@@ -437,24 +441,7 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         let stm = AstNode::new_a(AstType::STM_THROW, tkr.line(), a);
         return Ok(stm);
 
-    } else if tk_accept(tkr, TokenType::TK_TRY)? {                
-       /*
-       	a = block(J);
-		b = c = d = NULL;
-		if (jsP_accept(J, TK_CATCH)) {
-			jsP_expect(J, '(');
-			b = identifier(J);
-			jsP_expect(J, ')');
-			c = block(J);
-		}
-		if (jsP_accept(J, TK_FINALLY)) {
-			d = block(J);
-		}
-		if (!b && !d)
-			jsP_error(J, "unexpected token in try: %s (expected 'catch' or 'finally')", jsY_tokenstring(J->lookahead));
-        stm = STM4(TRY, a, b, c, d);
-        */
-
+    } else if tk_accept(tkr, TokenType::TK_TRY)? {       
         let a = ast_block(tkr)?;        
         if tk_accept(tkr, TokenType::TK_CATCH)? {
             tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
@@ -476,11 +463,33 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
             let stm = AstNode::new_a(AstType::STM_THROW, tkr.line(), a);
             return Ok(stm);
         }
-
         return Err(format!("unexpected token in try: {:?} (expected 'catch' or 'finally')", tkr.forward()? ));
+
+    } else if tk_accept(tkr, TokenType::TK_DEBUGGER)? {                
+        ast_semicolon(tkr)?;
+        let stm = AstNode::new(AstType::STM_DEBUGGER, tkr.line());
+        return Ok(stm);
+
+    } else if tk_accept(tkr, TokenType::TK_FUNCTION)? {                
+        let stm = ast_funstm(tkr)?;
+        return Ok(stm);
+    
+    } else if tk_accept(tkr, TokenType::TK_IDENTIFIER)? {                
+        let mut a = ast_expression(tkr)?;
+        if a.ast_type == AstType::EXP_IDENTIFIER {
+            if tk_accept(tkr, TokenType::TK_COLON)? {
+                a.ast_type = AstType::AST_IDENTIFIER;
+                let b = ast_statement(tkr)?;
+                let stm = AstNode::new_a_b(AstType::STM_LABEL, tkr.line(), a, b);
+                return Ok(stm);
+            }
+        }
+        ast_semicolon(tkr)?;
+        return Ok(a);
     }
 
-    panic!("TODO")
+    let stm = ast_expression(tkr)?;
+    return Ok(stm);
 }
 
 fn ast_element(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
