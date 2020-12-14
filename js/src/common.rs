@@ -68,9 +68,10 @@ pub enum TokenType {
     TK_NOT,
     TK_AND,
     TK_OR,
-    TK_XOR,
-    TK_LESS,
-    TK_GREAT,
+	TK_XOR,	
+	TK_BITNOT,
+    TK_LT,
+	TK_GT,
 
 	/* multi-character punctuators */
 	TK_LE,

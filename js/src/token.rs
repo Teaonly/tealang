@@ -72,7 +72,7 @@ fn next_general_token (script: &str, cursor: usize) -> Result<(GeneralToken, usi
             return ct::CT_NEWLN;
         }
         if ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '%' || ch == '=' || ch == ';' || ch == '\\'
-            || ch == '&' || ch == '!' || ch == '|' || ch == '^' || ch == ',' || ch == '\'' || ch == '"'
+            || ch == '&' || ch == '!' || ch == '|' || ch == '^' || ch == ',' || ch == '\'' || ch == '"' || ch == '~'
             || ch == '<' || ch == '>' || ch == '(' || ch == ')' || ch == '[' || ch == ']' || ch == '{' || ch == '}' {
             return ct::CT_PUNCT;
         }
@@ -425,8 +425,8 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
             ":" => Some(TokenType::TK_COLON),
 
             "=" => Some(TokenType::TK_ASS),
-            "<" => Some(TokenType::TK_LESS),
-            ">" => Some(TokenType::TK_GREAT),
+            "<" => Some(TokenType::TK_LT),
+            ">" => Some(TokenType::TK_GT),
             "!" => Some(TokenType::TK_NOT),
             "&" => Some(TokenType::TK_AND),
             "|" => Some(TokenType::TK_OR),
@@ -436,6 +436,7 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
             "*" => Some(TokenType::TK_MUL),
             "/" => Some(TokenType::TK_DIV),
             "%" => Some(TokenType::TK_MOD),
+            "~" => Some(TokenType::TK_BITNOT),
 
             "<=" => Some(TokenType::TK_LE),
             ">=" => Some(TokenType::TK_GE),
@@ -633,7 +634,7 @@ mod tests {
             const number = parseInt(prompt("Enter a positive number: "));
             let isPrime = true;
 
-            if ( number >= 1.342E+3+45.0 ) {
+            if ( number >= 1.342E+3+45.01 ) {
                 console.log("number is too bigger");
             }
 

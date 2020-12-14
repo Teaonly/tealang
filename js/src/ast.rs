@@ -146,20 +146,234 @@ fn ast_identifier_opt(tkr: &mut Tokenlizer) -> Result<Option<AstNode>, String> {
     }
 }
 
-fn ast_formula(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+fn ast_formula_postfix(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     panic!("TODO")
+}
+
+fn ast_formula_unary(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    if tk_accept(tkr, TokenType::TK_DELETE)? {
+        let a = ast_formula_unary(tkr)?;
+        let stm = AstNode::new_a(AstType::EXP_DELETE, tkr.line(), a);
+        return Ok(stm);
+    }
+    if tk_accept(tkr, TokenType::TK_VOID)? {
+        let a = ast_formula_unary(tkr)?;
+        let stm = AstNode::new_a(AstType::EXP_VOID, tkr.line(), a);
+        return Ok(stm);
+    }
+    if tk_accept(tkr, TokenType::TK_TYPEOF)? {
+        let a = ast_formula_unary(tkr)?;
+        let stm = AstNode::new_a(AstType::EXP_TYPEOF, tkr.line(), a);
+        return Ok(stm);
+    }
+    if tk_accept(tkr, TokenType::TK_INC)? {
+        let a = ast_formula_unary(tkr)?;
+        let stm = AstNode::new_a(AstType::EXP_PREINC, tkr.line(), a);
+        return Ok(stm);
+    }
+    if tk_accept(tkr, TokenType::TK_DEC)? {
+        let a = ast_formula_unary(tkr)?;
+        let stm = AstNode::new_a(AstType::EXP_PREDEC, tkr.line(), a);
+        return Ok(stm);
+    }
+    if tk_accept(tkr, TokenType::TK_BITNOT)? {
+        let a = ast_formula_unary(tkr)?;
+        let stm = AstNode::new_a(AstType::EXP_BITNOT, tkr.line(), a);
+        return Ok(stm);
+    }
+    if tk_accept(tkr, TokenType::TK_NOT)? {
+        let a = ast_formula_unary(tkr)?;
+        let stm = AstNode::new_a(AstType::EXP_LOGNOT, tkr.line(), a);
+        return Ok(stm);
+    }
+    return ast_formula_postfix(tkr);
+}    
+
+fn ast_formula_multiplicative(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_unary(tkr)?;
+
+    loop {
+        if tk_accept(tkr, TokenType::TK_MUL)? {
+            let b = ast_formula_unary(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_MUL, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_DIV)? {
+            let b = ast_formula_unary(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_DIV, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_MOD)? {
+            let b = ast_formula_unary(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_MOD, tkr.line(), a, b);
+            continue;
+        }        
+        break;
+    }
+    return Ok(a);
+}
+
+fn ast_formula_additive(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_multiplicative(tkr)?;
+
+    loop {
+        if tk_accept(tkr, TokenType::TK_ADD)? {
+            let b = ast_formula_multiplicative(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_ADD, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_SUB)? {
+            let b = ast_formula_multiplicative(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_SUB, tkr.line(), a, b);
+            continue;
+        }        
+        break;
+    }
+    return Ok(a);
+}
+
+fn ast_formula_shift(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_additive(tkr)?;
+
+    loop {
+        if tk_accept(tkr, TokenType::TK_SHL)? {
+            let b = ast_formula_additive(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_SHL, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_SHR)? {
+            let b = ast_formula_additive(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_SHR, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_USHR)? {
+            let b = ast_formula_additive(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_USHR, tkr.line(), a, b);
+            continue;
+        }
+        break;
+    }
+    return Ok(a);
+}
+
+fn ast_formula_relational(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_shift(tkr)?;
+
+    loop {
+        if tk_accept(tkr, TokenType::TK_LT)? {
+            let b = ast_formula_shift(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_LT, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_GT)? {
+            let b = ast_formula_shift(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_GT, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_LE)? {
+            let b = ast_formula_shift(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_LE, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_GE)? {
+            let b = ast_formula_shift(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_GE, tkr.line(), a, b);
+            continue;
+        }        
+        break;
+    }
+    return Ok(a);
+}
+
+fn ast_formula_eq(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_relational(tkr)?;
+
+    loop {
+        if tk_accept(tkr, TokenType::TK_EQ)? {
+            let b = ast_formula_relational(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_EQ, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_NE)? {
+            let b = ast_formula_relational(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_NE, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_STRICTEQ)? {
+            let b = ast_formula_relational(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_STRICTEQ, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_STRICTNE)? {
+            let b = ast_formula_relational(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_STRICTNE, tkr.line(), a, b);
+            continue;
+        }
+        break;
+    }
+    return Ok(a);
+}
+
+fn ast_formula_bitand(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_eq(tkr)?;
+    while tk_accept(tkr, TokenType::TK_OR)? {
+        let b = ast_formula_eq(tkr)?;
+        a = AstNode::new_a_b(AstType::EXP_BITAND, tkr.line(), a, b);
+    }
+    return Ok(a);
+}
+
+fn ast_formula_bitxor(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_bitand(tkr)?;
+    while tk_accept(tkr, TokenType::TK_OR)? {
+        let b = ast_formula_bitand(tkr)?;
+        a = AstNode::new_a_b(AstType::EXP_BITXOR, tkr.line(), a, b);
+    }
+    return Ok(a);
+}
+
+fn ast_formula_bitor(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_bitxor(tkr)?;
+    while tk_accept(tkr, TokenType::TK_OR)? {
+        let b = ast_formula_bitxor(tkr)?;
+        a = AstNode::new_a_b(AstType::EXP_BITOR, tkr.line(), a, b);
+    }
+    return Ok(a);
+}
+
+fn ast_formula_and(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_bitor(tkr)?;
+    while tk_accept(tkr, TokenType::TK_AND_AND)? {
+        let b = ast_formula_bitor(tkr)?;
+        a = AstNode::new_a_b(AstType::EXP_LOGAND, tkr.line(), a, b);
+    }
+    return Ok(a);
+}
+
+fn ast_formula_or(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_and(tkr)?;
+    while tk_accept(tkr, TokenType::TK_OR_OR)? {
+        let b = ast_formula_and(tkr)?;
+        a = AstNode::new_a_b(AstType::EXP_LOGOR, tkr.line(), a, b);
+    }
+    return Ok(a);
+}
+
+fn ast_formula(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_or(tkr)?;
+    if tk_accept(tkr, TokenType::TK_QUEST)? {
+        let b = ast_assignment(tkr)?;
+        tk_expect(tkr, TokenType::TK_COLON)?;
+        let c = ast_assignment(tkr)?;
+        a = AstNode::new_a_b_c(AstType::EXP_COND, a.src_line, a, b, c);
+    }
+    return Ok(a);
 }
 
 fn ast_assignment(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let a = ast_formula(tkr)?;
 
-    if tk_accept(tkr, TokenType::TK_QUEST)? {
-        let b = ast_assignment(tkr)?;
-        tk_expect(tkr, TokenType::TK_COLON)?;
-        let c = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b_c(AstType::EXP_COND, a.src_line, a, b, c);
-        return Ok(node);
-    } else if tk_accept(tkr, TokenType::TK_ASS)? {
+    if tk_accept(tkr, TokenType::TK_ASS)? {
         let b = ast_assignment(tkr)?;
         let node = AstNode::new_a_b(AstType::EXP_ASS, a.src_line, a, b);
         return Ok(node);
@@ -617,4 +831,3 @@ mod tests {
     use super::*;
 
 }
-
