@@ -260,6 +260,47 @@ fn ast_parameters(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     return Ok(head);
 }
 
+/*
+static js_Ast *caseclause(js_State *J)
+{
+	js_Ast *a, *b;
+	int line = J->lexline;
+
+	if (jsP_accept(J, TK_CASE)) {
+		a = expression(J, 0);
+		jsP_expect(J, ':');
+		b = statementlist(J);
+		return STM2(CASE, a, b);
+	}
+
+	if (jsP_accept(J, TK_DEFAULT)) {
+		jsP_expect(J, ':');
+		a = statementlist(J);
+		return STM1(DEFAULT, a);
+	}
+
+	jsP_error(J, "unexpected token in switch: %s (expected 'case' or 'default')", jsY_tokenstring(J->lookahead));
+}
+*/
+
+fn ast_caseclause(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    if tk_accept(tkr, TokenType::TK_CASE)? {
+        let a = ast_expression(tkr)?;
+        tk_expect(tkr, TokenType::TK_COLON)?;
+        let b = ast_statement_list(tkr)?;
+        let stm = AstNode::new_a_b(AstType::STM_CASE, tkr.line(), a, b);
+        return Ok(stm);
+    }
+    if tk_accept(tkr, TokenType::TK_DEFAULT)? {
+        tk_expect(tkr, TokenType::TK_COLON)?;
+        let a = ast_statement_list(tkr)?;
+        let stm = AstNode::new_a(AstType::STM_DEFAULT, tkr.line(), a);
+        return Ok(stm);
+    }
+
+    return Err(format!("AST error: unexpected token in switch: {:?} @ {}  (expected 'case' or 'default')", tkr.forward(), tkr.line()));    
+}
+
 fn ast_semicolon(tkr: &mut Tokenlizer) -> Result<(), String> {
     let lookahead = tkr.forward()?;
     if lookahead.tk_type == TokenType::TK_SEMICOLON || lookahead.tk_type == TokenType::TK_NEWLN {
@@ -300,7 +341,15 @@ fn ast_forstatement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 }
 
 fn ast_caselist(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    panic!("TODO")    
+    let node = ast_caseclause(tkr)?;
+
+    let mut head = AstNode::new_list( node );
+    let mut tail: &mut AstNode = &mut head;
+    while tkr.forward()?.tk_type != TokenType::TK_BRACE_RIGHT  {
+        AstNode::list_tail_push(tail, ast_caseclause(tkr)?);
+        tail = tail.b.as_mut().unwrap();
+    }
+    return Ok(head);
 }
 
 fn ast_statement_list(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
@@ -425,6 +474,10 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         let a = ast_expression(tkr)?;
         tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
         tk_expect(tkr, TokenType::TK_BRACE_LEFT)?;
+        if tk_accept(tkr, TokenType::TK_BRACE_RIGHT)? {
+            let stm = AstNode::new_a(AstType::STM_SWITCH, tkr.line(), a);            
+            return Ok(stm);
+        }
         let b = ast_caselist(tkr)?;
         tk_expect(tkr, TokenType::TK_BRACE_RIGHT)?;
         let stm = AstNode::new_a_b(AstType::STM_SWITCH, tkr.line(), a, b);
