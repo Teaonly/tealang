@@ -1,4 +1,5 @@
 use std::char;
+use std::collections::LinkedList;
 use crate::common::*;
 
 #[allow(non_camel_case_types)]
@@ -566,7 +567,7 @@ pub struct Tokenlizer<'a> {
     script : &'a str,
     cursor : usize,
     line : u32, 
-    forward_: Option<Token>
+    forward_: LinkedList<Token>,
 } 
 
 impl<'a> Tokenlizer<'a> {
@@ -576,7 +577,7 @@ impl<'a> Tokenlizer<'a> {
             script: script,
             cursor: 0,
             line: 1,
-            forward_: None,
+            forward_: LinkedList::new()
         }
     }
 
@@ -585,8 +586,34 @@ impl<'a> Tokenlizer<'a> {
     }
 
     pub fn next(&mut self) -> Result<Token, String> {        
-        self.forward_ = None;
+        if self.forward_.len() > 0 {
+            let n = self.forward_.pop_front().unwrap();
+            return Ok(n);
+        }
 
+        self.fetch_next()?;
+        
+        let n = self.forward_.pop_front().unwrap();
+        return Ok(n);
+    }
+    
+    pub fn forward(&mut self) -> Result<Token, String> {
+        if self.forward_.len() > 0 {
+            let n = self.forward_.front().unwrap().clone();
+            return Ok(n);
+        }
+
+        self.fetch_next()?;
+        
+        let n = self.forward_.front().unwrap().clone();
+        return Ok(n);        
+    }
+
+    pub fn line(&self) -> u32 {
+        return self.line;
+    }
+
+    fn fetch_next(&mut self) -> Result<(), String> {
         let result = get_next_token(self.script, self.cursor, self.line);
         if result.is_ok() {
             let (token, (cursor, line)) = result.unwrap();
@@ -594,32 +621,39 @@ impl<'a> Tokenlizer<'a> {
                 self.cursor = cursor;
                 self.line = line;
             }
-            return Ok(token);
+
+            if token.tk_type != TokenType::TK_IDENTIFIER {
+                self.forward_.push_back(token);
+                return Ok(());
+            }
+            
+            let src_line = token.src_line;
+            let mut ident = token.tk_value.unwrap();
+
+            let ids : Vec<String> = ident.replace(".", " . ").split_whitespace().map(|x| x.to_string()).collect();
+            for id in ids {
+                if id != "." {
+                    let tk = Token {
+                        tk_type: TokenType::TK_IDENTIFIER,
+                        tk_value: Some(id),
+                        src_line: src_line,
+                    };
+                    self.forward_.push_back(tk);
+                } else {
+                    let tk = Token {
+                        tk_type: TokenType::TK_POINT,
+                        tk_value: None,
+                        src_line: src_line,
+                    };
+                    self.forward_.push_back(tk);
+                }
+            }
+            return Ok(());
         }
 
         let msg = result.err().unwrap();
         return Err(msg);
     }
-    
-    pub fn forward(&mut self) -> Result<Token, String> {
-        if self.forward_.is_some() {
-            return Ok(self.forward_.as_ref().unwrap().clone());
-        }
-        let result = get_next_token(self.script, self.cursor, self.line);
-        if result.is_ok() {
-            let (token, (_, _)) = result.unwrap();
-            self.forward_ = Some(token.clone());
-            return Ok(token);
-        }
-
-        let msg = result.err().unwrap();
-        return Err(msg);
-    }
-
-    pub fn line(&self) -> u32 {
-        return self.line;
-    }
-
 }
 
 #[cfg(test)]
