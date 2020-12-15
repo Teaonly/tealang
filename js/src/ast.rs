@@ -147,8 +147,68 @@ fn ast_identifier_opt(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 }
 
 
+fn ast_propname(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let lookahead = tkr.forward()?;
+    if tk_accept(tkr, TokenType::TK_NUMBER)? {
+        let value = lookahead.tk_value.unwrap().parse::<f64>().unwrap();
+        let a = AstNode::new_number(AstType::EXP_NUMBER, tkr.line(), value);
+        return Ok(a); 
+    }
+    if tk_accept(tkr, TokenType::TK_STRING)? {
+        let a = AstNode::new_string(AstType::EXP_STRING, tkr.line(), &lookahead.tk_value.unwrap());
+        return Ok(a); 
+    }
+    return ast_identifier(tkr);
+}
+
+fn ast_propassign(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let name = ast_propname(tkr)?;
+    let lookahead = tkr.forward()?;
+
+    if lookahead.tk_type != TokenType::TK_COLON && name.ast_type == AstType::AST_IDENTIFIER {
+        if name.str_value.as_ref().unwrap() == "get" {
+            let null = AstNode::new(AstType::AST_NULL, tkr.line());
+            let name = ast_propname(tkr)?;
+            tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
+            tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+            let body = ast_funbody(tkr)?;
+            let exp = AstNode::new_a_b_c(AstType::EXP_PROP_GET, tkr.line(), name, null, body);
+            return Ok(exp);
+        } 
+        if name.str_value.as_ref().unwrap() == "set" {
+            let name = ast_propname(tkr)?;
+            tk_expect(tkr, TokenType::TK_PAREN_LEFT);
+            let arg = ast_identifier(tkr)?;
+            tk_expect(tkr, TokenType::TK_PAREN_RIGHT);
+            let body = ast_funbody(tkr)?;
+            let exp = AstNode::new_a_b_c(AstType::EXP_PROP_GET, tkr.line(), name, arg, body);
+            return Ok(exp);
+        }
+    }
+    tk_expect(tkr, TokenType::TK_COLON)?;
+    let value = ast_assignment(tkr)?;
+    let exp = AstNode::new_a_b(AstType::EXP_PROP_VAL, tkr.line(), name, value);
+    return Ok(exp);
+}
+
 fn ast_objectliteral(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    panic!("TODO")
+    if tkr.forward()?.tk_type == TokenType::TK_BRACE_RIGHT {
+        let null = AstNode::new(AstType::AST_NULL, tkr.line());
+        return Ok(null);
+    }
+
+    let node = ast_propassign(tkr)?;
+    let mut head = AstNode::new_list( node );
+    let mut tail: &mut AstNode = &mut head;
+
+    while tk_accept(tkr, TokenType::TK_COMMA)? {
+        if tkr.forward()?.tk_type == TokenType::TK_BRACE_RIGHT {
+            break;
+        }
+        AstNode::list_tail_push(tail, ast_propassign(tkr)?);
+        tail = tail.b.as_mut().unwrap();
+    }
+    return Ok(head);
 }
 
 fn ast_arrayelement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
