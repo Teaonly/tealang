@@ -151,8 +151,24 @@ fn ast_objectliteral(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     panic!("TODO")
 }
 
+fn ast_arrayelement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    if tkr.forward()?.tk_type == TokenType::TK_COMMA {
+        return Ok(AstNode::new(AstType::EXP_UNDEF, tkr.line()));
+    }
+    return ast_assignment(tkr);
+}
+
 fn ast_arrayliteral(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    panic!("TODO")
+    let node = ast_arrayelement(tkr)?;
+    let mut head = AstNode::new_list( node );
+    let mut tail: &mut AstNode = &mut head;
+
+    while tk_accept(tkr, TokenType::TK_COMMA)? {
+        AstNode::list_tail_push(tail, ast_arrayelement(tkr)?);
+        tail = tail.b.as_mut().unwrap();
+    }
+    
+    return Ok(head);
 }
 
 fn ast_primary(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
@@ -209,7 +225,8 @@ fn ast_arguments(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     if tkr.forward()?.tk_type == TokenType::TK_PAREN_RIGHT {
         return Ok(AstNode::new(AstType::AST_NULL, tkr.line()));
     }
-    let mut head = ast_assignment(tkr)?;
+    let node = ast_assignment(tkr)?;
+    let mut head = AstNode::new_list( node );
     let mut tail: &mut AstNode = &mut head;
 
     while tk_accept(tkr, TokenType::TK_COMMA)? {
