@@ -136,18 +136,118 @@ fn ast_identifier(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     return Ok(node);
 }
 
-fn ast_identifier_opt(tkr: &mut Tokenlizer) -> Result<Option<AstNode>, String> {
+fn ast_identifier_opt(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let ntk = tkr.forward()?;
     if ntk.tk_type == TokenType::TK_IDENTIFIER {
         let node = AstNode::new_string(AstType::AST_IDENTIFIER, tkr.line(), &ntk.tk_value.unwrap());
-        return Ok(Some(node));
+        return Ok(node);
     } else {
-        return Ok(None);
+        return Ok( AstNode::new(AstType::AST_EMPTY, tkr.line()));
     }
 }
 
+fn ast_primary(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    panic!("");
+}
+
+fn ast_arguments(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    if tkr.forward()?.tk_type == TokenType::TK_PAREN_RIGHT {
+        return Ok(AstNode::new(AstType::AST_EMPTY, tkr.line()));
+    }
+    let mut head = ast_assignment(tkr)?;
+    let mut tail: &mut AstNode = &mut head;
+
+    while tk_accept(tkr, TokenType::TK_COMMA)? {
+        AstNode::list_tail_push(tail, ast_assignment(tkr)?);
+        tail = tail.b.as_mut().unwrap();
+    }
+
+    return Ok(head);
+}
+
+fn ast_formula_funexp(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let a = ast_identifier_opt(tkr)?;
+    tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+    let b = ast_parameters(tkr)?;
+    tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
+    let c = ast_funbody(tkr)?;
+    let node = AstNode::new_a_b_c(AstType::EXP_FUN, tkr.line(), a, b, c);
+    return Ok(node);
+}
+
+fn ast_formula_memberexp(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_newexp(tkr)?;
+
+    loop {
+        if tk_accept(tkr, TokenType::TK_POINT)? {
+            let b = ast_identifier(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_MEMBER, tkr.line(), a, b);
+            continue;            
+        }
+        if tk_accept(tkr, TokenType::TK_PAREN_LEFT)? {
+            let b = ast_expression(tkr)?;
+            tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+            a = AstNode::new_a_b(AstType::EXP_INDEX, tkr.line(), a, b);
+            continue;
+        }
+        break;
+    }
+    return Ok(a);
+}
+
+fn ast_formula_newexp(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    if tk_accept(tkr, TokenType::TK_NEW)? {
+        let a = ast_formula_memberexp(tkr)?;
+        if tk_accept(tkr, TokenType::TK_PAREN_LEFT)? {
+            let b = ast_arguments(tkr)?;
+            tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+            return Ok(AstNode::new_a_b(AstType::EXP_NEW, tkr.line(), a, b));
+        }
+        return Ok(AstNode::new_a(AstType::EXP_NEW, tkr.line(), a));
+    }
+    
+    if tk_accept(tkr, TokenType::TK_FUNCTION)? {
+        return ast_formula_funexp(tkr);
+    }
+    return ast_primary(tkr);
+}
+
+fn ast_formula_callexp(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    let mut a = ast_formula_newexp(tkr)?;
+    loop {
+        if tk_accept(tkr, TokenType::TK_POINT)? {
+            let b = ast_identifier(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_MEMBER, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_BRACKET_LEFT)? {
+            let b = ast_expression(tkr)?;
+            tk_expect(tkr, TokenType::TK_BRACKET_LEFT)?;
+            a = AstNode::new_a_b(AstType::EXP_INDEX, tkr.line(), a, b);
+            continue;
+        }
+        if tk_accept(tkr, TokenType::TK_PAREN_LEFT)? {
+            let b = ast_arguments(tkr)?;
+            tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+            a = AstNode::new_a_b(AstType::EXP_CALL, tkr.line(), a, b);
+            continue;
+        }
+        break;
+    }
+    return Ok(a);
+}
+
 fn ast_formula_postfix(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    panic!("TODO")
+    let a = ast_formula_callexp(tkr)?;
+    if tk_accept(tkr, TokenType::TK_INC)? {
+        let node = AstNode::new_a(AstType::EXP_POSTINC, tkr.line(), a);
+        return Ok(node);
+    }
+    if tk_accept(tkr, TokenType::TK_DEC)? {
+        let node = AstNode::new_a(AstType::EXP_POSTDEC, tkr.line(), a);
+        return Ok(node);
+    }
+    return Ok(a);
 }
 
 fn ast_formula_unary(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
@@ -674,23 +774,13 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     } else if tk_accept(tkr, TokenType::TK_CONTINUE)? {                
         let id_opt = ast_identifier_opt(tkr)?;
         ast_semicolon(tkr)?;
-        if id_opt.is_some() {
-            let a = id_opt.unwrap();
-            let stm = AstNode::new_a(AstType::STM_CONTINUE, tkr.line(), a);
-            return Ok(stm);
-        }
-        let stm = AstNode::new(AstType::STM_CONTINUE, tkr.line());
+        let stm = AstNode::new_a(AstType::STM_CONTINUE, tkr.line(), id_opt);
         return Ok(stm);
 
     } else if tk_accept(tkr, TokenType::TK_BREAK)? {                
         let id_opt = ast_identifier_opt(tkr)?;
         ast_semicolon(tkr)?;
-        if id_opt.is_some() {
-            let a = id_opt.unwrap();
-            let stm = AstNode::new_a(AstType::STM_BREAK, tkr.line(), a);
-            return Ok(stm);
-        }
-        let stm = AstNode::new(AstType::STM_BREAK, tkr.line());
+        let stm = AstNode::new_a(AstType::STM_BREAK, tkr.line(), id_opt);
         return Ok(stm);
 
     } else if tk_accept(tkr, TokenType::TK_RETURN)? {                
