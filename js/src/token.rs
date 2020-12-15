@@ -661,7 +661,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test() {
+    fn test_token() {
         let script = r#"
             // program to check if a number is prime or not
             // take input from the user
