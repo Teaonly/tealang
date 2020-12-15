@@ -142,17 +142,72 @@ fn ast_identifier_opt(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         let node = AstNode::new_string(AstType::AST_IDENTIFIER, tkr.line(), &ntk.tk_value.unwrap());
         return Ok(node);
     } else {
-        return Ok( AstNode::new(AstType::AST_EMPTY, tkr.line()));
+        return Ok( AstNode::new(AstType::AST_NULL, tkr.line()));
     }
 }
 
+
+fn ast_objectliteral(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    panic!("TODO")
+}
+
+fn ast_arrayliteral(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    panic!("TODO")
+}
+
 fn ast_primary(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    panic!("");
+    let lookahead = tkr.forward()?;
+    if tk_accept(tkr, TokenType::TK_IDENTIFIER)? {
+        let a = AstNode::new_string(AstType::EXP_IDENTIFIER, tkr.line(), &lookahead.tk_value.unwrap());
+        return Ok(a); 
+    }
+    if tk_accept(tkr, TokenType::TK_STRING)? {
+        let a = AstNode::new_string(AstType::EXP_STRING, tkr.line(), &lookahead.tk_value.unwrap());
+        return Ok(a); 
+    }    
+    if tk_accept(tkr, TokenType::TK_NUMBER)? {
+        let value = lookahead.tk_value.unwrap().parse::<f64>().unwrap();
+        let a = AstNode::new_number(AstType::EXP_NUMBER, tkr.line(), value);
+        return Ok(a); 
+    }
+    if tk_accept(tkr, TokenType::TK_THIS)? {
+        let a = AstNode::new(AstType::EXP_THIS, tkr.line());
+        return Ok(a); 
+    }
+    if tk_accept(tkr, TokenType::TK_NULL)? {
+        let a = AstNode::new(AstType::EXP_NULL, tkr.line());
+        return Ok(a); 
+    }
+    if tk_accept(tkr, TokenType::TK_TRUE)? {
+        let a = AstNode::new(AstType::EXP_TRUE, tkr.line());
+        return Ok(a);
+    }
+    if tk_accept(tkr, TokenType::TK_FALSE)? {
+        let a = AstNode::new(AstType::EXP_FALSE, tkr.line());
+        return Ok(a);
+    }
+    if tk_accept(tkr, TokenType::TK_BRACE_LEFT)? {
+        let a = ast_objectliteral(tkr)?;
+        tk_expect(tkr, TokenType::TK_BRACE_RIGHT)?;
+        return Ok(a);
+    }
+    if tk_accept(tkr, TokenType::TK_BRACKET_LEFT)? {
+        let a = ast_arrayliteral(tkr)?;
+        tk_expect(tkr, TokenType::TK_BRACKET_RIGHT)?;
+        return Ok(a);
+    }
+    if tk_accept(tkr, TokenType::TK_PAREN_LEFT)? {
+        let a = ast_expression(tkr)?;
+        tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+        return Ok(a);
+    }
+
+    return Err(format!("unexpected token in expression: {:?} @ {}", lookahead, tkr.line()));
 }
 
 fn ast_arguments(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     if tkr.forward()?.tk_type == TokenType::TK_PAREN_RIGHT {
-        return Ok(AstNode::new(AstType::AST_EMPTY, tkr.line()));
+        return Ok(AstNode::new(AstType::AST_NULL, tkr.line()));
     }
     let mut head = ast_assignment(tkr)?;
     let mut tail: &mut AstNode = &mut head;
@@ -222,7 +277,7 @@ fn ast_formula_callexp(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         }
         if tk_accept(tkr, TokenType::TK_BRACKET_LEFT)? {
             let b = ast_expression(tkr)?;
-            tk_expect(tkr, TokenType::TK_BRACKET_LEFT)?;
+            tk_expect(tkr, TokenType::TK_BRACKET_RIGHT)?;
             a = AstNode::new_a_b(AstType::EXP_INDEX, tkr.line(), a, b);
             continue;
         }
@@ -559,7 +614,7 @@ fn ast_vardeclist(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 fn ast_parameters(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let n = tkr.forward()?;
     if n.tk_type == TokenType::TK_PAREN_RIGHT {
-        return Ok(AstNode::new(AstType::AST_EMPTY, n.src_line)); 
+        return Ok(AstNode::new(AstType::AST_NULL, n.src_line)); 
     }
 
     let node = ast_identifier(tkr)?;
@@ -630,7 +685,7 @@ fn ast_fundec(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 fn ast_forexpression(tkr: &mut Tokenlizer, stop: TokenType) -> Result<AstNode, String> {
     if tkr.forward()?.tk_type != stop {
         tk_expect(tkr, stop)?;
-        return Ok(AstNode::new(AstType::AST_EMPTY, tkr.line()));
+        return Ok(AstNode::new(AstType::AST_NULL, tkr.line()));
     }
     let a = ast_expression(tkr)?;
     tk_expect(tkr, stop)?;
@@ -660,7 +715,7 @@ fn ast_forstatement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         return Err(format!("unexpected token in for-var-statement: {:?}", tkr.forward()));
     }
 
-    let mut a = AstNode::new(AstType::AST_EMPTY, tkr.line());
+    let mut a = AstNode::new(AstType::AST_NULL, tkr.line());
     if tkr.forward()?.tk_type == TokenType::TK_SEMICOLON {
         a = ast_expression(tkr)?;
     }
@@ -699,7 +754,7 @@ fn ast_caselist(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 fn ast_statement_list(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let tk = tkr.forward()?;
     if tk.tk_type == TokenType::TK_BRACE_RIGHT || tk.tk_type == TokenType::TK_CASE || tk.tk_type == TokenType::TK_DEFAULT {
-        return Ok(AstNode::new(AstType::AST_EMPTY, tk.src_line));
+        return Ok(AstNode::new(AstType::AST_NULL, tk.src_line));
     }
     let mut head = AstNode::new_list( ast_statement(tkr)?);
 
@@ -909,7 +964,7 @@ pub fn build_ast_from_script(filename: &str, script: &str) -> Result<AstNode, St
     let mut tkr = Tokenlizer::new(filename, script);
     
     if tk_accept(&mut tkr, TokenType::TK_EOF)? {
-        let empty = AstNode::new( AstType::AST_EMPTY, 0);
+        let empty = AstNode::new( AstType::AST_NULL, 0);
         return Ok(empty);
     }
     

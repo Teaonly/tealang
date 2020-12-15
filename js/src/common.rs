@@ -111,8 +111,9 @@ pub struct Token {
 #[allow(non_camel_case_types)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum AstType {
-	AST_EMPTY,
-    AST_LIST,
+	AST_NULL = -1,
+	
+    AST_LIST = 0,
 	AST_FUNDEC,
 	AST_IDENTIFIER,
 
