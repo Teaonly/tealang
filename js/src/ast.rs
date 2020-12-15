@@ -856,12 +856,6 @@ fn ast_block(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 }
 
 fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    loop {
-        if tk_accept(tkr, TokenType::TK_NEWLN)? {
-            continue;
-        }
-        break;
-    }
 
     if tkr.forward()?.tk_type == TokenType::TK_BRACE_LEFT {        
         return ast_block(tkr);
@@ -1037,7 +1031,10 @@ fn ast_script(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
     let mut tail: &mut AstNode = &mut head;
     while tk_accept(tkr, TokenType::TK_EOF)? == false {
-        AstNode::list_tail_push(tail, ast_element(tkr)?);
+        if tk_accept(tkr, TokenType::TK_NEWLN)? {
+            continue;
+        }
+        AstNode::list_tail_push(tail, ast_element(tkr)?);        
         tail = tail.b.as_mut().unwrap();
     }
 
@@ -1047,6 +1044,12 @@ fn ast_script(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 pub fn build_ast_from_script(filename: &str, script: &str) -> Result<AstNode, String> {
     let mut tkr = Tokenlizer::new(filename, script);
     
+    loop {
+        if tk_accept(&mut tkr, TokenType::TK_NEWLN)? {
+            continue;
+        }
+        break;
+    }
     if tk_accept(&mut tkr, TokenType::TK_EOF)? {
         let empty = AstNode::new( AstType::AST_NULL, 0);
         return Ok(empty);
@@ -1063,6 +1066,8 @@ mod test {
     fn test_ast() {
         let script = r#"
         var a = 3.14;
+        
+        var b = 1979;
         "#;
 
         let result = build_ast_from_script("<script>", script).unwrap();
