@@ -855,7 +855,14 @@ fn ast_block(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     return Ok( AstNode::new_a(AstType::STM_BLOCK, leftbrace.src_line, a) );
 }
 
-fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {        
+fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    loop {
+        if tk_accept(tkr, TokenType::TK_NEWLN)? {
+            continue;
+        }
+        break;
+    }
+
     if tkr.forward()?.tk_type == TokenType::TK_BRACE_LEFT {        
         return ast_block(tkr);
 
@@ -864,7 +871,7 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         ast_semicolon(tkr)?;
         let stm = AstNode::new_a(AstType::STM_VAR, a.src_line, a);
         return Ok(stm);  
-
+    
     } else if tk_accept(tkr, TokenType::TK_SEMICOLON)? {        
         return Ok( AstNode::new(AstType::STM_EMPTY, tkr.line()) );
 
@@ -1049,31 +1056,14 @@ pub fn build_ast_from_script(filename: &str, script: &str) -> Result<AstNode, St
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use super::*;
 
     #[test]
     fn test_ast() {
         let script = r#"
-        function partition(items, left, right) {
-            var pivot   = items[Math.floor((right + left) / 2)], //middle element
-                i       = left, //left pointer
-                j       = right; //right pointer
-            while (i <= j) {
-                while (items[i] < pivot) {
-                    i++;
-                }
-                while (items[j] > pivot) {
-                    j--;
-                }
-                if (i <= j) {
-                    swap(items, i, j); //swap two elements
-                    i++;
-                    j--;
-                }
-            }
-            return i;
-        }"#;
+        var a = 3.14;
+        "#;
 
         let result = build_ast_from_script("<script>", script).unwrap();
         println!("{:?}", result);
