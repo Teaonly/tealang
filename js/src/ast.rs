@@ -278,7 +278,7 @@ fn ast_primary(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         return Ok(a);
     }
 
-    return Err(format!("unexpected token in expression: {:?} @ {}", lookahead, tkr.line()));
+    panic!(format!("unexpected token in expression: {:?} @ {}", lookahead, tkr.line()));
 }
 
 fn ast_arguments(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
@@ -760,7 +760,7 @@ fn ast_fundec(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 }
 
 fn ast_forexpression(tkr: &mut Tokenlizer, stop: TokenType) -> Result<AstNode, String> {
-    if tkr.forward()?.tk_type != stop {
+    if tkr.forward()?.tk_type == stop {
         tk_expect(tkr, stop)?;
         return Ok(AstNode::new(AstType::AST_NULL, tkr.line()));
     }
@@ -770,7 +770,8 @@ fn ast_forexpression(tkr: &mut Tokenlizer, stop: TokenType) -> Result<AstNode, S
 }
 
 fn ast_forstatement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+    tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
+
     if tk_accept(tkr, TokenType::TK_VAR)? {
         let a = ast_vardeclist(tkr)?;
         if tk_accept(tkr, TokenType::TK_SEMICOLON)? {
@@ -793,7 +794,7 @@ fn ast_forstatement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     }
 
     let mut a = AstNode::new(AstType::AST_NULL, tkr.line());
-    if tkr.forward()?.tk_type == TokenType::TK_SEMICOLON {
+    if tkr.forward()?.tk_type != TokenType::TK_SEMICOLON {
         a = ast_expression(tkr)?;
     }
     if tk_accept(tkr, TokenType::TK_SEMICOLON)? {
@@ -856,6 +857,12 @@ fn ast_block(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 }
 
 fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
+    loop {
+        if tk_accept(tkr, TokenType::TK_NEWLN)? {
+            continue;
+        }
+        break;
+    }
 
     if tkr.forward()?.tk_type == TokenType::TK_BRACE_LEFT {        
         return ast_block(tkr);
@@ -1031,9 +1038,6 @@ fn ast_script(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
     let mut tail: &mut AstNode = &mut head;
     while tk_accept(tkr, TokenType::TK_EOF)? == false {
-        if tk_accept(tkr, TokenType::TK_NEWLN)? {
-            continue;
-        }
         AstNode::list_tail_push(tail, ast_element(tkr)?);        
         tail = tail.b.as_mut().unwrap();
     }
@@ -1043,13 +1047,7 @@ fn ast_script(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
 pub fn build_ast_from_script(filename: &str, script: &str) -> Result<AstNode, String> {
     let mut tkr = Tokenlizer::new(filename, script);
-    
-    loop {
-        if tk_accept(&mut tkr, TokenType::TK_NEWLN)? {
-            continue;
-        }
-        break;
-    }
+
     if tk_accept(&mut tkr, TokenType::TK_EOF)? {
         let empty = AstNode::new( AstType::AST_NULL, 0);
         return Ok(empty);
@@ -1065,9 +1063,8 @@ mod test {
     #[test]
     fn test_ast() {
         let script = r#"
-        var a = 3.14;
-        
-        var b = 1979;
+        for (;;) {
+        }
         "#;
 
         let result = build_ast_from_script("<script>", script).unwrap();
