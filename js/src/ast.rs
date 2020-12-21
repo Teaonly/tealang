@@ -1004,6 +1004,7 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     }
 
     let stm = ast_expression(tkr)?;
+    ast_semicolon(tkr)?;
     return Ok(stm);
 }
 
