@@ -504,7 +504,7 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
                 if tkt == TokenType::TK_NEWLN {
                     line = line + 1;
                 }
-                let ntk = Token::new(tkt, line);            
+                let ntk = Token::new(tkt, line);
                 return Ok((ntk, (cursor, line)));
             },
             GeneralTokenType::TK_STRING_ => {
@@ -566,9 +566,9 @@ pub struct Tokenlizer<'a> {
     filename: String,
     script : &'a str,
     cursor : usize,
-    line : u32, 
+    line : u32,
     forward_: LinkedList<Token>,
-} 
+}
 
 impl<'a> Tokenlizer<'a> {
     pub fn new(filename: &str, script:&'a str) -> Self {
@@ -585,18 +585,18 @@ impl<'a> Tokenlizer<'a> {
         return &self.filename;
     }
 
-    pub fn next(&mut self) -> Result<Token, String> {        
+    pub fn next(&mut self) -> Result<Token, String> {
         if self.forward_.len() > 0 {
             let n = self.forward_.pop_front().unwrap();
             return Ok(n);
         }
 
         self.fetch_next()?;
-        
+
         let n = self.forward_.pop_front().unwrap();
         return Ok(n);
     }
-    
+
     pub fn forward(&mut self) -> Result<Token, String> {
         if self.forward_.len() > 0 {
             let n = self.forward_.front().unwrap().clone();
@@ -604,55 +604,74 @@ impl<'a> Tokenlizer<'a> {
         }
 
         self.fetch_next()?;
-        
+
         let n = self.forward_.front().unwrap().clone();
-        return Ok(n);        
+        return Ok(n);
     }
 
     pub fn line(&self) -> u32 {
         return self.line;
     }
 
-    fn fetch_next(&mut self) -> Result<(), String> {
-        let result = get_next_token(self.script, self.cursor, self.line);
-        if result.is_ok() {
-            let (token, (cursor, line)) = result.unwrap();
-            if token.tk_type != TokenType::TK_EOF {
-                self.cursor = cursor;
-                self.line = line;
-            }
+    fn split_identifier(&mut self, token: Token) {
+        assert!(token.tk_type == TokenType::TK_IDENTIFIER);
 
-            if token.tk_type != TokenType::TK_IDENTIFIER {
-                self.forward_.push_back(token);
+        let src_line = token.src_line;
+        let mut ident = token.tk_value.unwrap();
+
+        let ids : Vec<String> = ident.replace(".", " . ").split_whitespace().map(|x| x.to_string()).collect();
+        for id in ids {
+            if id != "." {
+                let tk = Token {
+                    tk_type: TokenType::TK_IDENTIFIER,
+                    tk_value: Some(id),
+                    src_line: src_line,
+                };
+                self.forward_.push_back(tk);
+            } else {
+                let tk = Token {
+                    tk_type: TokenType::TK_POINT,
+                    tk_value: None,
+                    src_line: src_line,
+                };
+                self.forward_.push_back(tk);
+            }
+        }
+    }
+
+    fn fetch_next(&mut self) -> Result<(), String> {
+        loop {
+
+            let result = get_next_token(self.script, self.cursor, self.line);
+            if result.is_ok() {
+                let (token, (cursor, line)) = result.unwrap();
+                if token.tk_type != TokenType::TK_EOF {
+                    self.cursor = cursor;
+                    self.line = line;
+                }
+
+                if token.tk_type == TokenType::TK_NEWLN {
+                    if self.forward_.len() == 0 {
+                        self.forward_.push_back(token);
+                        continue;
+                    }
+                    if self.forward_.back().unwrap().tk_type == TokenType::TK_NEWLN {
+                        continue;
+                    }
+                }
+
+                if token.tk_type != TokenType::TK_IDENTIFIER {
+                    self.forward_.push_back(token);
+                    return Ok(());
+                }
+                self.split_identifier(token);
+
                 return Ok(());
             }
-            
-            let src_line = token.src_line;
-            let mut ident = token.tk_value.unwrap();
 
-            let ids : Vec<String> = ident.replace(".", " . ").split_whitespace().map(|x| x.to_string()).collect();
-            for id in ids {
-                if id != "." {
-                    let tk = Token {
-                        tk_type: TokenType::TK_IDENTIFIER,
-                        tk_value: Some(id),
-                        src_line: src_line,
-                    };
-                    self.forward_.push_back(tk);
-                } else {
-                    let tk = Token {
-                        tk_type: TokenType::TK_POINT,
-                        tk_value: None,
-                        src_line: src_line,
-                    };
-                    self.forward_.push_back(tk);
-                }
-            }
-            return Ok(());
+            let msg = result.err().unwrap();
+            return Err(msg);
         }
-
-        let msg = result.err().unwrap();
-        return Err(msg);
     }
 }
 
@@ -706,7 +725,7 @@ mod tests {
             let token = tokens.next();
             if token.is_ok() {
                 let tk = token.unwrap();
-                println!(">> {:?}", tk);            
+                println!(">> {:?}", tk);
                 if tk.tk_type == TokenType::TK_EOF {
                     break;
                 }
