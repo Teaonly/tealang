@@ -609,6 +609,17 @@ impl<'a> Tokenlizer<'a> {
         return Ok(n);
     }
 
+    pub fn new_line(&self) -> bool {
+        let result = get_next_token(self.script, self.cursor, self.line);
+        if result.is_ok() {
+            let (token, _) = result.unwrap();
+            if token.tk_type == TokenType::TK_NEWLN {
+                return true;
+            }
+        }
+        return false;
+    }
+
     pub fn line(&self) -> u32 {
         return self.line;
     }
@@ -650,14 +661,9 @@ impl<'a> Tokenlizer<'a> {
                     self.line = line;
                 }
 
+                // skiped new line 
                 if token.tk_type == TokenType::TK_NEWLN {
-                    if self.forward_.len() == 0 {
-                        self.forward_.push_back(token);
-                        continue;
-                    }
-                    if self.forward_.back().unwrap().tk_type == TokenType::TK_NEWLN {
-                        continue;
-                    }
+                    continue;
                 }
 
                 if token.tk_type != TokenType::TK_IDENTIFIER {
