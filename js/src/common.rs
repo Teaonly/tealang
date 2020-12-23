@@ -237,3 +237,127 @@ pub struct AstNode {
     pub d:      Option<Box<AstNode>>,
 }
 
+/* bytecode stuff */
+#[allow(non_camel_case_types)]
+#[derive(Clone, Debug, PartialEq)]
+pub enum OpcodeType {
+	OP_NOP = 0,	
+	OP_POP = 1,	/* A -- */
+	OP_DUP,		/* A -- A A */
+	OP_DUP2,	/* A B -- A B A B */
+	OP_ROT2,	/* A B -- B A */
+	OP_ROT3,	/* A B C -- C A B */
+	OP_ROT4,	/* A B C D -- D A B C */
+
+	OP_INTEGER,	/* -K- (number-32768) */
+	OP_NUMBER,	/* -N- <number> */
+	OP_STRING,	/* -S- <string> */
+	OP_CLOSURE,	/* -F- <closure> */
+
+	OP_NEWARRAY,
+	OP_NEWOBJECT,
+	OP_NEWREGEXP,	/* -S,opts- <regexp> */
+
+	OP_UNDEF,
+	OP_NULL,
+	OP_TRUE,
+	OP_FALSE,
+
+	OP_THIS,
+	OP_CURRENT,	/* currently executing function object */
+
+	OP_GETLOCAL,	/* -K- <value> */
+	OP_SETLOCAL,	/* <value> -K- <value> */
+	OP_DELLOCAL,	/* -K- false */
+
+	OP_HASVAR,	/* -S- ( <value> | undefined ) */
+	OP_GETVAR,	/* -S- <value> */
+	OP_SETVAR,	/* <value> -S- <value> */
+	OP_DELVAR,	/* -S- <success> */
+
+	OP_IN,		/* <name> <obj> -- <exists?> */
+
+	OP_INITPROP,	/* <obj> <key> <val> -- <obj> */
+	OP_INITGETTER,	/* <obj> <key> <closure> -- <obj> */
+	OP_INITSETTER,	/* <obj> <key> <closure> -- <obj> */
+
+	OP_GETPROP,	/* <obj> <name> -- <value> */
+	OP_GETPROP_S,	/* <obj> -S- <value> */
+	OP_SETPROP,	/* <obj> <name> <value> -- <value> */
+	OP_SETPROP_S,	/* <obj> <value> -S- <value> */
+	OP_DELPROP,	/* <obj> <name> -- <success> */
+	OP_DELPROP_S,	/* <obj> -S- <success> */
+
+	OP_ITERATOR,	/* <obj> -- <iobj> */
+	OP_NEXTITER,	/* <iobj> -- ( <iobj> <name> true | false ) */
+
+	OP_EVAL,	/* <args...> -(numargs)- <returnvalue> */
+	OP_CALL,	/* <closure> <this> <args...> -(numargs)- <returnvalue> */
+	OP_NEW,		/* <closure> <args...> -(numargs)- <returnvalue> */
+
+	OP_TYPEOF,
+	OP_POS,
+	OP_NEG,
+	OP_BITNOT,
+	OP_LOGNOT,
+	OP_INC,		/* <x> -- ToNumber(x)+1 */
+	OP_DEC,		/* <x> -- ToNumber(x)-1 */
+	OP_POSTINC,	/* <x> -- ToNumber(x)+1 ToNumber(x) */
+	OP_POSTDEC,	/* <x> -- ToNumber(x)-1 ToNumber(x) */
+
+	OP_MUL,
+	OP_DIV,
+	OP_MOD,
+	OP_ADD,
+	OP_SUB,
+	OP_SHL,
+	OP_SHR,
+	OP_USHR,
+	OP_LT,
+	OP_GT,
+	OP_LE,
+	OP_GE,
+	OP_EQ,
+	OP_NE,
+	OP_STRICTEQ,
+	OP_STRICTNE,
+	OP_JCASE,
+	OP_BITAND,
+	OP_BITXOR,
+	OP_BITOR,
+
+	OP_INSTANCEOF,
+
+	OP_THROW,
+
+	OP_TRY,		/* -ADDR- /jump/ or -ADDR- <exception> */
+	OP_ENDTRY,
+
+	OP_CATCH,	/* push scope chain with exception variable */
+	OP_ENDCATCH,
+
+	OP_WITH,
+	OP_ENDWITH,
+
+	OP_DEBUGGER,
+	OP_JUMP,
+	OP_JTRUE,
+	OP_JFALSE,
+	OP_RETURN,
+}
+
+pub struct OPFunction {
+	pub name:		String,
+	pub script:		bool,
+	pub code:		Vec<u16>,
+	
+	pub num_tab:	Vec<f64>,
+	pub str_tab:	Vec<String>,
+	pub var_tab:	Vec<String>,
+	pub fun_tab:	Vec<OPFunction>,
+
+	pub file_name:	String,
+	pub begin_line:	u32,
+	pub last_line:	u32,	
+}
+

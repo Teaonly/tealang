@@ -1066,6 +1066,7 @@ mod test {
     #[test]
     fn test_ast() {
         let script = r#"
+        "use strict";
         for (;;) {
         }
         "#;
