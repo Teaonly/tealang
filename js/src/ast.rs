@@ -3,6 +3,19 @@ use crate::token::*;
 
 /* Local help function */
 impl AstNode {
+    pub fn null() -> Self {
+        AstNode {
+            ast_type:  AstType::AST_NULL,
+            src_line:  0,
+            num_value: None,
+            str_value: None,
+            a: None,
+            b: None,
+            c: None,
+            d: None
+        }
+    }
+
     fn new(ntype: AstType, line: u32) -> Self {
         AstNode {
             ast_type:  ntype,
@@ -173,9 +186,9 @@ fn ast_propassign(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         }
         if name.str_value.as_ref().unwrap() == "set" {
             let name = ast_propname(tkr)?;
-            tk_expect(tkr, TokenType::TK_PAREN_LEFT);
+            tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
             let arg = ast_identifier(tkr)?;
-            tk_expect(tkr, TokenType::TK_PAREN_RIGHT);
+            tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
             let body = ast_funbody(tkr)?;
             let exp = AstNode::new_a_b_c(AstType::EXP_PROP_GET, tkr.line(), name, arg, body);
             return Ok(exp);
