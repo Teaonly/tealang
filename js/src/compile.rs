@@ -1,14 +1,9 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::cell::RefMut;
-use std::ptr;
-
 use crate::common::*;
 use crate::ast::*;
 
 /* Local help function and struct */
 
-fn checkfutureword(name: &str) {
+fn checkfutureword(_name: &str) {
 
 }
 
@@ -44,6 +39,21 @@ impl<'a> Iterator for AstListIterator<'a> {
 }
 
 impl AstNode {
+
+    fn a(&self) -> &AstNode {
+        return self.a.as_ref().unwrap();
+    }
+    fn b(&self) -> &AstNode {
+        return self.b.as_ref().unwrap();
+    }
+    fn c(&self) -> &AstNode {
+        return self.c.as_ref().unwrap();
+    }
+    fn d(&self) -> &AstNode {
+        return self.d.as_ref().unwrap();
+    }
+
+
     fn is_null(&self) -> bool {
         if self.ast_type == AstType::AST_NULL {
             return true;
@@ -83,8 +93,6 @@ impl AstNode {
     fn iter<'a> (&'a self) -> AstListIterator<'a> {
         return AstListIterator::new(self);
     }
-
-
 }
 
 /* component stuff */
@@ -97,7 +105,7 @@ impl VMFunction {
             num_tab:    Vec::new(),
             str_tab:    Vec::new(),
             var_tab:    Vec::new(),
-            fun_tab:    Vec::new(),            
+            func_tab:   Vec::new(),            
         }
     }
 
@@ -105,11 +113,23 @@ impl VMFunction {
         self.code.push(value);
     }
 
-    fn addlocal(&mut self, node: &AstNode) {        
+    fn emitop(&mut self, op: OpcodeType) {
+        self.code.push(op as u16);
+    }
+
+    fn addlocal(&mut self, node: &AstNode) -> u16 {        
         let name = node.str_value.as_ref().unwrap();
         checkfutureword(name);
         
         self.var_tab.push(name.clone());
+
+        let id = self.var_tab.len() as u16;
+        return id;
+    }
+
+    fn addfunc(&mut self, func: VMFunction) -> u16 {        
+        self.func_tab.push(Box::new(func));
+        return self.func_tab.len() as u16;
     }
 
     fn parsing_vardec(&mut self, node: &AstNode) {
@@ -126,29 +146,47 @@ impl VMFunction {
         }
 
         if node.ast_type == AstType::EXP_VAR {
-            self.addlocal(node);
+            self.addlocal(node);            
         }
 
         if node.a.is_some() {
-            self.parsing_vardec(node.a.as_ref().unwrap());
+            self.parsing_vardec(node.a());
         }        
         if node.b.is_some() {
-            self.parsing_vardec(node.b.as_ref().unwrap());
+            self.parsing_vardec(node.b());
         }
         
         if node.c.is_some() {
-            self.parsing_vardec(node.c.as_ref().unwrap());
+            self.parsing_vardec(node.c());
         }
         
         if node.d.is_some() {
-            self.parsing_vardec(node.d.as_ref().unwrap());
+            self.parsing_vardec(node.d());
+        }
+    }
+
+    fn parsing_fundec(&mut self, lst: &AstNode) {
+        if lst.is_list() {
+            let it = lst.iter();
+            for n in it {
+                if n.ast_type == AstType::AST_FUNDEC {
+                    let newfunc = compile_func( n.a(), n.b(), n.c(), false).unwrap();                    
+                    let fid = self.addfunc(newfunc);
+                    self.emitop(OpcodeType::OP_CLOSURE);
+                    self.emit(fid);
+                    
+                    let vid = self.addlocal( n.a() );
+                    self.emitop(OpcodeType::OP_SETLOCAL);
+                    self.emit(vid);
+                    self.emitop(OpcodeType::OP_POP);            
+                }
+            }
+            return;
         }
     }
 }
 
-
-
-fn compile_func(name: &AstNode, params: &AstNode, body: &AstNode, script: bool) -> Result<VMFunction, String> {
+fn compile_func(_name: &AstNode, params: &AstNode, body: &AstNode, script: bool) -> Result<VMFunction, String> {
     let mut f = VMFunction::new(script);
 
     // parsing params
@@ -169,7 +207,7 @@ fn compile_func(name: &AstNode, params: &AstNode, body: &AstNode, script: bool) 
 }
 
 pub fn build_function_from_code(script: &str) -> Result<VMFunction, String> {
-    let ast = build_ast_from_script("<script>", script).unwrap();
+    let ast = build_ast_from_script(script).unwrap();
 
     let null = AstNode::null();
     let func = compile_func(&null, &null, &ast, false)?;

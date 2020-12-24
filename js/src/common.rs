@@ -350,12 +350,6 @@ pub enum OpcodeType {
 	OP_LAST,
 }
 
-impl OpcodeType {
-	pub fn u16(&self) -> u16 {
-		return *self as u16;
-	}
-}
-
 impl TryFrom<u16> for OpcodeType {
     type Error = ();
 
@@ -460,6 +454,6 @@ pub struct VMFunction {
 	pub num_tab:	Vec<f64>,
 	pub str_tab:	Vec<String>,
 	pub var_tab:	Vec<String>,
-	pub fun_tab:	Vec<VMFunction>,
+	pub func_tab:	Vec<Box<VMFunction>>,
 }
 

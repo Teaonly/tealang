@@ -1049,8 +1049,8 @@ fn ast_element(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     return ast_statement(tkr);
 }
 
-pub fn build_ast_from_script(filename: &str, script: &str) -> Result<AstNode, String> {
-    let mut tkr = Tokenlizer::new(filename, script);
+pub fn build_ast_from_script(script: &str) -> Result<AstNode, String> {
+    let mut tkr = Tokenlizer::new(script);
 
     if tk_accept(&mut tkr, TokenType::TK_EOF)? {
         let empty = AstNode::new( AstType::AST_NULL, 0);
@@ -1080,7 +1080,7 @@ mod test {
         }
         "#;
 
-        let result = build_ast_from_script("<script>", script).unwrap();
+        let result = build_ast_from_script(script).unwrap();
         println!("{:?}", result);
     }
 

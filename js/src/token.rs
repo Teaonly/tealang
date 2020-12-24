@@ -563,7 +563,6 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
 }
 
 pub struct Tokenlizer<'a> {
-    filename: String,
     script : &'a str,
     cursor : usize,
     line : u32,
@@ -571,18 +570,13 @@ pub struct Tokenlizer<'a> {
 }
 
 impl<'a> Tokenlizer<'a> {
-    pub fn new(filename: &str, script:&'a str) -> Self {
+    pub fn new(script:&'a str) -> Self {
         return Tokenlizer {
-            filename: String::from(filename),
             script: script,
             cursor: 0,
             line: 1,
             forward_: LinkedList::new()
         }
-    }
-
-    pub fn filename(&self) -> &str {
-        return &self.filename;
     }
 
     pub fn next(&mut self) -> Result<Token, String> {
@@ -628,7 +622,7 @@ impl<'a> Tokenlizer<'a> {
         assert!(token.tk_type == TokenType::TK_IDENTIFIER);
 
         let src_line = token.src_line;
-        let mut ident = token.tk_value.unwrap();
+        let ident = token.tk_value.unwrap();
 
         let ids : Vec<String> = ident.replace(".", " . ").split_whitespace().map(|x| x.to_string()).collect();
         for id in ids {
@@ -726,7 +720,7 @@ mod tests {
             }
         "#;
 
-        let mut tokens = Tokenlizer::new("[script]", script);
+        let mut tokens = Tokenlizer::new(script);
         loop {
             let token = tokens.next();
             if token.is_ok() {
