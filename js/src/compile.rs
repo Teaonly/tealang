@@ -3,12 +3,11 @@ use crate::ast::*;
 
 /* Local help function and struct */
 
-fn checkfutureword(_name: &str) {
+fn checkfutureword(name: &str) {
 
 }
 
 struct AstListIterator<'a> {
-    begin:  &'a AstNode,
     cursor: Option<&'a AstNode>
 }
 
@@ -16,7 +15,6 @@ impl<'a> AstListIterator<'a> {
     pub fn new(lst: &'a AstNode ) -> Self {
         assert!(lst.ast_type == AstType::AST_LIST);
         return AstListIterator {
-            begin: lst,
             cursor: Some(lst),
         }
     }
@@ -127,6 +125,18 @@ impl VMFunction {
         return id;
     }
 
+    fn findlocal(&self, node: &AstNode) -> u16 {
+        let name = node.str_value.as_ref().unwrap();
+        checkfutureword(name);
+
+        for i in 0..self.var_tab.len() {
+            if self.var_tab[i].eq(name) {
+                return (i+1) as u16;
+            }
+        }
+        return 0;
+    }
+
     fn addfunc(&mut self, func: VMFunction) -> u16 {        
         self.func_tab.push(Box::new(func));
         return self.func_tab.len() as u16;
@@ -178,7 +188,7 @@ impl VMFunction {
                     let vid = self.addlocal( n.a() );
                     self.emitop(OpcodeType::OP_SETLOCAL);
                     self.emit(vid);
-                    self.emitop(OpcodeType::OP_POP);            
+                    self.emitop(OpcodeType::OP_POP);
                 }
             }
             return;
@@ -186,22 +196,44 @@ impl VMFunction {
     }
 }
 
-fn compile_func(_name: &AstNode, params: &AstNode, body: &AstNode, script: bool) -> Result<VMFunction, String> {
+fn compile_func(name: &AstNode, params: &AstNode, body: &AstNode, script: bool) -> Result<VMFunction, String> {
     let mut f = VMFunction::new(script);
 
     // parsing params
     if !params.is_null() {       
+        f.numparams = params.len();
         let it = params.iter();
         for node in it {
-            f.numparams = f.numparams + 1;
             f.addlocal(node);
         }
     }
 
     if !body.is_null() {
 		f.parsing_vardec(body);
-		//cfundecs(J, F, body);
-	}
+		f.parsing_fundec(body);
+    }
+    
+    if !name.is_null() {
+
+        let mut localid = f.findlocal( name );        
+        if localid == 0 {
+            f.emitop(OpcodeType::OP_CURRENT);
+            f.emitop(OpcodeType::OP_SETLOCAL);
+            localid = f.addlocal(name);
+            f.emit(localid);
+            f.emitop(OpcodeType::OP_POP);
+        }
+    }
+
+    if f.script {
+        f.emitop(OpcodeType::OP_UNDEF);
+        // compile_stmlist(f, body)
+        f.emitop(OpcodeType::OP_RETURN);
+    } else {
+        // compile_stmlist(f, body)        
+        f.emitop(OpcodeType::OP_UNDEF);
+        f.emitop(OpcodeType::OP_RETURN);
+    }
 
     return Ok(f);
 }
