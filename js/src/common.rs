@@ -111,7 +111,7 @@ pub struct Token {
 
 /* ast stuff */
 #[allow(non_camel_case_types)]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AstType {
 	AST_NULL = -1,
 	
@@ -453,16 +453,13 @@ impl TryFrom<u16> for OpcodeType {
 
 #[allow(non_camel_case_types)]
 pub struct VMFunction {
-	pub name:		String,
 	pub script:		bool,
-	pub arguments:	u32,
+	pub numparams:	usize,
 	pub code:		Vec<u16>,
 	
 	pub num_tab:	Vec<f64>,
 	pub str_tab:	Vec<String>,
 	pub var_tab:	Vec<String>,
 	pub fun_tab:	Vec<VMFunction>,
-
-	pub file_name:	String,
 }
 
