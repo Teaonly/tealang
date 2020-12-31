@@ -446,7 +446,15 @@ impl TryFrom<u16> for OpcodeType {
 }
 
 #[allow(non_camel_case_types)]
+pub enum VMJumpType {
+	BreakJump(usize),
+	ContinueJump(usize),
+}
+
+
+#[allow(non_camel_case_types)]
 pub struct VMFunction {
+
 	pub script:		bool,
 	pub numparams:	usize,
 	pub code:		Vec<u16>,
@@ -455,5 +463,7 @@ pub struct VMFunction {
 	pub str_tab:	Vec<String>,
 	pub var_tab:	Vec<String>,
 	pub func_tab:	Vec<Box<VMFunction>>,
+
+	pub jumps:		Vec<Vec<VMJumpType>>,
 }
 
