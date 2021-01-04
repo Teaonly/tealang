@@ -139,7 +139,7 @@ impl VMFunction {
         return self.code.len();
     }
 
-    fn labelto(&mut self, addr: usize) {
+    fn label_current_to(&mut self, addr: usize) {
         self.labelto_(addr, self.current());
     }
 
@@ -278,14 +278,14 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
                 let then = f.emitjump(OpcodeType::OP_JTRUE);
                 compile_stm(f, stm.c.as_ref().unwrap());
                 let end = f.emitjump(OpcodeType::OP_JUMP);
-                f.labelto(then);
+                f.label_current_to(then);
                 compile_stm(f, stm.b.as_ref().unwrap());
-                f.labelto(end);
+                f.label_current_to(end);
             } else {
                 compile_exp(f, stm.a.as_ref().unwrap());
                 let end = f.emitjump(OpcodeType::OP_JFALSE);
                 compile_stm(f, stm.b.as_ref().unwrap());
-                f.labelto(end);
+                f.label_current_to(end);
             }
         },
         AstType::STM_DO => {
@@ -299,20 +299,22 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             
             f.fill_jumps(f.current(), cont);
             f.delete_jump();
-        }   
+        },
 
-        /*
-        case STM_DO:
-		loop = here(J, F);
-		cstm(J, F, stm->a);
-		cont = here(J, F);
-		cexp(J, F, stm->b);
-		emitline(J, F, stm);
-		emitjumpto(J, F, OP_JTRUE, loop);
-		labeljumps(J, F, stm->jumps, here(J,F), cont);
-        break;
-        */
-        
+        AstType::STM_WHILE => {
+            f.new_jump();
+
+            let lop = f.current();
+            compile_exp(f, stm.a.as_ref().unwrap());
+            let end = f.emitjump(OpcodeType::OP_JFALSE);
+            compile_stm(f, stm.b.as_ref().unwrap());
+            f.emitjumpto(OpcodeType::OP_JUMP, lop);
+            f.label_current_to(end);
+
+
+            f.fill_jumps(f.current(), lop);
+            f.delete_jump();
+        },        
         _ => {}
     }
 }
