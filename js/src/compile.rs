@@ -134,7 +134,6 @@ impl VMFunction {
         self.code.push(((dst >> 16) & 0xFFFF) as u16);
     }
 
-
     fn current(& self) -> usize {
         return self.code.len();
     }
@@ -314,7 +313,50 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
 
             f.fill_jumps(f.current(), lop);
             f.delete_jump();
-        },        
+        },
+
+        AstType::STM_FOR |  AstType::STM_FOR_VAR => {
+            f.new_jump();
+            // TODO
+
+           
+            f.delete_jump();
+        },
+        
+
+        /*
+        case STM_FOR:
+	case STM_FOR_VAR:
+		if (stm->type == STM_FOR_VAR) {
+			cvarinit(J, F, stm->a);
+		} else {
+			if (stm->a) {
+				cexp(J, F, stm->a);
+				emit(J, F, OP_POP);
+			}
+		}
+		loop = here(J, F);
+		if (stm->b) {
+			cexp(J, F, stm->b);
+			emitline(J, F, stm);
+			end = emitjump(J, F, OP_JFALSE);
+		} else {
+			end = 0;
+		}
+		cstm(J, F, stm->d);
+		cont = here(J, F);
+		if (stm->c) {
+			cexp(J, F, stm->c);
+			emit(J, F, OP_POP);
+		}
+		emitline(J, F, stm);
+		emitjumpto(J, F, OP_JUMP, loop);
+		if (end)
+			label(J, F, end);
+		labeljumps(J, F, stm->jumps, here(J,F), cont);
+        break;
+        */
+
         _ => {}
     }
 }
