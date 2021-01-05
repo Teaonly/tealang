@@ -51,7 +51,6 @@ impl AstNode {
         return self.d.as_ref().unwrap();
     }
 
-
     fn is_null(&self) -> bool {
         if self.ast_type == AstType::AST_NULL {
             return true;
@@ -255,6 +254,10 @@ impl VMFunction {
     }
 }
 
+fn compile_varinit(f: &mut VMFunction, exp: &AstNode) {
+
+}
+
 fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
 
 }
@@ -310,52 +313,51 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             f.emitjumpto(OpcodeType::OP_JUMP, lop);
             f.label_current_to(end);
 
-
             f.fill_jumps(f.current(), lop);
             f.delete_jump();
         },
 
         AstType::STM_FOR |  AstType::STM_FOR_VAR => {
             f.new_jump();
-            // TODO
 
-           
+            if stm.ast_type == AstType::STM_FOR_VAR {
+                compile_varinit(f, stm.a.as_ref().unwrap());
+            } else {       
+                let a = stm.a.as_ref().unwrap();
+                if ! a.is_null() {
+                    compile_exp(f, a);
+                    f.emitop(OpcodeType::OP_POP);
+                }
+            }
+
+            let lop = f.current();
+            let b = stm.b.as_ref().unwrap();
+            let end = if ! b.is_null() {
+                compile_exp(f, b);
+                f.emitjump(OpcodeType::OP_JFALSE)
+            } else {
+                0
+            };
+
+            compile_stm(f, stm.d.as_ref().unwrap());
+
+            let cont = f.current();
+            let c = stm.c.as_ref().unwrap();
+            if !c.is_null() {
+                compile_exp(f, c);
+                f.emitop(OpcodeType::OP_POP);
+            }
+            f.emitjumpto(OpcodeType::OP_JUMP, lop);
+
+            if end > 0 {
+                f.label_current_to(end);
+            } 
+
+            f.fill_jumps(f.current(), cont);
             f.delete_jump();
         },
         
-
-        /*
-        case STM_FOR:
-	case STM_FOR_VAR:
-		if (stm->type == STM_FOR_VAR) {
-			cvarinit(J, F, stm->a);
-		} else {
-			if (stm->a) {
-				cexp(J, F, stm->a);
-				emit(J, F, OP_POP);
-			}
-		}
-		loop = here(J, F);
-		if (stm->b) {
-			cexp(J, F, stm->b);
-			emitline(J, F, stm);
-			end = emitjump(J, F, OP_JFALSE);
-		} else {
-			end = 0;
-		}
-		cstm(J, F, stm->d);
-		cont = here(J, F);
-		if (stm->c) {
-			cexp(J, F, stm->c);
-			emit(J, F, OP_POP);
-		}
-		emitline(J, F, stm);
-		emitjumpto(J, F, OP_JUMP, loop);
-		if (end)
-			label(J, F, end);
-		labeljumps(J, F, stm->jumps, here(J,F), cont);
-        break;
-        */
+        
 
         _ => {}
     }
