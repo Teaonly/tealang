@@ -65,6 +65,16 @@ impl AstNode {
         return false;
     }
 
+    fn is_loop(&self) -> bool {        
+        let at = self.ast_type;
+        if at == AstType::STM_DO || at == AstType::STM_WHILE || 
+           at == AstType::STM_FOR || at == AstType::STM_FOR_VAR || 
+           at == AstType::STM_FOR_IN ||  at == AstType::STM_FOR_IN_VAR {
+            return true;
+        }
+        return false;
+    }
+
     fn is_func(&self) -> bool {
         let at = self.ast_type;
         if at == AstType::AST_FUNDEC || at == AstType::EXP_FUN || at == AstType::EXP_PROP_GET || at == AstType::EXP_PROP_SET {
@@ -254,6 +264,14 @@ impl VMFunction {
     }
 }
 
+fn compile_assignforin(f: &mut VMFunction, exp: &AstNode) {
+
+}
+
+fn compile_switch(f: &mut VMFunction, exp: &AstNode) {
+
+}
+
 fn compile_varinit(f: &mut VMFunction, exp: &AstNode) {
 
 }
@@ -357,8 +375,57 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             f.delete_jump();
         },
         
-        
+        AstType::STM_FOR_IN |  AstType::STM_FOR_IN_VAR => {
+            f.new_jump();
 
+            compile_exp(f, stm.b.as_ref().unwrap());
+            f.emitop(OpcodeType::OP_ITERATOR);
+            let lop = f.current();
+            
+            f.emitop(OpcodeType::OP_NEXTITER);
+            let end = f.emitjump(OpcodeType::OP_JFALSE);
+            compile_assignforin(f, stm);
+            if f.script {
+                f.emitop(OpcodeType::OP_ROT2);
+                compile_stm(f, stm.c.as_ref().unwrap());
+                f.emitop(OpcodeType::OP_ROT2);                
+            } else {
+                compile_stm(f, stm.c.as_ref().unwrap());                
+            }
+            f.emitjumpto(OpcodeType::OP_JUMP, lop);
+            f.label_current_to(end);
+
+            f.fill_jumps(f.current(), lop);
+            f.delete_jump();
+        },
+        
+        AstType::STM_SWITCH => {
+            f.new_jump();
+            compile_switch(f, stm);
+            f.fill_jumps(f.current(), f.current());
+            f.delete_jump();
+        },
+
+        AstType::STM_LABEL => {
+            f.new_jump();
+           
+            compile_stm(f, stm.b.as_ref().unwrap());
+            /* skip consecutive labels */
+            let mut node = stm;
+            while node.ast_type == AstType::STM_LABEL {
+                node = stm.b.as_ref().unwrap();
+            }
+
+            /* loops and switches have already been labelled */
+            if !node.is_loop() && node.ast_type != AstType::STM_SWITCH {
+                f.fill_jumps(f.current(), f.current());
+            }
+
+            f.delete_jump();
+        },
+
+
+        
         _ => {}
     }
 }
