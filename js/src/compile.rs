@@ -159,9 +159,9 @@ impl VMFunction {
         self.code[addr+1] = ((target_addr >> 16) & 0xFFFF) as u16;
     }
 
-    fn new_scope(&mut self, lop: VMJumpScope) {
+    fn new_scope(&mut self, scope: VMJumpScope) {
         let jump = VMJumpTable{
-            lop: lop,
+            scope: scope,
             lst: Vec::new(),
         };
         self.jumps.push(jump);
@@ -181,6 +181,18 @@ impl VMFunction {
                 },
             }
         }
+    }
+
+    fn targetBreakScope(&self) -> usize {
+        let mut brk_index = 0;
+        for i in (self.jumps.len() .. 0).rev() {
+            // TODO
+        }
+        return brk_index;
+    }
+
+    fn targetScopeByName(&self, name: &str) -> usize {
+        return 0;
     }
 
     fn delete_scope(&mut self) {
@@ -431,38 +443,16 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
 
         AstType::STM_BREAK => {
             let a = stm.a.as_ref().unwrap();
-            let mut find_target: i32 = -1;
+            let mut break_addr: usize = 0;
 
             if !a.is_null() {
                 let break_target = a.str_value.as_ref().unwrap();
                 checkfutureword(break_target);
-                           
-                for i in (0 .. f.jumps.len()).rev() {
-                    match &f.jumps[i].lop {
-                        VMJumpScope::LabelSection(label) => {
-                            if label.eq(break_target) {
-                                find_target = i as i32;
-                                break;
-                            }                            
-                        }
-                        _ => {}
-                    }
-                }
+                break_addr = f.targetScopeByName(break_target);
             } else {
-                if f.jumps.len() > 0 {
-                    find_target = (f.jumps.len() - 1) as i32;
-                    let jmp = f.jumps.last().unwrap();
-                    match &jmp.lop {
-                        VMJumpScope::LabelSection(label) => {
-                            find_target = -1;                        
-                        }
-                        _ => {}
-                    }
-                }
+                break_addr = f.targetBreakScope();
             }
-            if find_target < 0 {
-                panic!("Can't find break target: {:?}", stm);
-            }
+            // TODO
 
         },
 

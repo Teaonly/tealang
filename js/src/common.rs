@@ -467,7 +467,7 @@ pub enum VMJumpScope {
 
 #[allow(non_camel_case_types)]
 pub struct VMJumpTable {	
-	pub lop:	VMJumpScope,
+	pub scope:	VMJumpScope,
 	pub lst: 	Vec<VMJumpType>
 }
 
