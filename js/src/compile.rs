@@ -159,13 +159,17 @@ impl VMFunction {
         self.code[addr+1] = ((target_addr >> 16) & 0xFFFF) as u16;
     }
 
-    fn new_jump(&mut self) {
-        self.jumps.push(Vec::new());
+    fn new_jump(&mut self, lop: VMJumpLoop) {
+        let jump = VMJumpTable{
+            lop: lop,
+            lst: Vec::new(),
+        };
+        self.jumps.push(jump);
     }
 
     fn fill_jumps(&mut self, break_addr: usize, continue_addr: usize) {
         let jmp_lst = self.jumps.last().unwrap();
-        for j in jmp_lst {
+        for j in &jmp_lst.lst {
             match j {
                 VMJumpType::BreakJump(pos) => {
                     self.code[*pos] = (break_addr & 0xFFFF) as u16;
@@ -309,8 +313,8 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             }
         },
         AstType::STM_DO => {
-            f.new_jump();
-
+            f.new_jump(VMJumpLoop::DoLoop);
+    
             let lop = f.current();
             compile_stm(f, stm.a.as_ref().unwrap());
             let cont = f.current();
@@ -322,7 +326,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
         },
 
         AstType::STM_WHILE => {
-            f.new_jump();
+            f.new_jump(VMJumpLoop::WhileLoop);
 
             let lop = f.current();
             compile_exp(f, stm.a.as_ref().unwrap());
@@ -336,7 +340,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
         },
 
         AstType::STM_FOR |  AstType::STM_FOR_VAR => {
-            f.new_jump();
+            f.new_jump(VMJumpLoop::ForLoop);
 
             if stm.ast_type == AstType::STM_FOR_VAR {
                 compile_varinit(f, stm.a.as_ref().unwrap());
@@ -376,7 +380,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
         },
         
         AstType::STM_FOR_IN |  AstType::STM_FOR_IN_VAR => {
-            f.new_jump();
+            f.new_jump(VMJumpLoop::ForInLoop);
 
             compile_exp(f, stm.b.as_ref().unwrap());
             f.emitop(OpcodeType::OP_ITERATOR);
@@ -400,14 +404,15 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
         },
         
         AstType::STM_SWITCH => {
-            f.new_jump();
+            f.new_jump(VMJumpLoop::SwitchLoop);
             compile_switch(f, stm);
             f.fill_jumps(f.current(), f.current());
             f.delete_jump();
         },
 
         AstType::STM_LABEL => {
-            f.new_jump();
+            let a = stm.a.as_ref().unwrap();
+            f.new_jump(VMJumpLoop::LabelLoop(a.str_value.as_ref().unwrap().to_string()));
            
             compile_stm(f, stm.b.as_ref().unwrap());
             /* skip consecutive labels */
@@ -424,6 +429,23 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             f.delete_jump();
         },
 
+        /*
+        case STM_BREAK:
+		if (stm->a) {
+			checkfutureword(J, F, stm->a);
+			target = breaktarget(J, F, stm->parent, stm->a->string);
+			if (!target)
+				jsC_error(J, stm, "break label '%s' not found", stm->a->string);
+		} else {
+			target = breaktarget(J, F, stm->parent, NULL);
+			if (!target)
+				jsC_error(J, stm, "unlabelled break must be inside loop or switch");
+		}
+		cexit(J, F, STM_BREAK, stm, target);
+		emitline(J, F, stm);
+		addjump(J, F, STM_BREAK, target, emitjump(J, F, OP_JUMP));
+        break;
+        */
 
         
         _ => {}

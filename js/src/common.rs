@@ -451,6 +451,22 @@ pub enum VMJumpType {
 	ContinueJump(usize),
 }
 
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone)]
+pub enum VMJumpLoop {
+	ForLoop,
+	ForInLoop,
+	DoLoop,
+	WhileLoop,
+	SwitchLoop,
+	LabelLoop(String),
+}
+
+#[allow(non_camel_case_types)]
+pub struct VMJumpTable {	
+	pub lop:	VMJumpLoop,
+	pub lst: 	Vec<VMJumpType>
+}
 
 #[allow(non_camel_case_types)]
 pub struct VMFunction {
@@ -464,6 +480,6 @@ pub struct VMFunction {
 	pub var_tab:	Vec<String>,
 	pub func_tab:	Vec<Box<VMFunction>>,
 
-	pub jumps:		Vec<Vec<VMJumpType>>,
+	pub jumps:		Vec<VMJumpTable>,
 }
 
