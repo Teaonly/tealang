@@ -159,7 +159,7 @@ impl VMFunction {
         self.code[addr+1] = ((target_addr >> 16) & 0xFFFF) as u16;
     }
 
-    fn new_jump(&mut self, lop: VMJumpLoop) {
+    fn new_scope(&mut self, lop: VMJumpScope) {
         let jump = VMJumpTable{
             lop: lop,
             lst: Vec::new(),
@@ -183,7 +183,7 @@ impl VMFunction {
         }
     }
 
-    fn delete_jump(&mut self) {
+    fn delete_scope(&mut self) {
         self.jumps.pop();
     }
 
@@ -313,7 +313,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             }
         },
         AstType::STM_DO => {
-            f.new_jump(VMJumpLoop::DoLoop);
+            f.new_scope(VMJumpScope::DoLoop);
     
             let lop = f.current();
             compile_stm(f, stm.a.as_ref().unwrap());
@@ -322,11 +322,11 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             f.emitjumpto(OpcodeType::OP_JTRUE, lop);
             
             f.fill_jumps(f.current(), cont);
-            f.delete_jump();
+            f.delete_scope();
         },
 
         AstType::STM_WHILE => {
-            f.new_jump(VMJumpLoop::WhileLoop);
+            f.new_scope(VMJumpScope::WhileLoop);
 
             let lop = f.current();
             compile_exp(f, stm.a.as_ref().unwrap());
@@ -336,11 +336,11 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             f.label_current_to(end);
 
             f.fill_jumps(f.current(), lop);
-            f.delete_jump();
+            f.delete_scope();
         },
 
         AstType::STM_FOR |  AstType::STM_FOR_VAR => {
-            f.new_jump(VMJumpLoop::ForLoop);
+            f.new_scope(VMJumpScope::ForLoop);
 
             if stm.ast_type == AstType::STM_FOR_VAR {
                 compile_varinit(f, stm.a.as_ref().unwrap());
@@ -376,11 +376,11 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             } 
 
             f.fill_jumps(f.current(), cont);
-            f.delete_jump();
+            f.delete_scope();
         },
         
         AstType::STM_FOR_IN |  AstType::STM_FOR_IN_VAR => {
-            f.new_jump(VMJumpLoop::ForInLoop);
+            f.new_scope(VMJumpScope::ForInLoop);
 
             compile_exp(f, stm.b.as_ref().unwrap());
             f.emitop(OpcodeType::OP_ITERATOR);
@@ -400,19 +400,19 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             f.label_current_to(end);
 
             f.fill_jumps(f.current(), lop);
-            f.delete_jump();
+            f.delete_scope();
         },
         
         AstType::STM_SWITCH => {
-            f.new_jump(VMJumpLoop::SwitchLoop);
+            f.new_scope(VMJumpScope::SwitchScope);
             compile_switch(f, stm);
             f.fill_jumps(f.current(), f.current());
-            f.delete_jump();
+            f.delete_scope();
         },
 
         AstType::STM_LABEL => {
             let a = stm.a.as_ref().unwrap();
-            f.new_jump(VMJumpLoop::LabelLoop(a.str_value.as_ref().unwrap().to_string()));
+            f.new_scope(VMJumpScope::LabelSection(a.str_value.as_ref().unwrap().to_string()));
            
             compile_stm(f, stm.b.as_ref().unwrap());
             /* skip consecutive labels */
@@ -426,7 +426,44 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
                 f.fill_jumps(f.current(), f.current());
             }
 
-            f.delete_jump();
+            f.delete_scope();
+        },
+
+        AstType::STM_BREAK => {
+            let a = stm.a.as_ref().unwrap();
+            let mut find_target: i32 = -1;
+
+            if !a.is_null() {
+                let break_target = a.str_value.as_ref().unwrap();
+                checkfutureword(break_target);
+                           
+                for i in (0 .. f.jumps.len()).rev() {
+                    match &f.jumps[i].lop {
+                        VMJumpScope::LabelSection(label) => {
+                            if label.eq(break_target) {
+                                find_target = i as i32;
+                                break;
+                            }                            
+                        }
+                        _ => {}
+                    }
+                }
+            } else {
+                if f.jumps.len() > 0 {
+                    find_target = (f.jumps.len() - 1) as i32;
+                    let jmp = f.jumps.last().unwrap();
+                    match &jmp.lop {
+                        VMJumpScope::LabelSection(label) => {
+                            find_target = -1;                        
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            if find_target < 0 {
+                panic!("Can't find break target: {:?}", stm);
+            }
+
         },
 
         /*

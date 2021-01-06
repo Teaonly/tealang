@@ -453,18 +453,21 @@ pub enum VMJumpType {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone)]
-pub enum VMJumpLoop {
+pub enum VMJumpScope {
+	TryScope,
+	CatchScope,
+	WithScope,
 	ForLoop,
 	ForInLoop,
 	DoLoop,
 	WhileLoop,
-	SwitchLoop,
-	LabelLoop(String),
+	SwitchScope,
+	LabelSection(String),
 }
 
 #[allow(non_camel_case_types)]
 pub struct VMJumpTable {	
-	pub lop:	VMJumpLoop,
+	pub lop:	VMJumpScope,
 	pub lst: 	Vec<VMJumpType>
 }
 
