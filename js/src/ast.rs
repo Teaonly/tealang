@@ -921,7 +921,8 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
             return Ok(stm);
         }
         ast_semicolon(tkr)?;
-        let stm = AstNode::new(AstType::STM_RETURN, tkr.line());
+        let a = AstNode::new(AstType::AST_NULL, tkr.line());
+        let stm = AstNode::new_a(AstType::STM_RETURN, tkr.line(), a);
         return Ok(stm);
 
     } else if tk_accept(tkr, TokenType::TK_WITH)? {
@@ -964,16 +965,15 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
             if tk_accept(tkr, TokenType::TK_FINALLY)? {
                 let d = ast_block(tkr)?;
-                let stm = AstNode::new_a_b_c_d(AstType::STM_THROW, tkr.line(), a, b, c, d);
+                let stm = AstNode::new_a_b_c_d(AstType::STM_TRY, tkr.line(), a, b, c, d);
                 return Ok(stm);
             }
-
-            let stm = AstNode::new_a_b_c(AstType::STM_THROW, tkr.line(), a, b, c);
+            let stm = AstNode::new_a_b_c(AstType::STM_TRY, tkr.line(), a, b, c);
             return Ok(stm);
         }
         if tk_accept(tkr, TokenType::TK_FINALLY)? {
-            let a = ast_block(tkr)?;
-            let stm = AstNode::new_a(AstType::STM_THROW, tkr.line(), a);
+            let b = ast_block(tkr)?;
+            let stm = AstNode::new_a_b(AstType::STM_TRY, tkr.line(), a, b);
             return Ok(stm);
         }
         return Err(format!("unexpected token in try: {:?} (expected 'catch' or 'finally')", tkr.forward()? ));

@@ -51,6 +51,22 @@ impl AstNode {
         return self.d.as_ref().unwrap();
     }
 
+    fn has_a(&self) -> bool {
+        self.a.is_some()
+    }
+
+    fn has_b(&self) -> bool {
+        self.b.is_some()
+    }
+    
+    fn has_c(&self) -> bool {
+        self.c.is_some()
+    }
+    
+    fn has_d(&self) -> bool {
+        self.d.is_some()
+    }
+
     fn is_null(&self) -> bool {
         if self.ast_type == AstType::AST_NULL {
             return true;
@@ -167,6 +183,11 @@ impl VMFunction {
         self.jumps.push(jump);
     }
 
+    fn add_jump(&mut self, scope: usize, jmp: VMJumpType) {
+        let jmp_lst = &mut self.jumps[scope].lst;
+        jmp_lst.push(jmp);
+    }
+
     fn fill_jumps(&mut self, break_addr: usize, continue_addr: usize) {
         let jmp_lst = self.jumps.last().unwrap();
         for j in &jmp_lst.lst {
@@ -183,16 +204,51 @@ impl VMFunction {
         }
     }
 
-    fn targetBreakScope(&self) -> usize {
+    #[allow(non_camel_case_types)]
+    fn targetScopeByName(&self, name: &str) -> usize {
         let mut brk_index = 0;
         for i in (self.jumps.len() .. 0).rev() {
-            // TODO
+            match &self.jumps[i].scope {
+                VMJumpScope::LabelSection(label) => {
+                    if label.eq(name) {
+                        brk_index = i + 1;
+                        return brk_index;
+                    }
+                },
+                _ => {}
+            }
         }
         return brk_index;
     }
 
-    fn targetScopeByName(&self, name: &str) -> usize {
-        return 0;
+    #[allow(non_camel_case_types)]
+    fn targetBreakScope(&self) -> usize {
+        let mut brk_index = 0;
+        for i in (self.jumps.len() .. 0).rev() {
+            match &self.jumps[i].scope {
+                VMJumpScope::ForLoop | VMJumpScope::ForInLoop | VMJumpScope::DoLoop | VMJumpScope::WhileLoop | VMJumpScope::SwitchScope => {
+                    brk_index = i + 1;
+                    break;
+                },
+                _ => {}
+            }
+        }
+        return brk_index;
+    }
+
+    #[allow(non_camel_case_types)]
+    fn targetContinueScope(&self) -> usize {
+        let mut brk_index = 0;
+        for i in (self.jumps.len() .. 0).rev() {
+            match &self.jumps[i].scope {
+                VMJumpScope::ForLoop | VMJumpScope::ForInLoop | VMJumpScope::DoLoop | VMJumpScope::WhileLoop => {
+                    brk_index = i + 1;
+                    break;
+                },
+                _ => {}
+            }
+        }
+        return brk_index;
     }
 
     fn delete_scope(&mut self) {
@@ -280,19 +336,43 @@ impl VMFunction {
     }
 }
 
-fn compile_assignforin(f: &mut VMFunction, exp: &AstNode) {
+/* Expressions */
+fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
 
 }
+
+/* Emit code to rebalance stack and scopes during an abrupt exit */
+fn compile_exit(f: &mut VMFunction, scope_index: usize, jump_type: AstType) {
+
+}
+
+/* Try/catch/finally */
+
+fn compile_trycatchfinally(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode, d: &AstNode) {
+
+} 
+
+fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
+
+} 
+
+fn compile_finally(f: &mut VMFunction, a: &AstNode, b: &AstNode) {
+
+} 
+
+/* Switch */
 
 fn compile_switch(f: &mut VMFunction, exp: &AstNode) {
 
 }
 
-fn compile_varinit(f: &mut VMFunction, exp: &AstNode) {
+/* Statements */
 
+fn compile_varinit(f: &mut VMFunction, exp: &AstNode) {
+    
 }
 
-fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
+fn compile_assignforin(f: &mut VMFunction, exp: &AstNode) {
 
 }
 
@@ -341,9 +421,9 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             f.new_scope(VMJumpScope::WhileLoop);
 
             let lop = f.current();
-            compile_exp(f, stm.a.as_ref().unwrap());
+            compile_exp(f, stm.a());
             let end = f.emitjump(OpcodeType::OP_JFALSE);
-            compile_stm(f, stm.b.as_ref().unwrap());
+            compile_stm(f, stm.b());
             f.emitjumpto(OpcodeType::OP_JUMP, lop);
             f.label_current_to(end);
 
@@ -355,9 +435,9 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             f.new_scope(VMJumpScope::ForLoop);
 
             if stm.ast_type == AstType::STM_FOR_VAR {
-                compile_varinit(f, stm.a.as_ref().unwrap());
+                compile_varinit(f, stm.a());
             } else {       
-                let a = stm.a.as_ref().unwrap();
+                let a = stm.a();
                 if ! a.is_null() {
                     compile_exp(f, a);
                     f.emitop(OpcodeType::OP_POP);
@@ -365,7 +445,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             }
 
             let lop = f.current();
-            let b = stm.b.as_ref().unwrap();
+            let b = stm.b();
             let end = if ! b.is_null() {
                 compile_exp(f, b);
                 f.emitjump(OpcodeType::OP_JFALSE)
@@ -376,7 +456,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             compile_stm(f, stm.d.as_ref().unwrap());
 
             let cont = f.current();
-            let c = stm.c.as_ref().unwrap();
+            let c = stm.c();
             if !c.is_null() {
                 compile_exp(f, c);
                 f.emitop(OpcodeType::OP_POP);
@@ -394,7 +474,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
         AstType::STM_FOR_IN |  AstType::STM_FOR_IN_VAR => {
             f.new_scope(VMJumpScope::ForInLoop);
 
-            compile_exp(f, stm.b.as_ref().unwrap());
+            compile_exp(f, stm.b());
             f.emitop(OpcodeType::OP_ITERATOR);
             let lop = f.current();
             
@@ -442,40 +522,97 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
         },
 
         AstType::STM_BREAK => {
-            let a = stm.a.as_ref().unwrap();
-            let mut break_addr: usize = 0;
+            let a = stm.a();
+            let break_scope: usize;
 
             if !a.is_null() {
                 let break_target = a.str_value.as_ref().unwrap();
                 checkfutureword(break_target);
-                break_addr = f.targetScopeByName(break_target);
+                break_scope = f.targetScopeByName(break_target);
             } else {
-                break_addr = f.targetBreakScope();
+                break_scope = f.targetBreakScope();
             }
-            // TODO
+            if break_scope == 0 {
+                panic!("Can't find break target!");
+            }
+            
+            compile_exit(f, break_scope, AstType::STM_BREAK);
+            let from = f.emitjump(OpcodeType::OP_JUMP);
+            let jump = VMJumpType::BreakJump(from);
+            f.add_jump(break_scope, jump);
+        },
+        
+        AstType::STM_CONTINUE => {
+            let a = stm.a();
+            let continue_scope: usize;
 
+            if !a.is_null() {
+                let continue_target = a.str_value.as_ref().unwrap();
+                checkfutureword(continue_target);
+                continue_scope = f.targetScopeByName(continue_target);
+            } else {
+                continue_scope = f.targetContinueScope();
+            }
+            if continue_scope == 0 {
+                panic!("Can't find continue target!");                
+            }
+
+            compile_exit(f, continue_scope, AstType::STM_CONTINUE);
+            let from = f.emitjump(OpcodeType::OP_JUMP);
+            let jump = VMJumpType::ContinueJump(from);
+            f.add_jump(continue_scope, jump);
+        },
+        
+        AstType::STM_RETURN => {
+            if f.script {
+                panic!("Find return in script code!");
+            }
+
+            let a = stm.a.as_ref().unwrap();
+            if a.is_null() {
+                f.emitop(OpcodeType::OP_UNDEF);
+            } else {
+                compile_exp(f, a);
+            }
+            
+            compile_exit(f, 0, AstType::STM_RETURN);
+            f.emitop(OpcodeType::OP_RETURN);
         },
 
-        /*
-        case STM_BREAK:
-		if (stm->a) {
-			checkfutureword(J, F, stm->a);
-			target = breaktarget(J, F, stm->parent, stm->a->string);
-			if (!target)
-				jsC_error(J, stm, "break label '%s' not found", stm->a->string);
-		} else {
-			target = breaktarget(J, F, stm->parent, NULL);
-			if (!target)
-				jsC_error(J, stm, "unlabelled break must be inside loop or switch");
-		}
-		cexit(J, F, STM_BREAK, stm, target);
-		emitline(J, F, stm);
-		addjump(J, F, STM_BREAK, target, emitjump(J, F, OP_JUMP));
-        break;
-        */
+        AstType::STM_THROW => {
+            compile_exp(f, stm.a.as_ref().unwrap());
+            f.emitop(OpcodeType::OP_THROW);
+        },
 
-        
-        _ => {}
+        AstType::STM_WITH => {
+            panic!("'with' statements are not allowed in strict mode");
+        },
+
+        AstType::STM_TRY => {
+            if stm.has_b() && stm.has_c() {
+                if stm.has_d() {
+                    compile_trycatchfinally(f, stm.a(), stm.b(), stm.c(), stm.d());
+                } else {
+                    compile_trycatch(f, stm.a(), stm.b(), stm.c());
+                }
+            } else {
+                compile_finally(f, stm.a(), stm.b()); 
+            }
+        },
+
+        AstType::STM_DEBUGGER => {
+            f.emitop(OpcodeType::OP_DEBUGGER);
+        },
+
+        _ => {
+            if f.script {
+                f.emitop(OpcodeType::OP_POP);
+                compile_exp(f, stm);
+            } else {
+                compile_exp(f, stm);
+                f.emitop(OpcodeType::OP_POP);
+            }
+        }    
     }
 }
 
@@ -531,7 +668,7 @@ pub fn build_function_from_code(script: &str) -> Result<VMFunction, String> {
     let ast = build_ast_from_script(script).unwrap();
 
     let null = AstNode::null();
-    let func = compile_func(&null, &null, &ast, false)?;
+    let func = compile_func(&null, &null, &ast, true)?;
     return Ok(func);
 }
 

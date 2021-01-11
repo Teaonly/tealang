@@ -70,7 +70,7 @@ pub enum TokenType {
     TK_NOT,
     TK_AND,
     TK_OR,
-	TK_XOR,	
+	TK_XOR,
 	TK_BITNOT,
     TK_LT,
 	TK_GT,
@@ -114,7 +114,7 @@ pub struct Token {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AstType {
 	AST_NULL = -1,
-	
+
     AST_LIST = 0,
 	AST_FUNDEC,
 	AST_IDENTIFIER,
@@ -232,7 +232,7 @@ pub struct AstNode {
     pub src_line:   u32,
     pub num_value:  Option<f64>,
 	pub str_value:  Option<String>,
-	
+
     pub a:      Option<Box<AstNode>>,
     pub b:      Option<Box<AstNode>>,
     pub c:      Option<Box<AstNode>>,
@@ -243,7 +243,7 @@ pub struct AstNode {
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum OpcodeType {
-	OP_NOP = 0,	
+	OP_NOP = 0,
 	OP_POP = 1,	/* A -- */
 	OP_DUP,		/* A -- A A */
 	OP_DUP2,	/* A B -- A B A B */
@@ -446,6 +446,7 @@ impl TryFrom<u16> for OpcodeType {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(Debug, Copy, Clone)]
 pub enum VMJumpType {
 	BreakJump(usize),
 	ContinueJump(usize),
@@ -457,16 +458,16 @@ pub enum VMJumpScope {
 	TryScope,
 	CatchScope,
 	WithScope,
+	SwitchScope,
 	ForLoop,
 	ForInLoop,
 	DoLoop,
 	WhileLoop,
-	SwitchScope,
 	LabelSection(String),
 }
 
 #[allow(non_camel_case_types)]
-pub struct VMJumpTable {	
+pub struct VMJumpTable {
 	pub scope:	VMJumpScope,
 	pub lst: 	Vec<VMJumpType>
 }
@@ -477,7 +478,7 @@ pub struct VMFunction {
 	pub script:		bool,
 	pub numparams:	usize,
 	pub code:		Vec<u16>,
-	
+
 	pub num_tab:	Vec<f64>,
 	pub str_tab:	Vec<String>,
 	pub var_tab:	Vec<String>,
