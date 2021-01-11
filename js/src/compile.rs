@@ -343,10 +343,39 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
 
 /* Emit code to rebalance stack and scopes during an abrupt exit */
 fn compile_exit(f: &mut VMFunction, scope_index: usize, jump_type: AstType) {
+    if f.jumps.len() == 0 {
+        return;
+    }
+    for i in (scope_index .. f.jumps.len()).rev() {
+        let scope_type = f.jumps[i].scope.clone();
+        match scope_type {
+            VMJumpScope::WithScope => {
+                panic!("'with' statements are not allowed in strict mode");
+            },
+            VMJumpScope::TryScope(stm_d) => {
+                f.emitop(OpcodeType::OP_ENDTRY);
+                if stm_d.is_some() {
+                    compile_stm(f, stm_d.as_ref().unwrap());
+                }
+            },
+            VMJumpScope::CatchScope(stm_b) => {
+                f.emitop(OpcodeType::OP_ENDCATCH);
+                if stm_b.is_some() {
+                    f.emitop(OpcodeType::OP_ENDCATCH);
+                    compile_stm(f, stm_b.as_ref().unwrap());
+                }
+            },
+            VMJumpScope::ForInLoop => {
 
+            },
+            _ => {
+                
+            }
+        }
+    }
 }
-/*
 
+/*
 static void cexit(JF, enum js_AstType T, js_Ast *node, js_Ast *target)
 {
 	js_Ast *prev;
@@ -409,7 +438,7 @@ static void cexit(JF, enum js_AstType T, js_Ast *node, js_Ast *target)
 /* Try/catch/finally */
 
 fn compile_trycatchfinally(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode, d: &AstNode) {
-
+    panic!("TODO: current don't support finally ");
 } 
 
 fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
@@ -417,7 +446,7 @@ fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
 }
 
 fn compile_finally(f: &mut VMFunction, a: &AstNode, b: &AstNode) {
-
+    panic!("TODO: current don't support finally ");
 } 
 
 /* Switch */
@@ -589,7 +618,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
                 panic!("Can't find break target!");
             }
             
-            compile_exit(f, break_scope, AstType::STM_BREAK);
+            compile_exit(f, break_scope - 1, AstType::STM_BREAK);
             let from = f.emitjump(OpcodeType::OP_JUMP);
             let jump = VMJumpType::BreakJump(from);
             f.add_jump(break_scope, jump);
@@ -610,7 +639,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
                 panic!("Can't find continue target!");                
             }
 
-            compile_exit(f, continue_scope, AstType::STM_CONTINUE);
+            compile_exit(f, continue_scope - 1, AstType::STM_CONTINUE);
             let from = f.emitjump(OpcodeType::OP_JUMP);
             let jump = VMJumpType::ContinueJump(from);
             f.add_jump(continue_scope, jump);

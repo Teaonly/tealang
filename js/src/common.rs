@@ -455,8 +455,8 @@ pub enum VMJumpType {
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone)]
 pub enum VMJumpScope {
-	TryScope,
-	CatchScope,
+	TryScope(Option<AstNode>),
+	CatchScope(Option<AstNode>),
 	WithScope,
 	SwitchScope,
 	ForLoop,
