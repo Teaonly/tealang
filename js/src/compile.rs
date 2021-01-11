@@ -207,7 +207,7 @@ impl VMFunction {
     #[allow(non_camel_case_types)]
     fn targetScopeByName(&self, name: &str) -> usize {
         let mut brk_index = 0;
-        for i in (self.jumps.len() .. 0).rev() {
+        for i in (0..self.jumps.len()).rev() {
             match &self.jumps[i].scope {
                 VMJumpScope::LabelSection(label) => {
                     if label.eq(name) {
@@ -224,7 +224,7 @@ impl VMFunction {
     #[allow(non_camel_case_types)]
     fn targetBreakScope(&self) -> usize {
         let mut brk_index = 0;
-        for i in (self.jumps.len() .. 0).rev() {
+        for i in (0..self.jumps.len()).rev() {
             match &self.jumps[i].scope {
                 VMJumpScope::ForLoop | VMJumpScope::ForInLoop | VMJumpScope::DoLoop | VMJumpScope::WhileLoop | VMJumpScope::SwitchScope => {
                     brk_index = i + 1;
@@ -239,7 +239,7 @@ impl VMFunction {
     #[allow(non_camel_case_types)]
     fn targetContinueScope(&self) -> usize {
         let mut brk_index = 0;
-        for i in (self.jumps.len() .. 0).rev() {
+        for i in (0..self.jumps.len()).rev() {
             match &self.jumps[i].scope {
                 VMJumpScope::ForLoop | VMJumpScope::ForInLoop | VMJumpScope::DoLoop | VMJumpScope::WhileLoop => {
                     brk_index = i + 1;
@@ -345,6 +345,66 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
 fn compile_exit(f: &mut VMFunction, scope_index: usize, jump_type: AstType) {
 
 }
+/*
+
+static void cexit(JF, enum js_AstType T, js_Ast *node, js_Ast *target)
+{
+	js_Ast *prev;
+	do {
+		prev = node, node = node->parent;
+		switch (node->type) {
+		default:
+			/* impossible */
+			break;
+		case STM_WITH:
+			emitline(J, F, node);
+			emit(J, F, OP_ENDWITH);
+			break;
+		case STM_FOR_IN:
+		case STM_FOR_IN_VAR:
+			emitline(J, F, node);
+			/* pop the iterator if leaving the loop */
+			if (F->script) {
+				if (T == STM_RETURN || T == STM_BREAK || (T == STM_CONTINUE && target != node)) {
+					/* pop the iterator, save the return or exp value */
+					emit(J, F, OP_ROT2);
+					emit(J, F, OP_POP);
+				}
+				if (T == STM_CONTINUE)
+					emit(J, F, OP_ROT2); /* put the iterator back on top */
+			} else {
+				if (T == STM_RETURN) {
+					/* pop the iterator, save the return value */
+					emit(J, F, OP_ROT2);
+					emit(J, F, OP_POP);
+				}
+				if (T == STM_BREAK || (T == STM_CONTINUE && target != node))
+					emit(J, F, OP_POP); /* pop the iterator */
+			}
+			break;
+		case STM_TRY:
+			emitline(J, F, node);
+			/* came from try block */
+			if (prev == node->a) {
+				emit(J, F, OP_ENDTRY);
+				if (node->d) cstm(J, F, node->d); /* finally */
+			}
+			/* came from catch block */
+			if (prev == node->c) {
+				/* ... with finally */
+				if (node->d) {
+					emit(J, F, OP_ENDCATCH);
+					emit(J, F, OP_ENDTRY);
+					cstm(J, F, node->d); /* finally */
+				} else {
+					emit(J, F, OP_ENDCATCH);
+				}
+			}
+			break;
+		}
+	} while (node != target);
+}
+*/
 
 /* Try/catch/finally */
 
@@ -354,7 +414,7 @@ fn compile_trycatchfinally(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &Ast
 
 fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
 
-} 
+}
 
 fn compile_finally(f: &mut VMFunction, a: &AstNode, b: &AstNode) {
 
@@ -369,7 +429,7 @@ fn compile_switch(f: &mut VMFunction, exp: &AstNode) {
 /* Statements */
 
 fn compile_varinit(f: &mut VMFunction, exp: &AstNode) {
-    
+
 }
 
 fn compile_assignforin(f: &mut VMFunction, exp: &AstNode) {
@@ -383,10 +443,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             compile_stmlist(f, block);
         },
         AstType::STM_EMPTY => {
-            if f.script {
-                f.emitop(OpcodeType::OP_POP);
-                f.emitop(OpcodeType::OP_UNDEF);
-            }
+            // do nothing
         },
         AstType::STM_IF => {
             if stm.c.is_some() {
@@ -481,13 +538,9 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             f.emitop(OpcodeType::OP_NEXTITER);
             let end = f.emitjump(OpcodeType::OP_JFALSE);
             compile_assignforin(f, stm);
-            if f.script {
-                f.emitop(OpcodeType::OP_ROT2);
-                compile_stm(f, stm.c.as_ref().unwrap());
-                f.emitop(OpcodeType::OP_ROT2);                
-            } else {
-                compile_stm(f, stm.c.as_ref().unwrap());                
-            }
+
+            compile_stm(f, stm.c.as_ref().unwrap());
+            
             f.emitjumpto(OpcodeType::OP_JUMP, lop);
             f.label_current_to(end);
 
@@ -605,13 +658,8 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
         },
 
         _ => {
-            if f.script {
-                f.emitop(OpcodeType::OP_POP);
-                compile_exp(f, stm);
-            } else {
-                compile_exp(f, stm);
-                f.emitop(OpcodeType::OP_POP);
-            }
+            compile_exp(f, stm);
+            f.emitop(OpcodeType::OP_POP);
         }    
     }
 }
