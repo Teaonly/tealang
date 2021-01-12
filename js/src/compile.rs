@@ -165,6 +165,27 @@ impl VMFunction {
         self.emit(id);
     }
 
+    fn emitlocal(&mut self, oploc: OpcodeType, opvar: OpcodeType, var: &str) {
+        checkfutureword(var);
+        
+        let (found, i) =  self.findlocal(var);
+        if found {
+            self.emitstring(opvar, var);
+        } else {
+            self.emitop(oploc);
+            self.emit(i);
+        }
+    }
+
+    fn findlocal(&self, var: &str) -> (bool, u16) {
+        for i in 0..self.var_tab.len() {
+            if self.var_tab[i].eq(var) {
+                return (true, i as u16);
+            }
+        }
+        return (false, 0);
+    }
+
     fn addstring(&mut self, var: &str) -> u16 {
         for i in 0..self.str_tab.len() {
             if self.str_tab[i].eq(var) {
@@ -282,18 +303,6 @@ impl VMFunction {
 
         let id = self.var_tab.len() as u16;
         return id;
-    }
-
-    fn findlocal(&self, node: &AstNode) -> u16 {
-        let name = node.str_value.as_ref().unwrap();
-        checkfutureword(name);
-
-        for i in 0..self.var_tab.len() {
-            if self.var_tab[i].eq(name) {
-                return (i+1) as u16;
-            }
-        }
-        return 0;
     }
 
     fn addfunc(&mut self, func: VMFunction) -> u16 {
@@ -414,9 +423,11 @@ fn compile_trycatchfinally(f: &mut VMFunction, try_block: &AstNode, catch_var: &
     let L2:usize;
     let L3:usize;
 
+    //f.new_scope(VMJumpScope::TryScope);
     L1 = f.emitjump(OpcodeType::OP_TRY);
     {
         /* if we get here, we have caught an exception in the try block */
+        //f.new_scope(VMJumpScope::TryScope);
         L2 = f.emitjump(OpcodeType::OP_TRY);
         {
             /* if we get here, we have caught an exception in the catch block */
@@ -427,16 +438,19 @@ fn compile_trycatchfinally(f: &mut VMFunction, try_block: &AstNode, catch_var: &
 
         let catchvar = catch_var.str_value.as_ref().unwrap();
         checkfutureword(catchvar);
+        //f.new_scope(VMJumpScope::CatchScope);
         f.emitstring(OpcodeType::OP_CATCH, catchvar);
         compile_stm(f, catch_block);
         f.emitop(OpcodeType::OP_ENDCATCH);
+        //f.delete_scope();
         f.emitop(OpcodeType::OP_ENDTRY);
-
+        //f.delete_scope();
         L3 = f.emitjump(OpcodeType::OP_JUMP);
     }
     f.label_current_to(L1);
     compile_stm(f, try_block);
     f.emitop(OpcodeType::OP_ENDTRY);
+    //f.delete_scope();
     f.label_current_to(L3);
     compile_stm(f, finally_block);
 } 
@@ -444,6 +458,8 @@ fn compile_trycatchfinally(f: &mut VMFunction, try_block: &AstNode, catch_var: &
 fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
     let L1:usize;
     let L2:usize;
+
+    //f.new_scope(VMJumpScope::TryScope);
     L1 = f.emitjump(OpcodeType::OP_TRY);
     {
         /* if we get here, we have caught an exception in the try block */
@@ -456,6 +472,7 @@ fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
     f.label_current_to(L1);
     compile_stm(f, a);
     f.emitop(OpcodeType::OP_ENDTRY);
+    //f.delete_scope();
     compile_stm(f, b);
 }
 
@@ -474,19 +491,38 @@ fn compile_finally(f: &mut VMFunction, a: &AstNode, b: &AstNode) {
 } 
 
 /* Switch */
-
 fn compile_switch(f: &mut VMFunction, exp: &AstNode) {
 
 }
 
 /* Statements */
-
 fn compile_varinit(f: &mut VMFunction, exp: &AstNode) {
 
 }
 
-fn compile_assignforin(f: &mut VMFunction, exp: &AstNode) {
+fn compile_assignforin(f: &mut VMFunction, stm: &AstNode) {
+    let lhs = stm.a();
+    if stm.ast_type == AstType::STM_FOR_IN_VAR {
+        if !lhs.is_list() {
+            panic!("for var in statement must include an var list!");
+        }
+        if lhs.has_b() {
+            panic!("more than one loop variable in for-in statement");
+        }
+        let var = lhs.a().str_value.as_ref().unwrap();
+        f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, var);
+        f.emitop(OpcodeType::OP_POP);
+        return;
+    }
 
+    if lhs.ast_type != AstType::EXP_IDENTIFIER {
+        panic!("invalid l-value in for-in loop assignment");
+    }
+
+    let var = lhs.str_value.as_ref().unwrap();
+    f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, var);
+    f.emitop(OpcodeType::OP_POP);
+    return;
 }
 
 fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
@@ -742,12 +778,14 @@ fn compile_func(name: &AstNode, params: &AstNode, body: &AstNode, script: bool) 
 
     if !name.is_null() {
 
-        let mut localid = f.findlocal( name );
-        if localid == 0 {
+        let name_str = name.str_value.as_ref().unwrap();
+
+        let (found, localid) = f.findlocal( name_str );
+        if !found {
             f.emitop(OpcodeType::OP_CURRENT);
             f.emitop(OpcodeType::OP_SETLOCAL);
-            localid = f.addlocal(name);
-            f.emit(localid);
+            let id = f.addlocal(name);
+            f.emit(id);
             f.emitop(OpcodeType::OP_POP);
         }
     }
