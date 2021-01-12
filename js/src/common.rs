@@ -122,7 +122,6 @@ pub enum AstType {
 	EXP_IDENTIFIER,
 	EXP_NUMBER,
 	EXP_STRING,
-	EXP_REGEXP,
 
 	/* literals */
 	EXP_UNDEF, /* for array elisions */

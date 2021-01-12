@@ -274,12 +274,14 @@ fn ast_primary(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     if tk_accept(tkr, TokenType::TK_BRACE_LEFT)? {
         let a = ast_objectliteral(tkr)?;
         tk_expect(tkr, TokenType::TK_BRACE_RIGHT)?;
-        return Ok(a);
+        let obj = AstNode::new_a(AstType::EXP_OBJECT, tkr.line(), a);
+        return Ok(obj);
     }
     if tk_accept(tkr, TokenType::TK_BRACKET_LEFT)? {
         let a = ast_arrayliteral(tkr)?;
         tk_expect(tkr, TokenType::TK_BRACKET_RIGHT)?;
-        return Ok(a);
+        let array = AstNode::new_a(AstType::EXP_ARRAY, tkr.line(), a);
+        return Ok(array);
     }
     if tk_accept(tkr, TokenType::TK_PAREN_LEFT)? {
         let a = ast_expression(tkr)?;
