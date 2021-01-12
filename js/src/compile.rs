@@ -172,9 +172,9 @@ impl VMFunction {
     }
 
     fn emitfunction(&mut self, func: VMFunction) {
-        f.emitop(OpcodeType::OP_CLOSURE);
-        let id = f.addfunc(func);
-        f.emit(id);
+        self.emitop(OpcodeType::OP_CLOSURE);
+        let id = self.addfunc(func);
+        self.emit(id);
     }
 
     fn emitlocal(&mut self, oploc: OpcodeType, opvar: OpcodeType, var: &str) {
@@ -445,40 +445,40 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
         },
 
         AstType::EXP_FUN => {
-            let func = compile_func( n.a(), n.b(), n.c(), false).unwrap();
+            let func = compile_func( exp.a(), exp.b(), exp.c(), false).unwrap();
             f.emitfunction(func);
         },
 
         AstType::EXP_IDENTIFIER => {
-            let var_string = stm.str_value.as_ref().unwrap();
-            f.emitlocal(OpcodeType::GETLOCAL, OpcodeType::OP_GETVAR, var_string);
+            let var_string = exp.str_value.as_ref().unwrap();
+            f.emitlocal(OpcodeType::OP_GETLOCAL, OpcodeType::OP_GETVAR, var_string);
         },
 
         AstType::EXP_INDEX => {
-            compile_exp(f, stm.a());
-            compile_exp(f, stm.b());
+            compile_exp(f, exp.a());
+            compile_exp(f, exp.b());
             f.emitop(OpcodeType::OP_GETPROP);
         },
 
         AstType::EXP_INDEX => {
-            compile_exp(f, stm.a());
-            let prop_str = stm.b().str_value.as_ref().unwrap();
+            compile_exp(f, exp.a());
+            let prop_str = exp.b().str_value.as_ref().unwrap();
             f.emitstring(OpcodeType::OP_GETPROP_S, prop_str);
         },
 
         AstType::EXP_CALL => {
-            compile_call(f, stm);
+            compile_call(f, exp);
         },
 
         AstType::EXP_NEW => {
-            compile_exp(f, stm.a());
-            let n = compile_args(f, stm.b());
+            compile_exp(f, exp.a());
+            let n = compile_args(f, exp.b());
             f.emitop(OpcodeType::OP_NEW);
             f.emit(n);
         },
 
         AstType::EXP_DELETE => {
-            compile_delete(f, stm);
+            compile_delete(f, exp);
         },
 
         _ => {
