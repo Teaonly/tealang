@@ -171,6 +171,12 @@ impl VMFunction {
         self.emit(id);
     }
 
+    fn emitfunction(&mut self, func: VMFunction) {
+        f.emitop(OpcodeType::OP_CLOSURE);
+        let id = f.addfunc(func);
+        f.emit(id);
+    }
+
     fn emitlocal(&mut self, oploc: OpcodeType, opvar: OpcodeType, var: &str) {
         checkfutureword(var);
         
@@ -323,8 +329,9 @@ impl VMFunction {
     }
 
     fn addfunc(&mut self, func: VMFunction) -> u16 {
+        let r = self.func_tab.len();
         self.func_tab.push(Box::new(func));
-        return self.func_tab.len() as u16;
+        return r as u16;
     }
 
     fn parsing_vardec(&mut self, node: &AstNode) {
@@ -389,6 +396,15 @@ fn compile_object(f: &mut VMFunction, exp: &AstNode) {
 fn compile_array(f: &mut VMFunction, exp: &AstNode) {
 
 }
+fn compile_call(f: &mut VMFunction, exp: &AstNode) {
+
+}
+fn compile_args(f: &mut VMFunction, exp: &AstNode) -> u16{
+    return 0;
+}
+fn compile_delete(f: &mut VMFunction, exp: &AstNode) {
+
+}
 
 fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
     match exp.ast_type {
@@ -429,8 +445,41 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
         },
 
         AstType::EXP_FUN => {
-            
-        }
+            let func = compile_func( n.a(), n.b(), n.c(), false).unwrap();
+            f.emitfunction(func);
+        },
+
+        AstType::EXP_IDENTIFIER => {
+            let var_string = stm.str_value.as_ref().unwrap();
+            f.emitlocal(OpcodeType::GETLOCAL, OpcodeType::OP_GETVAR, var_string);
+        },
+
+        AstType::EXP_INDEX => {
+            compile_exp(f, stm.a());
+            compile_exp(f, stm.b());
+            f.emitop(OpcodeType::OP_GETPROP);
+        },
+
+        AstType::EXP_INDEX => {
+            compile_exp(f, stm.a());
+            let prop_str = stm.b().str_value.as_ref().unwrap();
+            f.emitstring(OpcodeType::OP_GETPROP_S, prop_str);
+        },
+
+        AstType::EXP_CALL => {
+            compile_call(f, stm);
+        },
+
+        AstType::EXP_NEW => {
+            compile_exp(f, stm.a());
+            let n = compile_args(f, stm.b());
+            f.emitop(OpcodeType::OP_NEW);
+            f.emit(n);
+        },
+
+        AstType::EXP_DELETE => {
+            compile_delete(f, stm);
+        },
 
         _ => {
 
@@ -445,45 +494,6 @@ static void cexp(JF, js_Ast *exp)
 	int n;
 
 	switch (exp->type) {
-	case EXP_FUN:
-		emitline(J, F, exp);
-		emitfunction(J, F, newfun(J, exp->line, exp->a, exp->b, exp->c, 0, F->strict));
-		break;
-
-	case EXP_IDENTIFIER:
-		emitline(J, F, exp);
-		emitlocal(J, F, OP_GETLOCAL, OP_GETVAR, exp);
-		break;
-
-	case EXP_INDEX:
-		cexp(J, F, exp->a);
-		cexp(J, F, exp->b);
-		emitline(J, F, exp);
-		emit(J, F, OP_GETPROP);
-		break;
-
-	case EXP_MEMBER:
-		cexp(J, F, exp->a);
-		emitline(J, F, exp);
-		emitstring(J, F, OP_GETPROP_S, exp->b->string);
-		break;
-
-	case EXP_CALL:
-		ccall(J, F, exp->a, exp->b);
-		break;
-
-	case EXP_NEW:
-		cexp(J, F, exp->a);
-		n = cargs(J, F, exp->b);
-		emitline(J, F, exp);
-		emit(J, F, OP_NEW);
-		emitarg(J, F, n);
-		break;
-
-	case EXP_DELETE:
-		cdelete(J, F, exp);
-		break;
-
 	case EXP_PREINC:
 		cassignop1(J, F, exp->a);
 		emitline(J, F, exp);
