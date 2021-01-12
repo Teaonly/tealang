@@ -491,8 +491,56 @@ fn compile_finally(f: &mut VMFunction, a: &AstNode, b: &AstNode) {
 } 
 
 /* Switch */
-fn compile_switch(f: &mut VMFunction, exp: &AstNode) {
+fn compile_switch(f: &mut VMFunction, stm: &AstNode) {
+    let mut def = None;
 
+    compile_exp(f, stm.a());
+
+    let mut case_jumps = Vec::new();
+
+    if stm.has_b() {
+        let it = stm.b().iter();
+        for n in it {
+            let clause = n.a();
+            if clause.ast_type == AstType::STM_CASE {
+                compile_exp(f, clause.a());
+                let addr = f.emitjump(OpcodeType::OP_JCASE);
+                case_jumps.push(addr);
+            } else if clause.ast_type == AstType::STM_DEFAULT {
+                if !def.is_none() {
+                    panic!("more than one default label in switch");
+                }
+                def = Some(n);
+            } else {
+                panic!("Case list only support STM_CASE and STM_DEFAULT!");
+            }
+        }
+    }
+
+    f.emitop(OpcodeType::OP_POP);
+    let last_jump = f.emitjump(OpcodeType::OP_JUMP);
+
+    if stm.has_b() {
+        let mut i:usize = 0;
+
+        let it = stm.b().iter();
+        for n in it {
+            let clause = n.a();
+            if clause.ast_type == AstType::STM_CASE {
+                let addr = case_jumps[i];
+                f.label_current_to(addr);
+                compile_stmlist(f, clause.b());
+                i = i + 1;
+            } else if clause.ast_type == AstType::STM_DEFAULT {
+                f.label_current_to(last_jump);
+                compile_stmlist(f, clause.a());
+            }
+        }
+    }
+
+    if def.is_none() {
+        f.label_current_to(last_jump);
+    }
 }
 
 /* Statements */
