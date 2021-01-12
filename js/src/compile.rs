@@ -496,8 +496,16 @@ fn compile_switch(f: &mut VMFunction, exp: &AstNode) {
 }
 
 /* Statements */
-fn compile_varinit(f: &mut VMFunction, exp: &AstNode) {
-
+fn compile_varinit(f: &mut VMFunction, lst: &AstNode) {
+    let it = lst.iter();
+    for n in it {
+        if n.has_b() {
+            compile_exp(f, n.b());
+            let var_str = n.a().str_value.as_ref().unwrap();
+            f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, var_str); 
+            f.emitop(OpcodeType::OP_POP);
+        }
+    }
 }
 
 fn compile_assignforin(f: &mut VMFunction, stm: &AstNode) {
