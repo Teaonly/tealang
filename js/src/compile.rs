@@ -159,15 +159,34 @@ impl VMFunction {
         self.code.push(((dst >> 16) & 0xFFFF) as u16);
     }
 
+    fn emitstring(&mut self, op: OpcodeType, var: &str) {
+        self.emitop(op);
+        let id = self.addstring(var);
+        self.emit(id);
+    }
+
+    fn addstring(&mut self, var: &str) -> u16 {
+        for i in 0..self.str_tab.len() {
+            if self.str_tab[i].eq(var) {
+                return i as u16;
+            }
+        }
+
+        let r = self.str_tab.len();
+        self.str_tab.push( var.to_string() );
+
+        return r as u16;
+    }
+
     fn current(& self) -> usize {
         return self.code.len();
     }
 
     fn label_current_to(&mut self, addr: usize) {
-        self.labelto_(addr, self.current());
+        self.labelto(addr, self.current());
     }
 
-    fn labelto_(&mut self, addr:usize,  target_addr: usize) {
+    fn labelto(&mut self, addr:usize,  target_addr: usize) {
         if target_addr > 0xFFFFFFFF {
             panic!("current address is out of 4G!");
         }
@@ -366,7 +385,21 @@ fn compile_exit(f: &mut VMFunction, scope_index: usize, jump_type: AstType) {
                 }
             },
             VMJumpScope::ForInLoop => {
-
+                if jump_type == AstType::STM_BREAK {
+                    /* pop the iterator */
+                    f.emitop(OpcodeType::OP_POP);
+                } else if jump_type == AstType::STM_CONTINUE {
+                    if scope_index != i {
+                        /* pop the iterator */
+                        f.emitop(OpcodeType::OP_POP);
+                    }
+                } else if jump_type == AstType::STM_RETURN {
+                    /* pop the iterator, save the return value */
+                    f.emitop(OpcodeType::OP_ROT2);
+                    f.emitop(OpcodeType::OP_POP);
+                } else {
+                    panic!("compile_exit error: only break/continue/return supported!");
+                }
             },
             _ => {
                 
@@ -375,78 +408,69 @@ fn compile_exit(f: &mut VMFunction, scope_index: usize, jump_type: AstType) {
     }
 }
 
-/*
-static void cexit(JF, enum js_AstType T, js_Ast *node, js_Ast *target)
-{
-	js_Ast *prev;
-	do {
-		prev = node, node = node->parent;
-		switch (node->type) {
-		default:
-			/* impossible */
-			break;
-		case STM_WITH:
-			emitline(J, F, node);
-			emit(J, F, OP_ENDWITH);
-			break;
-		case STM_FOR_IN:
-		case STM_FOR_IN_VAR:
-			emitline(J, F, node);
-			/* pop the iterator if leaving the loop */
-			if (F->script) {
-				if (T == STM_RETURN || T == STM_BREAK || (T == STM_CONTINUE && target != node)) {
-					/* pop the iterator, save the return or exp value */
-					emit(J, F, OP_ROT2);
-					emit(J, F, OP_POP);
-				}
-				if (T == STM_CONTINUE)
-					emit(J, F, OP_ROT2); /* put the iterator back on top */
-			} else {
-				if (T == STM_RETURN) {
-					/* pop the iterator, save the return value */
-					emit(J, F, OP_ROT2);
-					emit(J, F, OP_POP);
-				}
-				if (T == STM_BREAK || (T == STM_CONTINUE && target != node))
-					emit(J, F, OP_POP); /* pop the iterator */
-			}
-			break;
-		case STM_TRY:
-			emitline(J, F, node);
-			/* came from try block */
-			if (prev == node->a) {
-				emit(J, F, OP_ENDTRY);
-				if (node->d) cstm(J, F, node->d); /* finally */
-			}
-			/* came from catch block */
-			if (prev == node->c) {
-				/* ... with finally */
-				if (node->d) {
-					emit(J, F, OP_ENDCATCH);
-					emit(J, F, OP_ENDTRY);
-					cstm(J, F, node->d); /* finally */
-				} else {
-					emit(J, F, OP_ENDCATCH);
-				}
-			}
-			break;
-		}
-	} while (node != target);
-}
-*/
-
 /* Try/catch/finally */
+fn compile_trycatchfinally(f: &mut VMFunction, try_block: &AstNode, catch_var: &AstNode, catch_block: &AstNode, finally_block: &AstNode) {
+    let L1:usize;
+    let L2:usize;
+    let L3:usize;
 
-fn compile_trycatchfinally(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode, d: &AstNode) {
-    panic!("TODO: current don't support finally ");
+    L1 = f.emitjump(OpcodeType::OP_TRY);
+    {
+        /* if we get here, we have caught an exception in the try block */
+        L2 = f.emitjump(OpcodeType::OP_TRY);
+        {
+            /* if we get here, we have caught an exception in the catch block */
+            compile_stm(f, finally_block);  /* inline finally block */
+            f.emitop(OpcodeType::OP_THROW);
+        }
+        f.label_current_to(L2);
+
+        let catchvar = catch_var.str_value.as_ref().unwrap();
+        checkfutureword(catchvar);
+        f.emitstring(OpcodeType::OP_CATCH, catchvar);
+        compile_stm(f, catch_block);
+        f.emitop(OpcodeType::OP_ENDCATCH);
+        f.emitop(OpcodeType::OP_ENDTRY);
+
+        L3 = f.emitjump(OpcodeType::OP_JUMP);
+    }
+    f.label_current_to(L1);
+    compile_stm(f, try_block);
+    f.emitop(OpcodeType::OP_ENDTRY);
+    f.label_current_to(L3);
+    compile_stm(f, finally_block);
 } 
 
 fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
-
+    let L1:usize;
+    let L2:usize;
+    L1 = f.emitjump(OpcodeType::OP_TRY);
+    {
+        /* if we get here, we have caught an exception in the try block */
+        let catchvar = b.str_value.as_ref().unwrap();
+        checkfutureword(catchvar);
+        f.emitstring(OpcodeType::OP_CATCH, catchvar);
+        compile_stm(f, c);
+        f.emitop(OpcodeType::OP_ENDCATCH);
+    }
+    f.label_current_to(L1);
+    compile_stm(f, a);
+    f.emitop(OpcodeType::OP_ENDTRY);
+    compile_stm(f, b);
 }
 
 fn compile_finally(f: &mut VMFunction, a: &AstNode, b: &AstNode) {
-    panic!("TODO: current don't support finally ");
+    let L1:usize;
+    L1 = f.emitjump(OpcodeType::OP_TRY);
+    {
+        /* if we get here, we have caught an exception in the try block */
+        compile_stm(f, b);
+        f.emitop(OpcodeType::OP_THROW);
+    }
+    f.label_current_to(L1);
+    compile_stm(f, a);
+    f.emitop(OpcodeType::OP_ENDTRY);
+    compile_stm(f, b);
 } 
 
 /* Switch */
