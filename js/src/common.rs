@@ -355,8 +355,7 @@ pub enum VMJumpType {
 #[derive(Debug, Clone)]
 pub enum VMJumpScope {
 	TryScope(Option<AstNode>),
-	CatchScope(Option<AstNode>),
-	WithScope,
+	CatchScope,
 	SwitchScope,
 	ForLoop,
 	ForInLoop,

@@ -894,21 +894,14 @@ fn compile_exit(f: &mut VMFunction, scope_index: usize, jump_type: AstType) {
     for i in (scope_index .. f.jumps.len()).rev() {
         let scope_type = f.jumps[i].scope.clone();
         match scope_type {
-            VMJumpScope::WithScope => {
-                panic!("'with' statements are not allowed in strict mode");
-            },
             VMJumpScope::TryScope(stm_d) => {
                 f.emitop(OpcodeType::OP_ENDTRY);
                 if stm_d.is_some() {
                     compile_stm(f, stm_d.as_ref().unwrap());
                 }
             },
-            VMJumpScope::CatchScope(stm_b) => {
+            VMJumpScope::CatchScope => {
                 f.emitop(OpcodeType::OP_ENDCATCH);
-                if stm_b.is_some() {
-                    f.emitop(OpcodeType::OP_ENDCATCH);
-                    compile_stm(f, stm_b.as_ref().unwrap());
-                }
             },
             VMJumpScope::ForInLoop => {
                 if jump_type == AstType::STM_BREAK {
@@ -940,11 +933,10 @@ fn compile_trycatchfinally(f: &mut VMFunction, try_block: &AstNode, catch_var: &
     let l2:usize;
     let l3:usize;
 
-    //f.new_scope(VMJumpScope::TryScope);
+    f.new_scope(VMJumpScope::TryScope(Some(finally_block.clone())));
     l1 = f.emitjump(OpcodeType::OP_TRY);
     {
         /* if we get here, we have caught an exception in the try block */
-        //f.new_scope(VMJumpScope::TryScope);
         l2 = f.emitjump(OpcodeType::OP_TRY);
         {
             /* if we get here, we have caught an exception in the catch block */
@@ -954,19 +946,22 @@ fn compile_trycatchfinally(f: &mut VMFunction, try_block: &AstNode, catch_var: &
         f.label_current_to(l2);
 
         let catchvar = catch_var.str_value.as_ref().unwrap();
-        //f.new_scope(VMJumpScope::CatchScope);
-        f.emitstring(OpcodeType::OP_CATCH, catchvar);
-        compile_stm(f, catch_block);
-        f.emitop(OpcodeType::OP_ENDCATCH);
-        //f.delete_scope();
+        f.new_scope(VMJumpScope::CatchScope);
+        {
+            f.emitstring(OpcodeType::OP_CATCH, catchvar);
+            compile_stm(f, catch_block);
+            f.emitop(OpcodeType::OP_ENDCATCH);
+        }
+        f.delete_scope();
+
         f.emitop(OpcodeType::OP_ENDTRY);
-        //f.delete_scope();
         l3 = f.emitjump(OpcodeType::OP_JUMP);
     }
     f.label_current_to(l1);
     compile_stm(f, try_block);
     f.emitop(OpcodeType::OP_ENDTRY);
-    //f.delete_scope();
+    f.delete_scope();
+
     f.label_current_to(l3);
     compile_stm(f, finally_block);
 } 
@@ -975,27 +970,34 @@ fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
     let l1:usize;
     let l2:usize;
 
-    //f.new_scope(VMJumpScope::TryScope);
+    f.new_scope(VMJumpScope::TryScope(None));
     l1 = f.emitjump(OpcodeType::OP_TRY);
     {
         /* if we get here, we have caught an exception in the try block */
         let catchvar = b.str_value.as_ref().unwrap();
-        f.emitstring(OpcodeType::OP_CATCH, catchvar);
-        compile_stm(f, c);
-        f.emitop(OpcodeType::OP_ENDCATCH);
+        f.new_scope(VMJumpScope::CatchScope);
+        {
+            f.emitstring(OpcodeType::OP_CATCH, catchvar);
+            compile_stm(f, c);
+            f.emitop(OpcodeType::OP_ENDCATCH);
+        }
+        f.delete_scope();
         l2 = f.emitjump(OpcodeType::OP_JUMP);
     }
     f.label_current_to(l1);
     compile_stm(f, a);
     f.emitop(OpcodeType::OP_ENDTRY);
+    f.delete_scope();
+
     f.label_current_to(l2);
-    //f.delete_scope();
     compile_stm(f, b);
 }
 
 fn compile_finally(f: &mut VMFunction, a: &AstNode, b: &AstNode) {
     let l1:usize;
+
     l1 = f.emitjump(OpcodeType::OP_TRY);
+    f.new_scope(VMJumpScope::TryScope(Some(b.clone())));
     {
         /* if we get here, we have caught an exception in the try block */
         compile_stm(f, b);
@@ -1004,6 +1006,8 @@ fn compile_finally(f: &mut VMFunction, a: &AstNode, b: &AstNode) {
     f.label_current_to(l1);
     compile_stm(f, a);
     f.emitop(OpcodeType::OP_ENDTRY);
+    f.delete_scope();
+
     compile_stm(f, b);
 } 
 
