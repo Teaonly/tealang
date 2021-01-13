@@ -407,10 +407,6 @@ fn compile_delete(f: &mut VMFunction, exp: &AstNode) {
 
 }
 
-fn compile_assignop(f: &mut VMFunction, exp: &AstNode, op: OpcodeType, is_post: bool) {
-
-}
-
 fn compile_typeof(f: &mut VMFunction, exp: &AstNode) {
 
 }
@@ -423,6 +419,17 @@ fn compile_binary(f: &mut VMFunction, exp: &AstNode, op: OpcodeType) {
 
 }
 
+fn compile_assignop(f: &mut VMFunction, exp: &AstNode, op: OpcodeType, is_post: bool) {
+
+}
+
+fn compile_assign(f: &mut VMFunction, exp: &AstNode) {
+
+}
+
+fn compile_assignwith(f: &mut VMFunction, exp: &AstNode, op: OpcodeType) {
+
+}
 
 fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
     match exp.ast_type {
@@ -500,6 +507,41 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
             f.emitop(OpcodeType::OP_NEW);
             f.emit(n);
         },
+        
+        // multiple exps 
+        AstType::EXP_COMMA => {
+            compile_exp(f, exp.a());
+            f.emitop(OpcodeType::OP_POP);
+            compile_exp(f, exp.b());
+        },
+        
+        AstType::EXP_LOGOR => {
+            compile_exp(f, exp.a());
+            f.emitop(OpcodeType::OP_DUP);
+            let end = f.emitjump(OpcodeType::OP_JTRUE);
+            f.emitop(OpcodeType::OP_POP);
+            compile_exp(f, exp.b());
+            f.label_current_to(end);
+        },
+
+        AstType::EXP_LOGOR => {
+            compile_exp(f, exp.a());
+            f.emitop(OpcodeType::OP_DUP);
+            let end = f.emitjump(OpcodeType::OP_JFALSE);
+            f.emitop(OpcodeType::OP_POP);
+            compile_exp(f, exp.b());
+            f.label_current_to(end);
+        },
+        
+        AstType::EXP_COND => {
+            compile_exp(f, exp.a());
+            let then = f.emitjump(OpcodeType::OP_JTRUE);
+            compile_exp(f, exp.c());
+            let end = f.emitjump(OpcodeType::OP_JUMP);
+            f.label_current_to(then);
+            compile_exp(f, exp.b());
+            f.label_current_to(end);
+        },
 
         // Unary operation
         AstType::EXP_DELETE => {
@@ -555,91 +597,90 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
         AstType::EXP_STRICTNE => {
             compile_binary(f, exp,  OpcodeType::OP_STRICTNE);
         },
+        AstType::EXP_LT => {
+            compile_binary(f, exp,  OpcodeType::OP_LT);
+        },
+        AstType::EXP_GT => {
+            compile_binary(f, exp,  OpcodeType::OP_GT);
+        },
+        AstType::EXP_LE => {
+            compile_binary(f, exp,  OpcodeType::OP_LE);
+        },
+        AstType::EXP_GE => {
+            compile_binary(f, exp,  OpcodeType::OP_GE);
+        },
+        AstType::EXP_INSTANCEOF => {
+            compile_binary(f, exp,  OpcodeType::OP_INSTANCEOF);
+        },
+        // case EXP_IN: cbinary(J, F, exp, OP_IN); break;
+        AstType::EXP_SHL => {
+            compile_binary(f, exp,  OpcodeType::OP_SHL);
+        },
+        AstType::EXP_SHR => {
+            compile_binary(f, exp,  OpcodeType::OP_SHR);
+        },
+        AstType::EXP_USHR => {
+            compile_binary(f, exp,  OpcodeType::OP_USHR);
+        },
+        AstType::EXP_ADD => {
+            compile_binary(f, exp,  OpcodeType::OP_ADD);
+        },
+        AstType::EXP_SUB => {
+            compile_binary(f, exp,  OpcodeType::OP_SUB);
+        },
+        AstType::EXP_MUL => {
+            compile_binary(f, exp,  OpcodeType::OP_MUL);
+        },
+        AstType::EXP_DIV => {
+            compile_binary(f, exp,  OpcodeType::OP_DIV);
+        },
+        AstType::EXP_MOD => {
+            compile_binary(f, exp,  OpcodeType::OP_MOD);
+        },
+
+        // assignments 
+        AstType::EXP_ASS => {
+            compile_assign(f, exp);
+        },
+        AstType::EXP_ASS_MUL => {
+            compile_assignwith(f, exp, OpcodeType::OP_MUL);
+        },
+        AstType::EXP_ASS_DIV => {
+            compile_assignwith(f, exp, OpcodeType::OP_DIV);
+        },
+        AstType::EXP_ASS_MOD => {
+            compile_assignwith(f, exp, OpcodeType::OP_MOD);
+        },
+        AstType::EXP_ASS_ADD => {
+            compile_assignwith(f, exp, OpcodeType::OP_ADD);
+        },
+        AstType::EXP_ASS_SUB => {
+            compile_assignwith(f, exp, OpcodeType::OP_SUB);
+        },
+        AstType::EXP_ASS_SHL => {
+            compile_assignwith(f, exp, OpcodeType::OP_SHL);
+        },
+        AstType::EXP_ASS_SHR => {
+            compile_assignwith(f, exp, OpcodeType::OP_SHR);
+        },
+        AstType::EXP_ASS_USHR => {
+            compile_assignwith(f, exp, OpcodeType::OP_USHR);
+        },
+        AstType::EXP_ASS_BITAND => {
+            compile_assignwith(f, exp, OpcodeType::OP_BITAND);
+        },
+        AstType::EXP_ASS_BITXOR => {
+            compile_assignwith(f, exp, OpcodeType::OP_BITXOR);
+        },
+        AstType::EXP_ASS_BITOR => {
+            compile_assignwith(f, exp, OpcodeType::OP_BITOR);
+        },
 
         _ => {
-
+            panic!("unknown expression: ({:?})", exp);
         }
     }
 }
-
-/*
-static void cexp(JF, js_Ast *exp)
-{
-	int then, end;
-	int n;
-
-	switch (exp->type) {
-	case EXP_LT: cbinary(J, F, exp, OP_LT); break;
-	case EXP_GT: cbinary(J, F, exp, OP_GT); break;
-	case EXP_LE: cbinary(J, F, exp, OP_LE); break;
-	case EXP_GE: cbinary(J, F, exp, OP_GE); break;
-	case EXP_INSTANCEOF: cbinary(J, F, exp, OP_INSTANCEOF); break;
-	case EXP_IN: cbinary(J, F, exp, OP_IN); break;
-	case EXP_SHL: cbinary(J, F, exp, OP_SHL); break;
-	case EXP_SHR: cbinary(J, F, exp, OP_SHR); break;
-	case EXP_USHR: cbinary(J, F, exp, OP_USHR); break;
-	case EXP_ADD: cbinary(J, F, exp, OP_ADD); break;
-	case EXP_SUB: cbinary(J, F, exp, OP_SUB); break;
-	case EXP_MUL: cbinary(J, F, exp, OP_MUL); break;
-	case EXP_DIV: cbinary(J, F, exp, OP_DIV); break;
-	case EXP_MOD: cbinary(J, F, exp, OP_MOD); break;
-
-	case EXP_ASS: cassign(J, F, exp); break;
-	case EXP_ASS_MUL: cassignop(J, F, exp, OP_MUL); break;
-	case EXP_ASS_DIV: cassignop(J, F, exp, OP_DIV); break;
-	case EXP_ASS_MOD: cassignop(J, F, exp, OP_MOD); break;
-	case EXP_ASS_ADD: cassignop(J, F, exp, OP_ADD); break;
-	case EXP_ASS_SUB: cassignop(J, F, exp, OP_SUB); break;
-	case EXP_ASS_SHL: cassignop(J, F, exp, OP_SHL); break;
-	case EXP_ASS_SHR: cassignop(J, F, exp, OP_SHR); break;
-	case EXP_ASS_USHR: cassignop(J, F, exp, OP_USHR); break;
-	case EXP_ASS_BITAND: cassignop(J, F, exp, OP_BITAND); break;
-	case EXP_ASS_BITXOR: cassignop(J, F, exp, OP_BITXOR); break;
-	case EXP_ASS_BITOR: cassignop(J, F, exp, OP_BITOR); break;
-
-	case EXP_COMMA:
-		cexp(J, F, exp->a);
-		emitline(J, F, exp);
-		emit(J, F, OP_POP);
-		cexp(J, F, exp->b);
-		break;
-
-	case EXP_LOGOR:
-		cexp(J, F, exp->a);
-		emitline(J, F, exp);
-		emit(J, F, OP_DUP);
-		end = emitjump(J, F, OP_JTRUE);
-		emit(J, F, OP_POP);
-		cexp(J, F, exp->b);
-		label(J, F, end);
-		break;
-
-	case EXP_LOGAND:
-		cexp(J, F, exp->a);
-		emitline(J, F, exp);
-		emit(J, F, OP_DUP);
-		end = emitjump(J, F, OP_JFALSE);
-		emit(J, F, OP_POP);
-		cexp(J, F, exp->b);
-		label(J, F, end);
-		break;
-
-	case EXP_COND:
-		cexp(J, F, exp->a);
-		emitline(J, F, exp);
-		then = emitjump(J, F, OP_JTRUE);
-		cexp(J, F, exp->c);
-		end = emitjump(J, F, OP_JUMP);
-		label(J, F, then);
-		cexp(J, F, exp->b);
-		label(J, F, end);
-		break;
-
-	default:
-		jsC_error(J, exp, "unknown expression: (%s)", jsP_aststring(exp->type));
-	}
-}
-*/
 
 /* Emit code to rebalance stack and scopes during an abrupt exit */
 fn compile_exit(f: &mut VMFunction, scope_index: usize, jump_type: AstType) {

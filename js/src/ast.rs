@@ -656,15 +656,15 @@ fn ast_assignment(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_AND_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_AND, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_BITAND, a.src_line, a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_XOR_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_XOR, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_BITXOR, a.src_line, a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_OR_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_OR, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_BITOR, a.src_line, a, b);
         return Ok(node);
     }
     return Ok(a);
