@@ -625,19 +625,6 @@ fn compile_call(f: &mut VMFunction, exp: &AstNode) {
             f.emitstring(OpcodeType::OP_GETPROP_S, member);
             f.emitop(OpcodeType::OP_ROT2);
         },
-        /*
-        case EXP_IDENTIFIER:
-            if (!strcmp(fun->string, "eval")) {
-                ceval(J, F, fun, args);
-                return;
-            }
-            /* fallthrough */
-        default:
-            cexp(J, F, fun);
-            emit(J, F, OP_UNDEF);
-            break;
-        }
-        */
         _ => {
             compile_exp(f, fun);
             f.emitop(OpcodeType::OP_UNDEF);
