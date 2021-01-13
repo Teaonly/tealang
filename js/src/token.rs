@@ -404,7 +404,6 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
             "var" => Some(TokenType::TK_VAR),
             "void" => Some(TokenType::TK_VOID),
             "while" => Some(TokenType::TK_WHILE),
-            "with" => Some(TokenType::TK_WITH),
             _ => None,
         }
     }

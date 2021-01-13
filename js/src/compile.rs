@@ -2,10 +2,6 @@ use crate::common::*;
 use crate::ast::*;
 
 /* Local help function and struct */
-fn checkfutureword(name: &str) {
-    
-}
-
 struct AstListIterator<'a> {
     cursor: Option<&'a AstNode>
 }
@@ -177,8 +173,6 @@ impl VMFunction {
     }
 
     fn emitlocal(&mut self, oploc: OpcodeType, opvar: OpcodeType, var: &str) {
-        checkfutureword(var);
-        
         let (found, i) =  self.findlocal(var);
         if found {
             self.emitstring(opvar, var);
@@ -317,7 +311,6 @@ impl VMFunction {
 
     fn addlocal(&mut self, node: &AstNode) -> u16 {
         let name = node.str_value.as_ref().unwrap();
-        checkfutureword(name);
 
         self.var_tab.push(name.clone());
 
@@ -837,7 +830,6 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
         AstType::EXP_INSTANCEOF => {
             compile_binary(f, exp,  OpcodeType::OP_INSTANCEOF);
         },
-        // case EXP_IN: cbinary(J, F, exp, OP_IN); break;
         AstType::EXP_SHL => {
             compile_binary(f, exp,  OpcodeType::OP_SHL);
         },
@@ -975,7 +967,6 @@ fn compile_trycatchfinally(f: &mut VMFunction, try_block: &AstNode, catch_var: &
         f.label_current_to(l2);
 
         let catchvar = catch_var.str_value.as_ref().unwrap();
-        checkfutureword(catchvar);
         //f.new_scope(VMJumpScope::CatchScope);
         f.emitstring(OpcodeType::OP_CATCH, catchvar);
         compile_stm(f, catch_block);
@@ -1002,7 +993,6 @@ fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
     {
         /* if we get here, we have caught an exception in the try block */
         let catchvar = b.str_value.as_ref().unwrap();
-        checkfutureword(catchvar);
         f.emitstring(OpcodeType::OP_CATCH, catchvar);
         compile_stm(f, c);
         f.emitop(OpcodeType::OP_ENDCATCH);
@@ -1265,7 +1255,6 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
 
             if !a.is_null() {
                 let break_target = a.str_value.as_ref().unwrap();
-                checkfutureword(break_target);
                 break_scope = f.target_scope_by_name(break_target);
             } else {
                 break_scope = f.target_break_scope();
@@ -1286,7 +1275,6 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
 
             if !a.is_null() {
                 let continue_target = a.str_value.as_ref().unwrap();
-                checkfutureword(continue_target);
                 continue_scope = f.target_scope_by_name(continue_target);
             } else {
                 continue_scope = f.target_continue_scope();
@@ -1320,10 +1308,6 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
         AstType::STM_THROW => {
             compile_exp(f, stm.a.as_ref().unwrap());
             f.emitop(OpcodeType::OP_THROW);
-        },
-
-        AstType::STM_WITH => {
-            panic!("'with' statements are not allowed in strict mode");
         },
 
         AstType::STM_TRY => {

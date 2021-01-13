@@ -165,7 +165,6 @@ pub enum AstType {
 	EXP_USHR,
 	EXP_SHR,
 	EXP_SHL,
-	EXP_IN,
 	EXP_INSTANCEOF,
 	EXP_GE,
 	EXP_LE,
@@ -214,7 +213,6 @@ pub enum AstType {
 	STM_CONTINUE,
 	STM_BREAK,
 	STM_RETURN,
-	STM_WITH,
 	STM_SWITCH,
 	STM_THROW,
 	STM_TRY,
@@ -276,7 +274,6 @@ pub enum OpcodeType {
 	OP_SETVAR,	/* <value> -S- <value> */
 	OP_DELVAR,	/* -S- <success> */
 
-	OP_IN,		/* <name> <obj> -- <exists?> */
 
 	OP_INITPROP,	/* <obj> <key> <val> -- <obj> */
 	OP_INITGETTER,	/* <obj> <key> <closure> -- <obj> */
@@ -381,7 +378,6 @@ impl TryFrom<u16> for OpcodeType {
 			x if x == OpcodeType::OP_GETVAR as u16 => Ok(OpcodeType::OP_GETVAR),
 			x if x == OpcodeType::OP_SETVAR as u16 => Ok(OpcodeType::OP_SETVAR),
 			x if x == OpcodeType::OP_DELVAR as u16 => Ok(OpcodeType::OP_DELVAR),
-			x if x == OpcodeType::OP_IN as u16 => Ok(OpcodeType::OP_IN),
 			x if x == OpcodeType::OP_INITPROP as u16 => Ok(OpcodeType::OP_INITPROP),
 			x if x == OpcodeType::OP_INITGETTER as u16 => Ok(OpcodeType::OP_INITGETTER),
 			x if x == OpcodeType::OP_INITSETTER as u16 => Ok(OpcodeType::OP_INITSETTER),

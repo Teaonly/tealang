@@ -926,16 +926,7 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         let a = AstNode::new(AstType::AST_NULL, tkr.line());
         let stm = AstNode::new_a(AstType::STM_RETURN, tkr.line(), a);
         return Ok(stm);
-
-    } else if tk_accept(tkr, TokenType::TK_WITH)? {
-        tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
-        let a = ast_expression(tkr)?;
-        tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
-        let b = ast_statement(tkr)?;
-
-        let stm = AstNode::new_a_b(AstType::STM_WITH, tkr.line(), a, b);
-        return Ok(stm);
-
+        
     } else if tk_accept(tkr, TokenType::TK_SWITCH)? {
         tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
         let a = ast_expression(tkr)?;
