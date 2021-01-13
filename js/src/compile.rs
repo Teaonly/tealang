@@ -402,9 +402,27 @@ fn compile_call(f: &mut VMFunction, exp: &AstNode) {
 fn compile_args(f: &mut VMFunction, exp: &AstNode) -> u16{
     return 0;
 }
+
 fn compile_delete(f: &mut VMFunction, exp: &AstNode) {
 
 }
+
+fn compile_assignop(f: &mut VMFunction, exp: &AstNode, op: OpcodeType, is_post: bool) {
+
+}
+
+fn compile_typeof(f: &mut VMFunction, exp: &AstNode) {
+
+}
+
+fn compile_unary(f: &mut VMFunction, exp: &AstNode, op: OpcodeType) {
+
+}
+
+fn compile_binary(f: &mut VMFunction, exp: &AstNode, op: OpcodeType) {
+
+}
+
 
 fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
     match exp.ast_type {
@@ -449,6 +467,12 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
             f.emitfunction(func);
         },
 
+        AstType::EXP_VOID => {
+            compile_exp(f, exp.a());
+            f.emitop(OpcodeType::OP_POP);
+            f.emitop(OpcodeType::OP_UNDEF);
+        }
+
         AstType::EXP_IDENTIFIER => {
             let var_string = exp.str_value.as_ref().unwrap();
             f.emitlocal(OpcodeType::OP_GETLOCAL, OpcodeType::OP_GETVAR, var_string);
@@ -460,7 +484,7 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
             f.emitop(OpcodeType::OP_GETPROP);
         },
 
-        AstType::EXP_INDEX => {
+        AstType::EXP_MEMBER => {
             compile_exp(f, exp.a());
             let prop_str = exp.b().str_value.as_ref().unwrap();
             f.emitstring(OpcodeType::OP_GETPROP_S, prop_str);
@@ -477,8 +501,59 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
             f.emit(n);
         },
 
+        // Unary operation
         AstType::EXP_DELETE => {
             compile_delete(f, exp);
+        },
+        AstType::EXP_PREINC => {
+            compile_assignop(f, exp.a(), OpcodeType::OP_INC, false);
+        },
+        AstType::EXP_PREDEC => {
+            compile_assignop(f, exp.a(), OpcodeType::OP_DEC, false);
+        },
+        AstType::EXP_POSTINC => {
+            compile_assignop(f, exp.a(), OpcodeType::OP_POSTINC, true);
+        },
+        AstType::EXP_POSTDEC => {
+            compile_assignop(f, exp.a(), OpcodeType::OP_POSTDEC, true);
+        },
+        AstType::EXP_TYPEOF => {
+            compile_typeof(f, exp);
+        },
+        AstType::EXP_POS => {
+            compile_unary(f, exp,  OpcodeType::OP_POS);
+        },
+        AstType::EXP_NEG => {
+            compile_unary(f, exp,  OpcodeType::OP_NEG);
+        },
+        AstType::EXP_BITNOT => {
+            compile_unary(f, exp,  OpcodeType::OP_BITNOT);
+        },
+        AstType::EXP_LOGNOT => {
+            compile_unary(f, exp,  OpcodeType::OP_LOGNOT);
+        },
+
+        // Binary operation
+        AstType::EXP_BITOR => {
+            compile_binary(f, exp,  OpcodeType::OP_BITOR);
+        },
+        AstType::EXP_BITXOR => {
+            compile_binary(f, exp,  OpcodeType::OP_BITXOR);
+        },
+        AstType::EXP_BITAND => {
+            compile_binary(f, exp,  OpcodeType::OP_BITAND);
+        },
+        AstType::EXP_EQ => {
+            compile_binary(f, exp,  OpcodeType::OP_EQ);
+        },
+        AstType::EXP_NE => {
+            compile_binary(f, exp,  OpcodeType::OP_NE);
+        },
+        AstType::EXP_STRICTEQ => {
+            compile_binary(f, exp,  OpcodeType::OP_STRICTEQ);
+        },
+        AstType::EXP_STRICTNE => {
+            compile_binary(f, exp,  OpcodeType::OP_STRICTNE);
         },
 
         _ => {
@@ -494,56 +569,6 @@ static void cexp(JF, js_Ast *exp)
 	int n;
 
 	switch (exp->type) {
-	case EXP_PREINC:
-		cassignop1(J, F, exp->a);
-		emitline(J, F, exp);
-		emit(J, F, OP_INC);
-		cassignop2(J, F, exp->a, 0);
-		break;
-
-	case EXP_PREDEC:
-		cassignop1(J, F, exp->a);
-		emitline(J, F, exp);
-		emit(J, F, OP_DEC);
-		cassignop2(J, F, exp->a, 0);
-		break;
-
-	case EXP_POSTINC:
-		cassignop1(J, F, exp->a);
-		emitline(J, F, exp);
-		emit(J, F, OP_POSTINC);
-		cassignop2(J, F, exp->a, 1);
-		emit(J, F, OP_POP);
-		break;
-
-	case EXP_POSTDEC:
-		cassignop1(J, F, exp->a);
-		emitline(J, F, exp);
-		emit(J, F, OP_POSTDEC);
-		cassignop2(J, F, exp->a, 1);
-		emit(J, F, OP_POP);
-		break;
-
-	case EXP_VOID:
-		cexp(J, F, exp->a);
-		emitline(J, F, exp);
-		emit(J, F, OP_POP);
-		emit(J, F, OP_UNDEF);
-		break;
-
-	case EXP_TYPEOF: ctypeof(J, F, exp); break;
-	case EXP_POS: cunary(J, F, exp, OP_POS); break;
-	case EXP_NEG: cunary(J, F, exp, OP_NEG); break;
-	case EXP_BITNOT: cunary(J, F, exp, OP_BITNOT); break;
-	case EXP_LOGNOT: cunary(J, F, exp, OP_LOGNOT); break;
-
-	case EXP_BITOR: cbinary(J, F, exp, OP_BITOR); break;
-	case EXP_BITXOR: cbinary(J, F, exp, OP_BITXOR); break;
-	case EXP_BITAND: cbinary(J, F, exp, OP_BITAND); break;
-	case EXP_EQ: cbinary(J, F, exp, OP_EQ); break;
-	case EXP_NE: cbinary(J, F, exp, OP_NE); break;
-	case EXP_STRICTEQ: cbinary(J, F, exp, OP_STRICTEQ); break;
-	case EXP_STRICTNE: cbinary(J, F, exp, OP_STRICTNE); break;
 	case EXP_LT: cbinary(J, F, exp, OP_LT); break;
 	case EXP_GT: cbinary(J, F, exp, OP_GT); break;
 	case EXP_LE: cbinary(J, F, exp, OP_LE); break;
@@ -1083,7 +1108,7 @@ fn compile_func(name: &AstNode, params: &AstNode, body: &AstNode, script: bool) 
 
         let name_str = name.str_value.as_ref().unwrap();
 
-        let (found, localid) = f.findlocal( name_str );
+        let (found, _) = f.findlocal( name_str );
         if !found {
             f.emitop(OpcodeType::OP_CURRENT);
             f.emitop(OpcodeType::OP_SETLOCAL);
