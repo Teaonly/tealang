@@ -32,7 +32,7 @@ impl<'a> Iterator for AstListIterator<'a> {
         if node.b.is_none() {
             self.cursor = Some( node.b.as_ref().unwrap() );
         }
-        return Some(node);
+        return Some(node.a.as_ref().unwrap());
     }
 }
 
@@ -389,46 +389,273 @@ impl VMFunction {
 }
 
 /* Expressions */
+fn compile_object(f: &mut VMFunction, lst: &AstNode) {
+    if lst.is_null() {
+        return;
+    }
 
-fn compile_object(f: &mut VMFunction, exp: &AstNode) {
+    let it = lst.iter();
+    for kv in it {
+        let prop = kv.a();
+        match prop.ast_type {
+            AstType::AST_IDENTIFIER | AstType::EXP_STRING => {
+                let prop_str = prop.str_value.as_ref().unwrap();
+                f.emitstring(OpcodeType::OP_STRING, prop_str);
+            },
+            AstType::EXP_NUMBER => {
+                let prop_number = prop.num_value.unwrap();
+                f.emitnumber(prop_number);
+            },
+            _ => {
+                panic!("invalid property name in object initializer");
+            }
+        }
 
+        /*    
+		if (F->strict)
+            checkdup(J, F, head, kv);
+        */
+        match kv.ast_type {
+            AstType::EXP_PROP_VAL => {
+                compile_exp(f, kv.b());
+                f.emitop(OpcodeType::OP_INITPROP);
+            },
+            AstType::EXP_PROP_GET => {
+                let null = AstNode::null();
+                let func = compile_func( &null, &null, kv.c(), false).unwrap();
+                f.emitfunction(func);
+                f.emitop(OpcodeType::OP_INITGETTER);                
+            },
+            AstType::EXP_PROP_SET => {
+                let null = AstNode::null();
+                let func = compile_func( &null, kv.b(), kv.c(), false).unwrap();
+                f.emitop(OpcodeType::OP_INITSETTER);  
+            },
+            _ => {
+                panic!("invalid value type in object initializer");
+            }
+        }
+    }
 }
-fn compile_array(f: &mut VMFunction, exp: &AstNode) {
 
-}
-fn compile_call(f: &mut VMFunction, exp: &AstNode) {
-
-}
-fn compile_args(f: &mut VMFunction, exp: &AstNode) -> u16{
-    return 0;
+fn compile_array(f: &mut VMFunction, lst: &AstNode) {
+    if lst.is_null() {
+        return;
+    }
+    let mut i:u16 = 0;
+    let it = lst.iter();
+    for n in it {
+        if n.ast_type != AstType::EXP_UNDEF {
+            f.emitop(OpcodeType::OP_INTEGER);
+            f.emit(i);
+            compile_exp(f, n);
+            f.emitop(OpcodeType::OP_INITPROP);
+        }
+        i = i + 1;
+    }
 }
 
 fn compile_delete(f: &mut VMFunction, exp: &AstNode) {
+    let arg = exp.a();
+    match arg.ast_type {
 
+        AstType::EXP_INDEX => {
+            compile_exp(f, arg.a());
+            compile_exp(f, arg.b());
+            f.emitop(OpcodeType::OP_DELPROP);
+        },
+        AstType::EXP_MEMBER => {
+            compile_exp(f, arg.a());
+            let member_str = arg.b().str_value.as_ref().unwrap();
+            f.emitstring(OpcodeType::OP_DELPROP_S, member_str);
+        },
+        AstType::EXP_IDENTIFIER => {
+            panic!("delete on an unqualified name is not allowed in strict mode");
+        },
+        _ => {
+            panic!("invalid l-value in delete expression");
+        }
+    }
 }
 
 fn compile_typeof(f: &mut VMFunction, exp: &AstNode) {
-
+    if exp.a().ast_type == AstType::EXP_IDENTIFIER {
+        let var_str = exp.a().str_value.as_ref().unwrap();
+        f.emitlocal(OpcodeType::OP_GETLOCAL, OpcodeType::OP_HASVAR, var_str);
+    } else {
+        compile_exp(f, exp.a());
+    }
+    f.emitop(OpcodeType::OP_TYPEOF);
 }
 
 fn compile_unary(f: &mut VMFunction, exp: &AstNode, op: OpcodeType) {
-
+    compile_exp(f, exp.a());
+    f.emitop(op);
 }
 
 fn compile_binary(f: &mut VMFunction, exp: &AstNode, op: OpcodeType) {
-
+    compile_exp(f, exp.a());
+    compile_exp(f, exp.b());
+    f.emitop(op);
 }
 
-fn compile_assignop(f: &mut VMFunction, exp: &AstNode, op: OpcodeType, is_post: bool) {
-
-}
-
-fn compile_assign(f: &mut VMFunction, exp: &AstNode) {
-
+fn compile_assignop(f: &mut VMFunction, var: &AstNode, op: OpcodeType, is_post: bool) {
+    match var.ast_type {
+        AstType::EXP_IDENTIFIER => {
+            let id_str = var.str_value.as_ref().unwrap();
+            f.emitlocal(OpcodeType::OP_GETLOCAL, OpcodeType::OP_GETVAR, id_str);
+            f.emitop(op);
+            if is_post {
+                f.emitop(OpcodeType::OP_ROT2);
+            }
+            f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, id_str);
+        },
+        AstType::EXP_INDEX => {
+            compile_exp(f, var.a());
+            compile_exp(f, var.b());
+            f.emitop(OpcodeType::OP_DUP2);
+            f.emitop(OpcodeType::OP_GETPROP);
+            f.emitop(op);
+            if is_post {
+                f.emitop(OpcodeType::OP_ROT4);
+            }
+            f.emitop(OpcodeType::OP_SETPROP);
+        },
+        AstType::EXP_MEMBER => {
+            compile_exp(f, var.a());
+            f.emitop(OpcodeType::OP_DUP);
+            let member_str = var.b().str_value.as_ref().unwrap();
+            f.emitstring(OpcodeType::OP_GETPROP_S, member_str);
+            f.emitop(op);
+            if is_post {
+                f.emitop(OpcodeType::OP_ROT3);
+            }
+            f.emitstring(OpcodeType::OP_SETPROP_S, member_str);
+        },
+        _ => {
+            panic!("invalid l-value in assignment");
+        }
+    }
 }
 
 fn compile_assignwith(f: &mut VMFunction, exp: &AstNode, op: OpcodeType) {
+    let var = exp.a();
+    let rhs = exp.b();
 
+    match var.ast_type {
+        AstType::EXP_IDENTIFIER => {
+            let id_str = var.str_value.as_ref().unwrap();
+            f.emitlocal(OpcodeType::OP_GETLOCAL, OpcodeType::OP_GETVAR, id_str);
+            compile_exp(f, rhs);
+            f.emitop(op);
+            f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, id_str);
+        },
+        AstType::EXP_INDEX => {
+            compile_exp(f, var.a());
+            compile_exp(f, var.b());
+            f.emitop(OpcodeType::OP_DUP2);
+            f.emitop(OpcodeType::OP_GETPROP);
+            compile_exp(f, rhs);
+            f.emitop(op);
+            f.emitop(OpcodeType::OP_SETPROP);
+        },
+        AstType::EXP_MEMBER => {
+            compile_exp(f, var.a());
+            f.emitop(OpcodeType::OP_DUP);
+            let member_str = var.b().str_value.as_ref().unwrap();
+            f.emitstring(OpcodeType::OP_GETPROP_S, member_str);
+            compile_exp(f, rhs);
+            f.emitop(op);
+            f.emitstring(OpcodeType::OP_SETPROP_S, member_str);
+        },
+        _ => {
+            panic!("invalid l-value in assignment");
+        }
+    }
+}
+
+fn compile_assign(f: &mut VMFunction, exp: &AstNode) {
+    let var = exp.a();
+    let rhs = exp.b();
+
+    match var.ast_type {
+        AstType::EXP_IDENTIFIER => {
+            let id_str = var.str_value.as_ref().unwrap();
+            compile_exp(f, rhs);
+            f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, id_str);
+        },
+        AstType::EXP_INDEX => {
+            compile_exp(f, var.a());
+            compile_exp(f, var.b());
+            compile_exp(f, rhs);
+            f.emitop(OpcodeType::OP_SETPROP);
+        },
+        AstType::EXP_MEMBER => {            
+            let member_str = var.b().str_value.as_ref().unwrap();
+            compile_exp(f, var.a());
+            compile_exp(f, rhs);
+            f.emitstring(OpcodeType::OP_SETPROP_S, member_str);
+        },
+        _ => {
+            panic!("invalid l-value in assignment");
+        }
+    }
+}
+
+fn compile_args(f: &mut VMFunction, lst: &AstNode) -> u16 {
+    if lst.is_null() {
+        return 0;
+    }
+    let mut num:u16 = 0;
+    let it = lst.iter();
+    for n in it {
+        compile_exp(f, n);
+        num = num + 1;
+    }
+    return num;
+}
+
+fn compile_call(f: &mut VMFunction, exp: &AstNode) {
+    let fun = exp.a();
+    let args = exp.b();
+
+    match fun.ast_type {
+        AstType::EXP_INDEX => {
+            compile_exp(f, fun.a());
+            f.emitop(OpcodeType::OP_DUP);
+            compile_exp(f, fun.b());
+            f.emitop(OpcodeType::OP_GETPROP);
+            f.emitop(OpcodeType::OP_ROT2);
+        },
+        AstType::EXP_MEMBER => {
+            compile_exp(f, fun.a());
+            f.emitop(OpcodeType::OP_DUP);
+            let member = fun.b().str_value.as_ref().unwrap();
+            f.emitstring(OpcodeType::OP_GETPROP_S, member);
+            f.emitop(OpcodeType::OP_ROT2);
+        },
+        /*
+        case EXP_IDENTIFIER:
+            if (!strcmp(fun->string, "eval")) {
+                ceval(J, F, fun, args);
+                return;
+            }
+            /* fallthrough */
+        default:
+            cexp(J, F, fun);
+            emit(J, F, OP_UNDEF);
+            break;
+        }
+        */
+        _ => {
+            compile_exp(f, fun);
+            f.emitop(OpcodeType::OP_UNDEF);
+        }
+    }
+
+    let n = compile_args(f, args);
+    f.emitop(OpcodeType::OP_CALL);
+    f.emit(n);
 }
 
 fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
