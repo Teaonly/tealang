@@ -2,9 +2,8 @@ use crate::common::*;
 use crate::ast::*;
 
 /* Local help function and struct */
-
 fn checkfutureword(name: &str) {
-
+    
 }
 
 struct AstListIterator<'a> {
@@ -36,8 +35,8 @@ impl<'a> Iterator for AstListIterator<'a> {
     }
 }
 
+#[allow(dead_code)] 
 impl AstNode {
-
     fn a(&self) -> &AstNode {
         return self.a.as_ref().unwrap();
     }
@@ -50,7 +49,7 @@ impl AstNode {
     fn d(&self) -> &AstNode {
         return self.d.as_ref().unwrap();
     }
-
+    
     fn has_a(&self) -> bool {
         self.a.is_some()
     }
@@ -268,7 +267,7 @@ impl VMFunction {
     }
 
     #[allow(non_camel_case_types)]
-    fn targetScopeByName(&self, name: &str) -> usize {
+    fn target_scope_by_name(&self, name: &str) -> usize {
         let mut brk_index = 0;
         for i in (0..self.jumps.len()).rev() {
             match &self.jumps[i].scope {
@@ -284,8 +283,7 @@ impl VMFunction {
         return brk_index;
     }
 
-    #[allow(non_camel_case_types)]
-    fn targetBreakScope(&self) -> usize {
+    fn target_break_scope(&self) -> usize {
         let mut brk_index = 0;
         for i in (0..self.jumps.len()).rev() {
             match &self.jumps[i].scope {
@@ -299,8 +297,7 @@ impl VMFunction {
         return brk_index;
     }
 
-    #[allow(non_camel_case_types)]
-    fn targetContinueScope(&self) -> usize {
+    fn target_continue_scope(&self) -> usize {
         let mut brk_index = 0;
         for i in (0..self.jumps.len()).rev() {
             match &self.jumps[i].scope {
@@ -429,6 +426,7 @@ fn compile_object(f: &mut VMFunction, lst: &AstNode) {
             AstType::EXP_PROP_SET => {
                 let null = AstNode::null();
                 let func = compile_func( &null, kv.b(), kv.c(), false).unwrap();
+                f.emitfunction(func);
                 f.emitop(OpcodeType::OP_INITSETTER);  
             },
             _ => {
@@ -751,7 +749,7 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
             f.label_current_to(end);
         },
 
-        AstType::EXP_LOGOR => {
+        AstType::EXP_LOGAND => {
             compile_exp(f, exp.a());
             f.emitop(OpcodeType::OP_DUP);
             let end = f.emitjump(OpcodeType::OP_JFALSE);
@@ -959,22 +957,22 @@ fn compile_exit(f: &mut VMFunction, scope_index: usize, jump_type: AstType) {
 
 /* Try/catch/finally */
 fn compile_trycatchfinally(f: &mut VMFunction, try_block: &AstNode, catch_var: &AstNode, catch_block: &AstNode, finally_block: &AstNode) {
-    let L1:usize;
-    let L2:usize;
-    let L3:usize;
+    let l1:usize;
+    let l2:usize;
+    let l3:usize;
 
     //f.new_scope(VMJumpScope::TryScope);
-    L1 = f.emitjump(OpcodeType::OP_TRY);
+    l1 = f.emitjump(OpcodeType::OP_TRY);
     {
         /* if we get here, we have caught an exception in the try block */
         //f.new_scope(VMJumpScope::TryScope);
-        L2 = f.emitjump(OpcodeType::OP_TRY);
+        l2 = f.emitjump(OpcodeType::OP_TRY);
         {
             /* if we get here, we have caught an exception in the catch block */
             compile_stm(f, finally_block);  /* inline finally block */
             f.emitop(OpcodeType::OP_THROW);
         }
-        f.label_current_to(L2);
+        f.label_current_to(l2);
 
         let catchvar = catch_var.str_value.as_ref().unwrap();
         checkfutureword(catchvar);
@@ -985,22 +983,22 @@ fn compile_trycatchfinally(f: &mut VMFunction, try_block: &AstNode, catch_var: &
         //f.delete_scope();
         f.emitop(OpcodeType::OP_ENDTRY);
         //f.delete_scope();
-        L3 = f.emitjump(OpcodeType::OP_JUMP);
+        l3 = f.emitjump(OpcodeType::OP_JUMP);
     }
-    f.label_current_to(L1);
+    f.label_current_to(l1);
     compile_stm(f, try_block);
     f.emitop(OpcodeType::OP_ENDTRY);
     //f.delete_scope();
-    f.label_current_to(L3);
+    f.label_current_to(l3);
     compile_stm(f, finally_block);
 } 
 
 fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
-    let L1:usize;
-    let L2:usize;
+    let l1:usize;
+    let l2:usize;
 
     //f.new_scope(VMJumpScope::TryScope);
-    L1 = f.emitjump(OpcodeType::OP_TRY);
+    l1 = f.emitjump(OpcodeType::OP_TRY);
     {
         /* if we get here, we have caught an exception in the try block */
         let catchvar = b.str_value.as_ref().unwrap();
@@ -1008,23 +1006,25 @@ fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
         f.emitstring(OpcodeType::OP_CATCH, catchvar);
         compile_stm(f, c);
         f.emitop(OpcodeType::OP_ENDCATCH);
+        l2 = f.emitjump(OpcodeType::OP_JUMP);
     }
-    f.label_current_to(L1);
+    f.label_current_to(l1);
     compile_stm(f, a);
     f.emitop(OpcodeType::OP_ENDTRY);
+    f.label_current_to(l2);
     //f.delete_scope();
     compile_stm(f, b);
 }
 
 fn compile_finally(f: &mut VMFunction, a: &AstNode, b: &AstNode) {
-    let L1:usize;
-    L1 = f.emitjump(OpcodeType::OP_TRY);
+    let l1:usize;
+    l1 = f.emitjump(OpcodeType::OP_TRY);
     {
         /* if we get here, we have caught an exception in the try block */
         compile_stm(f, b);
         f.emitop(OpcodeType::OP_THROW);
     }
-    f.label_current_to(L1);
+    f.label_current_to(l1);
     compile_stm(f, a);
     f.emitop(OpcodeType::OP_ENDTRY);
     compile_stm(f, b);
@@ -1266,9 +1266,9 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             if !a.is_null() {
                 let break_target = a.str_value.as_ref().unwrap();
                 checkfutureword(break_target);
-                break_scope = f.targetScopeByName(break_target);
+                break_scope = f.target_scope_by_name(break_target);
             } else {
-                break_scope = f.targetBreakScope();
+                break_scope = f.target_break_scope();
             }
             if break_scope == 0 {
                 panic!("Can't find break target!");
@@ -1287,9 +1287,9 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             if !a.is_null() {
                 let continue_target = a.str_value.as_ref().unwrap();
                 checkfutureword(continue_target);
-                continue_scope = f.targetScopeByName(continue_target);
+                continue_scope = f.target_scope_by_name(continue_target);
             } else {
-                continue_scope = f.targetContinueScope();
+                continue_scope = f.target_continue_scope();
             }
             if continue_scope == 0 {
                 panic!("Can't find continue target!");                
