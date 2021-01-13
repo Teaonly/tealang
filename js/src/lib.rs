@@ -2,6 +2,7 @@ pub mod common;
 mod token;
 mod ast;
 mod compile;
+mod run;
 
 pub fn dummy() {
     let script = r#"
