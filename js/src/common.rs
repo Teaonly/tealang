@@ -2,6 +2,10 @@
 // common/shared/public struct/enum
 //
 
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
 /* token stuff */
 #[allow(non_camel_case_types)]
 #[derive(Clone, Debug, PartialEq)]
@@ -383,5 +387,40 @@ pub struct VMFunction {
 	pub func_tab:	Vec<Box<VMFunction>>,
 
 	pub jumps:		Vec<VMJumpTable>,
+}
+
+#[allow(non_camel_case_types)]
+pub enum JsValue {
+	JSBoolean(bool),
+	JSNumber(f64),
+	JSString(String),
+	JSObject(RefCell<JsObject>),
+}
+
+#[allow(non_camel_case_types)]
+pub enum JsType {
+	boolean(bool),
+	number(f64),
+	string(String),
+	array(Vec<JsValue>),
+
+	// some special type
+	iter(()),
+	function(VMFunction),
+	native(()),
+}
+
+#[allow(non_camel_case_types)]
+pub struct JsObject {
+	pub prototype:	Box<RefCell<JsObject>>,
+	pub properties: HashMap<String, JsProperty>,
+	pub value:	JsType,
+}
+
+#[allow(non_camel_case_types)]
+pub struct JsProperty {
+	pub value:	JsValue,
+	pub getter:	JsObject,
+	pub setter:	JsObject,
 }
 

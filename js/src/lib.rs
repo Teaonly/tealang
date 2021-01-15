@@ -3,6 +3,7 @@ mod token;
 mod ast;
 mod compile;
 mod run;
+mod value;
 
 pub fn dummy() {
     let script = r#"
