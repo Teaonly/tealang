@@ -376,7 +376,6 @@ pub struct VMJumpTable {
 
 #[allow(non_camel_case_types)]
 pub struct VMFunction {
-
 	pub script:		bool,
 	pub numparams:	usize,
 	pub code:		Vec<u16>,
@@ -422,5 +421,37 @@ pub struct JsProperty {
 	pub value:	JsValue,
 	pub getter:	JsObject,
 	pub setter:	JsObject,
+}
+
+#[allow(non_camel_case_types)]
+pub struct JsEnvironment<'a> {
+	data: HashMap<String, RefCell<JsObject>>,
+	outer: Option<&'a JsEnvironment<'a>>
+}
+
+#[allow(non_camel_case_types)]
+pub struct JsPrototype {
+	/* prototype for different objects */
+	pub object_prototype:	Box<RefCell<JsObject>>,
+	pub array_prototype:	Box<RefCell<JsObject>>,
+	pub function_prototype: Box<RefCell<JsObject>>,
+	pub boolean_prototype:	Box<RefCell<JsObject>>,
+	pub number_prototype:	Box<RefCell<JsObject>>,
+	pub string_prototype:	Box<RefCell<JsObject>>,
+	
+	pub error_prototype:	Box<RefCell<JsObject>>,
+	pub range_err_proto:	Box<RefCell<JsObject>>,
+	pub ref_err_proto:		Box<RefCell<JsObject>>,
+	pub syntax_err_proto:	Box<RefCell<JsObject>>,
+	pub type_err_proto:		Box<RefCell<JsObject>>,
+}
+
+#[allow(non_camel_case_types)]
+pub struct JsRuntime <'a> {
+	pub prototypes:				JsPrototype,
+	pub global_object:			Box<RefCell<JsObject>>,
+	pub global_environment:		JsEnvironment<'a>,
+
+	pub statck:					Vec<RefCell<JsValue>>,
 }
 

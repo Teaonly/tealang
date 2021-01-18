@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-use crate::common::OpcodeType;
+use crate::common::*;
 
 impl TryFrom<u16> for OpcodeType {
     type Error = ();
@@ -96,3 +96,6 @@ impl TryFrom<u16> for OpcodeType {
     }
 }
 
+pub fn new_runtime<'a>() -> JsRuntime<'a> {
+	
+} 
