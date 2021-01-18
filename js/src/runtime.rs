@@ -1,6 +1,10 @@
 use std::convert::TryFrom;
+use std::cell::Cell;
+use std::rc::Rc;
+use std::collections::HashMap;
 
 use crate::common::*;
+use crate::value::*;
 
 impl TryFrom<u16> for OpcodeType {
     type Error = ();
@@ -96,6 +100,25 @@ impl TryFrom<u16> for OpcodeType {
     }
 }
 
-pub fn new_runtime<'a>() -> JsRuntime<'a> {
-	
-} 
+
+pub fn new_runtime() {
+	let obj = Rc::new(Cell::new(JsObject::new()));
+	let boolean = Rc::new(Cell::new(JsObject::new_with_class(obj.clone(), JsClass::boolean(false))));
+	let number = Rc::new(Cell::new(JsObject::new_with_class(obj.clone(), JsClass::number(0.0))));	
+	let prototypes = JsPrototype {
+		object_prototype:	obj.clone(),
+		array_prototype:	obj.clone(),
+		function_prototype:	obj.clone(),
+		boolean_prototype:	boolean,
+		number_prototype:	number,
+		string_prototype:	obj.clone(),
+
+		error_prototype:	obj.clone(),
+		range_err_proto:	obj.clone(),
+		ref_err_proto:		obj.clone(),
+		syntax_err_proto:	obj.clone(),
+		type_err_proto:		obj.clone(),			
+	};
+	let gobj =  Rc::new(Cell::new(JsObject::new_with_class(obj.clone(), JsClass::object)));
+	panic!("TODO")
+}

@@ -2,6 +2,7 @@
 // common/shared/public struct/enum
 //
 
+use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -388,70 +389,75 @@ pub struct VMFunction {
 	pub jumps:		Vec<VMJumpTable>,
 }
 
+pub type SharedObject = Rc<Cell<JsObject>>; 
+
 #[allow(non_camel_case_types)]
 pub enum JsValue {
+	JSUndefined,
+	JSNULL,
 	JSBoolean(bool),
 	JSNumber(f64),
 	JSString(String),
-	JSObject(RefCell<JsObject>),
+	JSObject(SharedObject),
 }
 
 #[allow(non_camel_case_types)]
-pub enum JsType {
+pub enum JsClass {
+	object,
 	boolean(bool),
 	number(f64),
 	string(String),
 	array(Vec<JsValue>),
 
 	// some special type
-	iter(()),
-	function(VMFunction),
-	native(()),
+	iter,
+	function,
+	native,
 }
 
 #[allow(non_camel_case_types)]
 pub struct JsObject {
-	pub prototype:	Box<RefCell<JsObject>>,
+	pub prototype:	Option<SharedObject>,
 	pub properties: HashMap<String, JsProperty>,
-	pub value:	JsType,
+	pub value:	JsClass,
 }
 
 #[allow(non_camel_case_types)]
 pub struct JsProperty {
 	pub value:	JsValue,
-	pub getter:	JsObject,
-	pub setter:	JsObject,
+	pub getter:	Option<SharedObject>,
+	pub setter:	Option<SharedObject>,
 }
 
 #[allow(non_camel_case_types)]
 pub struct JsEnvironment<'a> {
-	data: HashMap<String, RefCell<JsObject>>,
+	data: HashMap<String, SharedObject>,
 	outer: Option<&'a JsEnvironment<'a>>
 }
 
 #[allow(non_camel_case_types)]
 pub struct JsPrototype {
 	/* prototype for different objects */
-	pub object_prototype:	Box<RefCell<JsObject>>,
-	pub array_prototype:	Box<RefCell<JsObject>>,
-	pub function_prototype: Box<RefCell<JsObject>>,
-	pub boolean_prototype:	Box<RefCell<JsObject>>,
-	pub number_prototype:	Box<RefCell<JsObject>>,
-	pub string_prototype:	Box<RefCell<JsObject>>,
+	pub object_prototype:	SharedObject,
+	pub array_prototype:	SharedObject,
+	pub function_prototype: SharedObject,
+	pub boolean_prototype:	SharedObject,
+	pub number_prototype:	SharedObject,
+	pub string_prototype:	SharedObject,
 	
-	pub error_prototype:	Box<RefCell<JsObject>>,
-	pub range_err_proto:	Box<RefCell<JsObject>>,
-	pub ref_err_proto:		Box<RefCell<JsObject>>,
-	pub syntax_err_proto:	Box<RefCell<JsObject>>,
-	pub type_err_proto:		Box<RefCell<JsObject>>,
+	pub error_prototype:	SharedObject,
+	pub range_err_proto:	SharedObject,
+	pub ref_err_proto:		SharedObject,
+	pub syntax_err_proto:	SharedObject,
+	pub type_err_proto:		SharedObject,
 }
 
 #[allow(non_camel_case_types)]
 pub struct JsRuntime <'a> {
 	pub prototypes:				JsPrototype,
-	pub global_object:			Box<RefCell<JsObject>>,
+	pub global_object:			SharedObject,
 	pub global_environment:		JsEnvironment<'a>,
 
-	pub statck:					Vec<RefCell<JsValue>>,
+	pub statck:					Vec<JsValue>,
 }
 
