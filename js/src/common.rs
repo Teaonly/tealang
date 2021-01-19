@@ -431,8 +431,8 @@ pub struct JsProperty {
 
 #[allow(non_camel_case_types)]
 pub struct JsEnvironment<'a> {
-	data: HashMap<String, SharedObject>,
-	outer: Option<&'a JsEnvironment<'a>>
+	pub data: HashMap<String, SharedObject>,
+	pub outer: Option<&'a JsEnvironment<'a>>
 }
 
 #[allow(non_camel_case_types)]
@@ -454,10 +454,10 @@ pub struct JsPrototype {
 
 #[allow(non_camel_case_types)]
 pub struct JsRuntime <'a> {
-	pub prototypes:				JsPrototype,
-	pub global_object:			SharedObject,
-	pub global_environment:		JsEnvironment<'a>,
+	pub prototypes:		JsPrototype,
+	pub gobj:			SharedObject,
+	pub genv:			JsEnvironment<'a>,
 
-	pub statck:					Vec<JsValue>,
+	pub stack:			Vec<JsValue>,
 }
 
