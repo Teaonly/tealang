@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::collections::HashMap;
 
 use crate::common::*;
+use crate::runtime::*;
 
 impl TryFrom<u16> for OpcodeType {
     type Error = ();
@@ -99,6 +100,177 @@ impl TryFrom<u16> for OpcodeType {
     }
 }
 
-pub fn run(runtime: &mut JsRuntime, func: &VMFunction) {
-	
+impl VMFunction {
+	pub fn opcode(&self, pc:&mut usize) -> OpcodeType {
+		if *pc >= self.code.len() {
+			panic!("fetch opcode out of code");
+		}
+		if let Ok(op) = OpcodeType::try_from(self.code[*pc]) {
+			*pc = *pc + 1;
+			return op;
+		}
+		panic!("fetch opcode error!");
+	}
+	pub fn int(&self, pc:&mut usize) -> f64 {
+		if *pc >= self.code.len() {
+			panic!("fetch raw out of code");
+		}
+		let value = self.code[*pc] as f64;
+		*pc = *pc + 1;
+		return value;
+	}
+	pub fn number(&self, pc:&mut usize) -> f64 {
+		if *pc >= self.code.len() {
+			panic!("fetch raw out of code");
+		}
+		let id = self.code[*pc] as usize;
+		if id > self.num_tab.len() {
+			panic!("number out of vm");
+		}
+		let value = self.num_tab[id];
+		
+		*pc = *pc + 1;
+		return value;
+	}
+	pub fn string(&self, pc:&mut usize) -> String {
+		if *pc >= self.code.len() {
+			panic!("fetch raw out of code");
+		}
+		let id = self.code[*pc] as usize;
+		if id > self.str_tab.len() {
+			panic!("string out of vm");
+		}
+		let value = String::clone(&self.str_tab[id]);
+
+		*pc = *pc + 1;
+		return value;
+	}
+}
+
+impl <'a> JsRuntime<'a> {
+	pub fn pop(&mut self, n: usize) {
+		if n > self.stack.len() {
+			panic!("stack underflow! @ pop");
+		}
+		self.stack.pop();		
+	}
+	pub fn dup(&mut self) {
+		if let Some(ref v) = self.stack.first() {
+			let nv: JsValue = JsValue::clone(v);
+			self.stack.push(nv);
+		} else {
+			panic!("stack underflow! @ dup");
+		}
+	}
+	pub fn dup2(&mut self) {
+		if self.stack.len() < 2 {
+			panic!("stack underflow! @ dup2");
+		}
+
+		let top = self.stack.len();
+		let nv1: JsValue = JsValue::clone( &self.stack[top-2] );
+		let nv2: JsValue = JsValue::clone( &self.stack[top-1] );
+		self.stack.push(nv1);
+		self.stack.push(nv2);	
+	}
+	pub fn rot2(&mut self) {
+		if self.stack.len() < 2 {
+			panic!("stack underflow! @ rot2");
+		}
+		/* A B -> B A */
+		let top = self.stack.len();
+		self.stack.swap(top-1, top-2);
+	}
+	pub fn rot3(&mut self) {
+		if self.stack.len() < 3 {
+			panic!("stack underflow! @ rot3");
+		}
+		/* A B C -> C A B */
+		let top = self.stack.len();
+		self.stack.swap(top-1, top-2);
+		self.stack.swap(top-2, top-3);
+	}
+	pub fn rot4(&mut self) {
+		if self.stack.len() < 4 {
+			panic!("stack underflow! @ rot4");
+		}
+		/* A B C D -> D A B C */
+		let top = self.stack.len();
+		self.stack.swap(top-1, top-2);
+		self.stack.swap(top-2, top-3);
+		self.stack.swap(top-3, top-4);		
+	}
+
+	pub fn push(&mut self, jv: JsValue) {
+		self.stack.push(jv);
+	}
+	pub fn push_number(&mut self, v:f64) {
+		let jv = JsValue::new_number(v);
+		self.stack.push(jv);
+	}
+	pub fn push_string(&mut self, v:String) {
+		let jv = JsValue::new_string(v);
+		self.stack.push(jv);
+	} 
+
+}
+
+pub fn run<'a> (rt: &mut JsRuntime<'a>, func: &VMFunction) {
+	let mut pc:usize = 0;
+
+	loop {
+		let opcode = func.opcode(&mut pc);
+
+		match opcode {
+			OpcodeType::OP_POP => {
+				rt.pop(1);
+			},
+			OpcodeType::OP_DUP => {
+				rt.dup();
+			},
+			OpcodeType::OP_DUP2 => {
+				rt.dup2();
+			},
+			OpcodeType::OP_ROT2 => {
+				rt.rot2();
+			},
+			OpcodeType::OP_ROT3 => {
+				rt.rot3();
+			},
+			OpcodeType::OP_ROT4 => {
+				rt.rot4();
+			},
+
+			OpcodeType::OP_UNDEF => {
+				rt.push(JsValue::new_undefined());
+			},
+			OpcodeType::OP_NULL => {
+				rt.push(JsValue::new_null());
+			},
+			OpcodeType::OP_FALSE => {
+				rt.push(JsValue::new_false());
+			},
+			OpcodeType::OP_TRUE => {
+				rt.push(JsValue::new_false());
+			},
+
+			OpcodeType::OP_INTEGER => {
+				let v = func.int(&mut pc);
+				rt.push_number(v);
+			},
+			OpcodeType::OP_NUMBER => {
+				let v = func.number(&mut pc);
+				rt.push_number(v);
+			},
+			OpcodeType::OP_STRING => {
+				let v = func.string(&mut pc);
+				rt.push_string(v);
+			},
+
+
+
+			_ => {}
+		}
+		
+	}
 }

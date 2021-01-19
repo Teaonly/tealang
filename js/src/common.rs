@@ -392,6 +392,7 @@ pub struct VMFunction {
 pub type SharedObject = Rc<Cell<JsObject>>; 
 
 #[allow(non_camel_case_types)]
+#[derive(Clone)]
 pub enum JsValue {
 	JSUndefined,
 	JSNULL,
@@ -404,12 +405,7 @@ pub enum JsValue {
 #[allow(non_camel_case_types)]
 pub enum JsClass {
 	object,
-	boolean(bool),
-	number(f64),
-	string(String),
 	array(Vec<JsValue>),
-
-	// some special type
 	iter,
 	function,
 	native,

@@ -6,6 +6,27 @@ use std::rc::Rc;
 use crate::common::*;
 
 /* implementation for JsValue/JsObject/JsEnvironment/JsRuntime */
+impl JsValue {
+	pub fn new_null() -> Self {
+		JsValue::JSNULL
+	}
+	pub fn new_undefined() -> Self {
+		JsValue::JSUndefined
+	}
+	pub fn new_false() -> Self {
+		JsValue::JSBoolean(false)
+	}
+	pub fn new_true() -> Self {
+		JsValue::JSBoolean(true)
+	}
+	pub fn new_number(v:f64) -> Self {
+		JsValue::JSNumber(v)
+	}
+	pub fn new_string(v:String) -> Self {
+		JsValue::JSString(v)
+	}
+}
+
 impl JsObject {
     pub fn new() -> JsObject {
         JsObject {
@@ -21,8 +42,8 @@ impl JsObject {
             properties: HashMap::new(),
             value: value
         }
-    }
-        
+	}
+
     /* property's help functions */
     pub fn new_property<'a>(obj: &'a mut JsObject, name: &str) -> Option<&'a mut JsProperty> {
         let prop = JsProperty {
@@ -36,7 +57,7 @@ impl JsObject {
     }
 }
 
-
+/*
 pub fn new_runtime<'a>() -> JsRuntime<'a> {
 	let obj = Rc::new(Cell::new(JsObject::new()));
 	let boolean = Rc::new(Cell::new(JsObject::new_with_class(obj.clone(), JsClass::boolean(false))));
@@ -69,5 +90,5 @@ pub fn new_runtime<'a>() -> JsRuntime<'a> {
 
 	return runtime;
 }
-
+*/
 
