@@ -99,3 +99,6 @@ impl TryFrom<u16> for OpcodeType {
     }
 }
 
+pub fn run(runtime: &mut JsRuntime, func: &VMFunction) {
+	
+}

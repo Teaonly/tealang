@@ -5,6 +5,7 @@ use std::rc::Rc;
 
 use crate::common::*;
 
+/* implementation for JsValue/JsObject/JsEnvironment/JsRuntime */
 impl JsObject {
     pub fn new() -> JsObject {
         JsObject {
@@ -21,8 +22,7 @@ impl JsObject {
             value: value
         }
     }
-    
-    
+        
     /* property's help functions */
     pub fn new_property<'a>(obj: &'a mut JsObject, name: &str) -> Option<&'a mut JsProperty> {
         let prop = JsProperty {
@@ -69,3 +69,5 @@ pub fn new_runtime<'a>() -> JsRuntime<'a> {
 
 	return runtime;
 }
+
+
