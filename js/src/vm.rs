@@ -148,11 +148,14 @@ impl VMFunction {
 }
 
 impl <'a> JsRuntime<'a> {
-	pub fn pop(&mut self, n: usize) {
+	pub fn pop(&mut self, mut n: usize) {
 		if n > self.stack.len() {
 			panic!("stack underflow! @ pop");
 		}
-		self.stack.pop();		
+		while n > 0 {
+			self.stack.pop();
+			n = n - 1;
+		}		
 	}
 	pub fn dup(&mut self) {
 		if let Some(ref v) = self.stack.first() {
@@ -212,11 +215,19 @@ impl <'a> JsRuntime<'a> {
 		let jv = JsValue::new_string(v);
 		self.stack.push(jv);
 	} 
-
+	pub fn push_from(&mut self, from: usize) {
+		if from >= self.stack.len() {
+			panic!("stack underflow! @ push_from");
+		}
+		let jv = JsValue::clone( &self.stack[from] );
+		self.stack.push(jv);
+	}
 }
 
 pub fn run<'a> (rt: &mut JsRuntime<'a>, func: &VMFunction) {
+	assert!(rt.stack.len() > 0);
 	let mut pc:usize = 0;
+	let bot:usize = rt.stack.len() - 1;
 
 	loop {
 		let opcode = func.opcode(&mut pc);
@@ -266,11 +277,22 @@ pub fn run<'a> (rt: &mut JsRuntime<'a>, func: &VMFunction) {
 				let v = func.string(&mut pc);
 				rt.push_string(v);
 			},
+			
+			OpcodeType::OP_THIS => {
+				rt.push_from(bot);
+			},
+			OpcodeType::OP_CURRENT => {
+				rt.push_from(bot - 1);
+			},
 
+			/*
+			// TODO
+			OpcodeType::OP_GETLOCAL => {
+				let v = func.string(&mut pc);
 
-
+			}
+			*/
 			_ => {}
-		}
-		
+		}		
 	}
 }
