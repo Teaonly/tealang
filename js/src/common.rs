@@ -433,9 +433,13 @@ pub struct JsObject {
 	pub value:	JsClass,
 }
 
+/* Property attribute flags */
+
+
 #[allow(non_camel_case_types)]
 pub struct JsProperty {
 	pub value:	JsValue,
+	pub attr:	u32,
 	pub getter:	Option<SharedObject>,
 	pub setter:	Option<SharedObject>,
 }

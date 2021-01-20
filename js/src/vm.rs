@@ -162,7 +162,33 @@ impl JsEnvironment {
 }
 
 impl JsRuntime {
+	/* properties operation */
+	
 
+	/* stack operations */
+	pub fn push(&mut self, jv: JsValue) {
+		self.stack.push(jv);
+	}
+	pub fn push_undefined(&mut self) {
+		let jv = JsValue::new_undefined();
+		self.stack.push(jv);
+	}
+	pub fn push_number(&mut self, v:f64) {
+		let jv = JsValue::new_number(v);
+		self.stack.push(jv);
+	}
+	pub fn push_string(&mut self, v:String) {
+		let jv = JsValue::new_string(v);
+		self.stack.push(jv);
+	} 
+	pub fn push_from(&mut self, from: usize) {
+		if from >= self.stack.len() {
+			panic!("stack underflow! @ push_from");
+		}
+		let jv = JsValue::clone( &self.stack[from] );
+		self.stack.push(jv);
+	}
+	/* opcode helper*/
 	pub fn pop(&mut self, mut n: usize) {
 		if n > self.stack.len() {
 			panic!("stack underflow! @ pop");
@@ -217,29 +243,6 @@ impl JsRuntime {
 		self.stack.swap(top-1, top-2);
 		self.stack.swap(top-2, top-3);
 		self.stack.swap(top-3, top-4);		
-	}
-
-	pub fn push(&mut self, jv: JsValue) {
-		self.stack.push(jv);
-	}
-	pub fn push_undefined(&mut self) {
-		let jv = JsValue::new_undefined();
-		self.stack.push(jv);
-	}
-	pub fn push_number(&mut self, v:f64) {
-		let jv = JsValue::new_number(v);
-		self.stack.push(jv);
-	}
-	pub fn push_string(&mut self, v:String) {
-		let jv = JsValue::new_string(v);
-		self.stack.push(jv);
-	} 
-	pub fn push_from(&mut self, from: usize) {
-		if from >= self.stack.len() {
-			panic!("stack underflow! @ push_from");
-		}
-		let jv = JsValue::clone( &self.stack[from] );
-		self.stack.push(jv);
 	}
 }
 
@@ -343,6 +346,7 @@ pub fn jscall(rt: &mut JsRuntime, argc: usize) {
 			/* create new scope */
 			let rfobj = fobj.borrow();
 			let new_env = JsEnvironment::new_from(rfobj.get_func().scope.clone());
+			rt.cenv = new_env;
 
 			/*
 			if (F->arguments) {
@@ -361,7 +365,16 @@ pub fn jscall(rt: &mut JsRuntime, argc: usize) {
 				js_pop(J, 1);
 			}
 			*/
-			
+			if vmf.numparams > 0 {
+				let arg_obj = JsObject::new_with_class( rt.prototypes.object_prototype.clone(), JsClass::object);
+				let arg_value = JsValue::new_object(arg_obj);
+				
+				rt.push(arg_value);
+				rt.push_number(vmf.numparams as f64);
+				//rt.defproperty(-2, "length", JS_DONTENUM);
+			}
+
+
 		}		
 	}
 	
