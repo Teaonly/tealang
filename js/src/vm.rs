@@ -147,7 +147,7 @@ impl VMFunction {
 	}
 }
 
-impl <'a> JsRuntime<'a> {
+impl JsRuntime {
 	pub fn pop(&mut self, mut n: usize) {
 		if n > self.stack.len() {
 			panic!("stack underflow! @ pop");
@@ -224,7 +224,7 @@ impl <'a> JsRuntime<'a> {
 	}
 }
 
-pub fn run<'a> (rt: &mut JsRuntime<'a>, func: &VMFunction) {
+fn run (rt: &mut JsRuntime, func: &VMFunction) {
 	assert!(rt.stack.len() > 0);
 	let mut pc:usize = 0;
 	let bot:usize = rt.stack.len() - 1;
@@ -296,3 +296,4 @@ pub fn run<'a> (rt: &mut JsRuntime<'a>, func: &VMFunction) {
 		}		
 	}
 }
+

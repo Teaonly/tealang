@@ -389,7 +389,13 @@ pub struct VMFunction {
 	pub jumps:		Vec<VMJumpTable>,
 }
 
-pub type SharedObject = Rc<Cell<JsObject>>; 
+// runtime stuff
+pub type SharedObject = Rc<Cell<JsObject>>;
+pub type SharedScope = Rc<Cell<JsEnvironment>>;
+
+pub fn SharedObject_new(obj: JsObject) -> SharedObject {
+	Rc::new(Cell::new(obj))
+}
 
 #[allow(non_camel_case_types)]
 #[derive(Clone)]
@@ -403,11 +409,17 @@ pub enum JsValue {
 }
 
 #[allow(non_camel_case_types)]
+pub struct JsFunction {
+	pub scope:	SharedScope,
+	pub vmf:	VMFunction,
+}
+
+#[allow(non_camel_case_types)]
 pub enum JsClass {
 	object,
 	array(Vec<JsValue>),
 	iter,
-	function,
+	function(JsFunction),
 	native,
 }
 
@@ -426,9 +438,10 @@ pub struct JsProperty {
 }
 
 #[allow(non_camel_case_types)]
-pub struct JsEnvironment<'a> {
+#[derive(Clone)]
+pub struct JsEnvironment {
 	pub data: HashMap<String, SharedObject>,
-	pub outer: Option<&'a JsEnvironment<'a>>
+	pub outer: Option<SharedScope>,
 }
 
 #[allow(non_camel_case_types)]
@@ -449,11 +462,11 @@ pub struct JsPrototype {
 }
 
 #[allow(non_camel_case_types)]
-pub struct JsRuntime <'a> {
+pub struct JsRuntime {
 	pub prototypes:		JsPrototype,
-	pub gobj:			SharedObject,
-	pub genv:			JsEnvironment<'a>,
+
+	pub genv:			SharedScope,	
+	pub cenv:			SharedScope,
 
 	pub stack:			Vec<JsValue>,
 }
-

@@ -4,8 +4,10 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::common::*;
+use crate::vm::*;
 
 /* implementation for JsValue/JsObject/JsEnvironment/JsRuntime */
+
 impl JsValue {
 	pub fn new_null() -> Self {
 		JsValue::JSNULL
@@ -24,6 +26,10 @@ impl JsValue {
 	}
 	pub fn new_string(v:String) -> Self {
 		JsValue::JSString(v)
+	}
+	pub fn new_object(obj:JsObject) -> Self {
+		let shared_obj = SharedObject_new(obj);
+		JsValue::JSObject(shared_obj)  
 	}
 }
 
@@ -56,6 +62,19 @@ impl JsObject {
         return obj.properties.get_mut(name);
     }
 }
+
+impl JsRuntime {
+	pub fn newobj_from_vmf(&mut self, vmf: VMFunction) -> JsObject {
+		let f = JsFunction {
+			scope:	self.genv.clone(),
+			vmf:	vmf,
+		};
+		let jclass = JsClass::function(f);
+		let fobj = JsObject::new_with_class(self.prototypes.function_prototype.clone(), jclass);
+		return fobj;
+	} 
+}
+
 
 /*
 pub fn new_runtime<'a>() -> JsRuntime<'a> {
@@ -92,3 +111,10 @@ pub fn new_runtime<'a>() -> JsRuntime<'a> {
 }
 */
 
+pub fn execute_global(rt: &mut JsRuntime, vmf: VMFunction) {
+	// building function object and push to stack
+	let jv = JsValue::new_object(rt.newobj_from_vmf(vmf));
+	rt.push(jv);
+
+
+}
