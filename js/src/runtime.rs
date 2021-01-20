@@ -31,6 +31,12 @@ impl JsValue {
 		let shared_obj = SharedObject_new(obj);
 		JsValue::JSObject(shared_obj)  
 	}
+	pub fn as_object(&self) -> SharedObject {
+		if let JsValue::JSObject(obj) = self {
+			return obj.clone();
+		}
+		panic!("JsValue is not an object!");
+	}
 }
 
 impl JsObject {
@@ -50,6 +56,19 @@ impl JsObject {
         }
 	}
 
+	pub fn is_function(&self) -> bool {
+		if let JsClass::function(ref _func) = self.value {
+			return true;
+		}
+		return false;
+	}
+	pub fn get_func(&self) -> &JsFunction {
+		if let JsClass::function(ref func) = self.value {
+			return func;
+		}
+		panic!("Object can't be a func!")
+	}
+
     /* property's help functions */
     pub fn new_property<'a>(obj: &'a mut JsObject, name: &str) -> Option<&'a mut JsProperty> {
         let prop = JsProperty {
@@ -63,10 +82,12 @@ impl JsObject {
     }
 }
 
+
+
 impl JsRuntime {
 	pub fn newobj_from_vmf(&mut self, vmf: VMFunction) -> JsObject {
 		let f = JsFunction {
-			scope:	self.genv.clone(),
+			scope:	self.cenv.clone(),
 			vmf:	vmf,
 		};
 		let jclass = JsClass::function(f);
@@ -112,9 +133,11 @@ pub fn new_runtime<'a>() -> JsRuntime<'a> {
 */
 
 pub fn execute_global(rt: &mut JsRuntime, vmf: VMFunction) {
-	// building function object and push to stack
+	// variable to the enviroment
+	rt.cenv = rt.genv.clone();	
 	let jv = JsValue::new_object(rt.newobj_from_vmf(vmf));
-	rt.push(jv);
+	rt.push(jv);			// function object
+	rt.push_undefined();	// this, undefined for global in strict mode
 
-
+	jscall(rt, 0);
 }

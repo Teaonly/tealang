@@ -147,7 +147,22 @@ impl VMFunction {
 	}
 }
 
+impl JsEnvironment {
+	pub fn init_var(&mut self, name: &str) {
+		let jv = JsValue::new_undefined();		
+		self.data.insert(name.to_string(), jv);
+	}
+	pub fn new_from(outer: SharedScope) -> SharedScope {
+		let env = JsEnvironment {
+			data: HashMap::new(),
+			outer: Some(outer),
+		};
+		SharedScope_new(env)
+	}
+}
+
 impl JsRuntime {
+
 	pub fn pop(&mut self, mut n: usize) {
 		if n > self.stack.len() {
 			panic!("stack underflow! @ pop");
@@ -207,6 +222,10 @@ impl JsRuntime {
 	pub fn push(&mut self, jv: JsValue) {
 		self.stack.push(jv);
 	}
+	pub fn push_undefined(&mut self) {
+		let jv = JsValue::new_undefined();
+		self.stack.push(jv);
+	}
 	pub fn push_number(&mut self, v:f64) {
 		let jv = JsValue::new_number(v);
 		self.stack.push(jv);
@@ -224,7 +243,7 @@ impl JsRuntime {
 	}
 }
 
-fn run (rt: &mut JsRuntime, func: &VMFunction) {
+fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 	assert!(rt.stack.len() > 0);
 	let mut pc:usize = 0;
 	let bot:usize = rt.stack.len() - 1;
@@ -297,3 +316,53 @@ fn run (rt: &mut JsRuntime, func: &VMFunction) {
 	}
 }
 
+pub fn jscall(rt: &mut JsRuntime, argc: usize) {
+	assert!(rt.stack.len() >= argc + 2);
+	let bot = rt.stack.len() - 1;
+
+	let fobj = rt.stack[bot-1].as_object();	
+	if fobj.borrow().is_function() == true {		
+		let rfobj = fobj.borrow();
+		let ref vmf = rfobj.get_func().vmf;
+		if vmf.script {
+			/* scripts take no arguments */
+			rt.pop(argc);
+			
+			/* init var in current env*/
+			for var in &vmf.var_tab {
+				rt.cenv.borrow_mut().init_var(var);
+			}
+
+			jsrun(rt, vmf);
+			
+			/* clear stack */
+			let jv = rt.stack.pop().unwrap();
+			rt.pop(2);
+			rt.push(jv);
+		} else {
+			/* create new scope */
+			let rfobj = fobj.borrow();
+			let new_env = JsEnvironment::new_from(rfobj.get_func().scope.clone());
+
+			/*
+			if (F->arguments) {
+				js_newarguments(J);
+				if (!J->strict) {
+					js_currentfunction(J);
+					js_defproperty(J, -2, "callee", JS_DONTENUM);
+				}
+				js_pushnumber(J, n);
+				js_defproperty(J, -2, "length", JS_DONTENUM);
+				for (i = 0; i < n; ++i) {
+					js_copy(J, i + 1);
+					js_setindex(J, -2, i);
+				}
+				js_initvar(J, "arguments", -1);
+				js_pop(J, 1);
+			}
+			*/
+			
+		}		
+	}
+	
+}
