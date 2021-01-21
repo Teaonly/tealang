@@ -429,8 +429,11 @@ fn jscall_native(rt: &mut JsRuntime, argc: usize) {
 		rt.push_undefined();
 	}
 
-	//TODO
-	//native.f(rt);
+	(native.f)(rt);
+	
+	let jv = rt.stack.pop().unwrap();
+	rt.pop(argc + 2);
+	rt.push(jv);
 }
 
 pub fn jscall(rt: &mut JsRuntime, argc: usize) {
