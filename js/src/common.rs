@@ -418,12 +418,19 @@ pub struct JsFunction {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(Clone)]
+pub struct JsNatveFunction {
+	pub f:		fn(&mut JsRuntime),
+	pub argc:	usize,
+}
+
+#[allow(non_camel_case_types)]
 pub enum JsClass {
 	object,
 	array(Vec<JsValue>),
 	iter,
 	function(JsFunction),
-	builtin,
+	native(JsNatveFunction),
 }
 
 #[allow(non_camel_case_types)]
@@ -434,20 +441,31 @@ pub struct JsObject {
 }
 
 /* Property attribute flags */
-
+#[allow(non_camel_case_types)]
+#[derive(Copy, Clone)]
+pub enum JsPropertyAttr {
+	NONE,
+	READONLY,
+	DONTENUM,
+	DONTCONF,
+	READONLY_DONTENUM,
+	READONLY_DONTCONF,
+	DONTENUM_DONTCONF,
+	READONLY_DONTENUM_DONTCONF,
+}
 
 #[allow(non_camel_case_types)]
+#[derive(Clone)]
 pub struct JsProperty {
 	pub value:	JsValue,
-	pub attr:	u32,
+	pub attr:	JsPropertyAttr,
 	pub getter:	Option<SharedObject>,
 	pub setter:	Option<SharedObject>,
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
 pub struct JsEnvironment {
-	pub data: HashMap<String, JsValue>,
+	pub variables: JsObject,		// variables stored in properties 
 	pub outer: Option<SharedScope>,
 }
 

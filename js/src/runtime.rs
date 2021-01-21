@@ -31,6 +31,12 @@ impl JsValue {
 		let shared_obj = SharedObject_new(obj);
 		JsValue::JSObject(shared_obj)  
 	}
+	pub fn is_object(&self) -> bool {
+		if let JsValue::JSObject(_obj) = self {
+			return true;
+		}
+		return false;
+	}
 	pub fn as_object(&self) -> SharedObject {
 		if let JsValue::JSObject(obj) = self {
 			return obj.clone();
@@ -56,6 +62,18 @@ impl JsObject {
         }
 	}
 
+	pub fn is_native(&self) -> bool {
+		if let JsClass::native(_) = self.value {
+			return true;
+		}
+		return false;
+	}
+	pub fn get_native(&self) -> JsNatveFunction {
+		if let JsClass::native(ref func) = self.value {
+			return func.clone();
+		}
+		panic!("Object can't be a func!")
+	}
 	pub fn is_function(&self) -> bool {
 		if let JsClass::function(ref _func) = self.value {
 			return true;
@@ -69,8 +87,25 @@ impl JsObject {
 		panic!("Object can't be a func!")
 	}
 
-    /* property's help functions */
-    
+	/* property's help functions */
+	pub fn setproperty(&mut self, name: &str, v: JsValue, attr: JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) { 
+		// TODO
+		if let JsClass::array(ref vec) = self.value {
+			if name == "length" {
+				panic!("length is readonly for array object!");
+			}
+		} 
+	
+		let property = JsProperty {
+			value:	v,
+			attr:	attr,
+			getter:	None,
+			setter: None,
+		};
+
+		self.properties.insert(name.to_string(), property);
+		
+	}
 }
 
 

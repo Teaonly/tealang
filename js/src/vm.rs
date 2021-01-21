@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 use std::cell::Cell;
 use std::rc::Rc;
 use std::collections::HashMap;
+use std::cmp;
 
 use crate::common::*;
 use crate::runtime::*;
@@ -148,13 +149,14 @@ impl VMFunction {
 }
 
 impl JsEnvironment {
-	pub fn init_var(&mut self, name: &str) {
-		let jv = JsValue::new_undefined();		
-		self.data.insert(name.to_string(), jv);
+	pub fn init_var(&mut self, name: &str, jv: JsValue) {
+		
+		let attr = JsPropertyAttr::DONTENUM_DONTCONF;
+		self.variables.setproperty(name, jv, attr, None, None);
 	}
 	pub fn new_from(outer: SharedScope) -> SharedScope {
 		let env = JsEnvironment {
-			data: HashMap::new(),
+			variables: JsObject::new(),
 			outer: Some(outer),
 		};
 		SharedScope_new(env)
@@ -163,7 +165,27 @@ impl JsEnvironment {
 
 impl JsRuntime {
 	/* properties operation */
-	
+	pub fn defproperty(&mut self, name: &str, attr:JsPropertyAttr) {
+		let top = self.stack.len() - 1;
+		
+		let target_obj = self.stack[top - 1].as_object();
+		let value = self.stack[top].clone();
+		target_obj.borrow_mut().setproperty(name, value, attr, None, None);
+
+		self.pop(1);
+	}
+
+	/* index operation */
+	pub fn setindex(&mut self, target: usize, index: usize) {
+		let top = self.stack.len() - 1;
+		
+		let target_obj = self.stack[target].as_object();
+		let value = self.stack[top].clone();
+		let name = index.to_string();
+		target_obj.borrow_mut().setproperty(&name, value, JsPropertyAttr::NONE, None, None);
+
+		self.pop(1);
+	}
 
 	/* stack operations */
 	pub fn push(&mut self, jv: JsValue) {
@@ -196,7 +218,7 @@ impl JsRuntime {
 		while n > 0 {
 			self.stack.pop();
 			n = n - 1;
-		}		
+		}
 	}
 	pub fn dup(&mut self) {
 		if let Some(ref v) = self.stack.first() {
@@ -319,63 +341,111 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 	}
 }
 
-pub fn jscall(rt: &mut JsRuntime, argc: usize) {
-	assert!(rt.stack.len() >= argc + 2);
-	let bot = rt.stack.len() - 1;
+fn jscall_script(rt: &mut JsRuntime, argc: usize) {
+	let bot = rt.stack.len() - 1 - argc;
 
 	let fobj = rt.stack[bot-1].as_object();	
-	if fobj.borrow().is_function() == true {		
-		let rfobj = fobj.borrow();
-		let ref vmf = rfobj.get_func().vmf;
-		if vmf.script {
-			/* scripts take no arguments */
-			rt.pop(argc);
-			
-			/* init var in current env*/
-			for var in &vmf.var_tab {
-				rt.cenv.borrow_mut().init_var(var);
-			}
+	let rfobj = fobj.borrow();
+	let vmf = &rfobj.get_func().vmf;
 
-			jsrun(rt, vmf);
-			
-			/* clear stack */
-			let jv = rt.stack.pop().unwrap();
-			rt.pop(2);
-			rt.push(jv);
-		} else {
-			/* create new scope */
-			let rfobj = fobj.borrow();
-			let new_env = JsEnvironment::new_from(rfobj.get_func().scope.clone());
-			rt.cenv = new_env;
+	/* init var in current env*/
+	for var in &vmf.var_tab {
+		let jv = JsValue::new_undefined();
+		rt.cenv.borrow_mut().init_var(var, jv);
+	}
 
-			/*
-			if (F->arguments) {
-				js_newarguments(J);
-				if (!J->strict) {
-					js_currentfunction(J);
-					js_defproperty(J, -2, "callee", JS_DONTENUM);
-				}
-				js_pushnumber(J, n);
-				js_defproperty(J, -2, "length", JS_DONTENUM);
-				for (i = 0; i < n; ++i) {
-					js_copy(J, i + 1);
-					js_setindex(J, -2, i);
-				}
-				js_initvar(J, "arguments", -1);
-				js_pop(J, 1);
-			}
-			*/
-			if vmf.numparams > 0 {
-				let arg_obj = JsObject::new_with_class( rt.prototypes.object_prototype.clone(), JsClass::object);
-				let arg_value = JsValue::new_object(arg_obj);
-				
-				rt.push(arg_value);
-				rt.push_number(vmf.numparams as f64);
-				//rt.defproperty(-2, "length", JS_DONTENUM);
-			}
+	/* scripts take no arguments */
+	rt.pop(argc);
+	jsrun(rt, vmf);
+	
+	/* clear stack */
+	let jv = rt.stack.pop().unwrap();
+	rt.pop(2);
+	rt.push(jv);
+}
 
+fn jscall_function(rt: &mut JsRuntime, argc: usize) {
+	let bot = rt.stack.len() - 1 - argc;
 
-		}		
+	let fobj = rt.stack[bot-1].as_object();	
+	let rfobj = fobj.borrow();
+	let vmf = &rfobj.get_func().vmf;
+
+	/* create new scope */
+	let new_env = JsEnvironment::new_from(rfobj.get_func().scope.clone());
+	let old_env = rt.cenv.clone();
+	rt.cenv = new_env;
+
+	/* create arguments */
+	if vmf.numparams > 0 {
+		let arg_obj = JsObject::new_with_class( rt.prototypes.object_prototype.clone(), JsClass::object);
+		let arg_value = JsValue::new_object(arg_obj);
+		
+		rt.push(arg_value.clone());			
+		rt.push_number(argc as f64);
+		rt.defproperty("length", JsPropertyAttr::DONTENUM);
+
+		for i in 0..argc {
+			rt.push_from(bot + 1 + i);
+			rt.setindex( rt.stack.len() - 2, i);
+		}
+		
+		rt.cenv.borrow_mut().init_var("arguments", arg_value);
+		rt.pop(1);
+	}
+
+	let min_argc = cmp::min(argc, vmf.numparams);
+	for i in 0..min_argc {
+		let argv = rt.stack[i + 1].clone();
+		rt.cenv.borrow_mut().init_var(&vmf.var_tab[i], argv);
+	}
+	rt.pop(argc);
+
+	/* init var in current env*/
+	for i in min_argc..vmf.var_tab.len() {
+		let jv = JsValue::new_undefined();
+		rt.cenv.borrow_mut().init_var(&vmf.var_tab[i], jv);
+	}
+	
+	jsrun(rt, vmf);
+	
+	/* clear stack */
+	let jv = rt.stack.pop().unwrap();
+	rt.pop(2);
+	rt.push(jv);
+
+	/* restore old env */
+	rt.cenv = old_env;
+}
+
+fn jscall_native(rt: &mut JsRuntime, argc: usize) {
+	assert!(rt.stack.len() >= argc + 2);
+	let bot = rt.stack.len() - 1 - argc;
+
+	let fobj = rt.stack[bot-1].as_object();
+	let native = fobj.borrow().get_native();
+
+	for _i in argc .. native.argc {
+		rt.push_undefined();
+	}
+
+	//TODO
+	//native.f(rt);
+}
+
+pub fn jscall(rt: &mut JsRuntime, argc: usize) {
+	assert!(rt.stack.len() >= argc + 2);
+	let bot = rt.stack.len() - 1 - argc;
+
+	let fobj = rt.stack[bot-1].as_object();	
+	if fobj.borrow().is_function() == true {
+		if fobj.borrow().get_func().vmf.script {
+			jscall_script(rt, argc);
+		} else {			
+			jscall_function(rt, argc);
+		}
+	} else if fobj.borrow().is_native() == true {
+		jscall_native(rt, argc);
 	}
 	
 }
