@@ -108,7 +108,19 @@ impl JsObject {
 	}
 }
 
-
+impl JsEnvironment {
+	pub fn init_var(&mut self, name: &str, jv: JsValue) {		
+		let attr = JsPropertyAttr::DONTENUM_DONTCONF;
+		self.variables.setproperty(name, jv, attr, None, None);
+	}
+	pub fn new_from(outer: SharedScope) -> SharedScope {
+		let env = JsEnvironment {
+			variables: JsObject::new(),
+			outer: Some(outer),
+		};
+		SharedScope_new(env)
+	}
+}
 
 impl JsRuntime {
 	pub fn newobj_from_vmf(&mut self, vmf: VMFunction) -> JsObject {

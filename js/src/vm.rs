@@ -148,43 +148,24 @@ impl VMFunction {
 	}
 }
 
-impl JsEnvironment {
-	pub fn init_var(&mut self, name: &str, jv: JsValue) {
-		
-		let attr = JsPropertyAttr::DONTENUM_DONTCONF;
-		self.variables.setproperty(name, jv, attr, None, None);
-	}
-	pub fn new_from(outer: SharedScope) -> SharedScope {
-		let env = JsEnvironment {
-			variables: JsObject::new(),
-			outer: Some(outer),
-		};
-		SharedScope_new(env)
-	}
-}
 
-impl JsRuntime {
+
+impl JsRuntime {	
 	/* properties operation */
-	pub fn defproperty(&mut self, name: &str, attr:JsPropertyAttr) {
-		let top = self.stack.len() - 1;
+	pub fn defproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue, 
+		attr:JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) {
 		
-		let target_obj = self.stack[top - 1].as_object();
-		let value = self.stack[top].clone();
-		target_obj.borrow_mut().setproperty(name, value, attr, None, None);
-
-		self.pop(1);
+		if let JsClass::array(ref v) = target.value {
+			if name == "length" {
+				panic!(" object is read-only or non-configurable");
+			}
+		} 
+		// TODO
+		
 	}
 
-	/* index operation */
-	pub fn setindex(&mut self, target: usize, index: usize) {
-		let top = self.stack.len() - 1;
-		
-		let target_obj = self.stack[target].as_object();
-		let value = self.stack[top].clone();
-		let name = index.to_string();
-		target_obj.borrow_mut().setproperty(&name, value, JsPropertyAttr::NONE, None, None);
+	pub fn setproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue) {
 
-		self.pop(1);
 	}
 
 	/* stack operations */
@@ -378,25 +359,25 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 
 	/* create arguments */
 	if vmf.numparams > 0 {
-		let arg_obj = JsObject::new_with_class( rt.prototypes.object_prototype.clone(), JsClass::object);
-		let arg_value = JsValue::new_object(arg_obj);
+		let mut arg_obj = JsObject::new_with_class( rt.prototypes.object_prototype.clone(), JsClass::object);
 		
-		rt.push(arg_value.clone());			
-		rt.push_number(argc as f64);
-		rt.defproperty("length", JsPropertyAttr::DONTENUM);
+		let jv = JsValue::new_number(argc as f64);
+		rt.defproperty(&mut arg_obj, "length", jv,  JsPropertyAttr::DONTENUM, None, None);
 
 		for i in 0..argc {
-			rt.push_from(bot + 1 + i);
-			rt.setindex( rt.stack.len() - 2, i);
+			let name = i.to_string();
+			let jv = rt.stack[bot+1+i].clone();			
+			rt.defproperty(&mut arg_obj, &name, jv, JsPropertyAttr::NONE, None, None);
 		}
 		
+		let arg_value = JsValue::new_object(arg_obj);
 		rt.cenv.borrow_mut().init_var("arguments", arg_value);
-		rt.pop(1);
 	}
 
+	/* setup remained arguments*/
 	let min_argc = cmp::min(argc, vmf.numparams);
 	for i in 0..min_argc {
-		let argv = rt.stack[i + 1].clone();
+		let argv = rt.stack[i + 1 + bot].clone();
 		rt.cenv.borrow_mut().init_var(&vmf.var_tab[i], argv);
 	}
 	rt.pop(argc);
@@ -449,6 +430,7 @@ pub fn jscall(rt: &mut JsRuntime, argc: usize) {
 		}
 	} else if fobj.borrow().is_native() == true {
 		jscall_native(rt, argc);
-	}
-	
+	} 
+
+	rt.pop(2+argc);
 }
