@@ -48,6 +48,7 @@ impl JsValue {
 impl JsObject {
     pub fn new() -> JsObject {
         JsObject {
+			extensible:	true,
             prototype: None,
             properties: HashMap::new(),
             value: JsClass::object,
@@ -56,20 +57,21 @@ impl JsObject {
 	
 	pub fn new_with_class(prototype: SharedObject, value: JsClass) -> JsObject {
         JsObject {
+			extensible:	true,
             prototype: Some(prototype),
             properties: HashMap::new(),
             value: value
         }
 	}
 
-	pub fn is_native(&self) -> bool {
-		if let JsClass::native(_) = self.value {
+	pub fn is_builtin(&self) -> bool {
+		if let JsClass::builtin(_) = self.value {
 			return true;
 		}
 		return false;
 	}
-	pub fn get_native(&self) -> JsNatveFunction {
-		if let JsClass::native(ref func) = self.value {
+	pub fn get_builtin(&self) -> JsBuiltinFunction {
+		if let JsClass::builtin(ref func) = self.value {
 			return func.clone();
 		}
 		panic!("Object can't be a func!")
@@ -89,7 +91,6 @@ impl JsObject {
 
 	/* property's help functions */
 	pub fn setproperty(&mut self, name: &str, v: JsValue, attr: JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) { 
-		// TODO
 		if let JsClass::array(ref vec) = self.value {
 			if name == "length" {
 				panic!("length is readonly for array object!");
@@ -103,8 +104,7 @@ impl JsObject {
 			setter: None,
 		};
 
-		self.properties.insert(name.to_string(), property);
-		
+		self.properties.insert(name.to_string(), property);		
 	}
 }
 

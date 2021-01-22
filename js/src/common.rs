@@ -420,7 +420,7 @@ pub struct JsFunction {
 
 #[allow(non_camel_case_types)]
 #[derive(Clone)]
-pub struct JsNatveFunction {
+pub struct JsBuiltinFunction {
 	pub f:		fn(&mut JsRuntime),
 	pub argc:	usize,
 }
@@ -433,11 +433,14 @@ pub enum JsClass {
 	string(String),
 	array(Vec<JsValue>),
 	function(JsFunction),
-	native(JsNatveFunction),
+	builtin(JsBuiltinFunction),
+	native,
+		
 }
 
 #[allow(non_camel_case_types)]
 pub struct JsObject {
+	pub extensible:	bool,
 	pub prototype:	Option<SharedObject>,
 	pub properties: HashMap<String, JsProperty>,
 	pub value:	JsClass,

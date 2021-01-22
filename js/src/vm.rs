@@ -157,17 +157,27 @@ impl JsRuntime {
     pub fn defproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue,
 		attr:JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) {
 
+		fn goto_readonly() {
+			println!("Hello");
+		}
+		
 		if let JsClass::array(ref _v) = target.value {
 			if name == "length" {
-				panic!(" object is read-only or non-configurable");
+				goto_readonly();
 			}
-		} else if let JsClass::string(ref _s) = target.value {
+		} else if let JsClass::string(ref s) = target.value {
 			if name == "length" {
-				panic!(" object is read-only or non-configurable");
+				goto_readonly();
 			}
-		} 
+			if let Ok(index) = name.parse::<usize>() {
+				if index > s.len() {
+					goto_readonly();
+				}
+			}			
+		}
 
-
+		
+		
 	}
 
 	pub fn setproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue) {
@@ -405,16 +415,16 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 	rt.cenv = old_env;
 }
 
-fn jscall_native(rt: &mut JsRuntime, argc: usize) {
+fn jscall_builtin(rt: &mut JsRuntime, argc: usize) {
 	let bot = rt.stack.len() - 1 - argc;
 	let fobj = rt.stack[bot-1].as_object();
-	let native = fobj.borrow().get_native();
+	let builtin = fobj.borrow().get_builtin();
 
-	for _i in argc .. native.argc {
+	for _i in argc .. builtin.argc {
 		rt.push_undefined();
 	}
 
-	(native.f)(rt);
+	(builtin.f)(rt);
 
 	let jv = rt.stack.pop().unwrap();
 	rt.pop(argc + 2);
@@ -432,8 +442,8 @@ pub fn jscall(rt: &mut JsRuntime, argc: usize) {
 		} else {
 			jscall_function(rt, argc);
 		}
-	} else if fobj.borrow().is_native() == true {
-		jscall_native(rt, argc);
+	} else if fobj.borrow().is_builtin() == true {
+		jscall_builtin(rt, argc);
 	} else {
         panic!("Can't call none function object");
     }
