@@ -129,7 +129,7 @@ impl VMFunction {
 			panic!("number out of vm");
 		}
 		let value = self.num_tab[id];
-		
+
 		*pc = *pc + 1;
 		return value;
 	}
@@ -150,18 +150,24 @@ impl VMFunction {
 
 
 
-impl JsRuntime {	
+impl JsRuntime {
 	/* properties operation */
-	pub fn defproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue, 
+
+    // make a new proptery for object
+    pub fn defproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue,
 		attr:JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) {
-		
-		if let JsClass::array(ref v) = target.value {
+
+		if let JsClass::array(ref _v) = target.value {
+			if name == "length" {
+				panic!(" object is read-only or non-configurable");
+			}
+		} else if let JsClass::string(ref _s) = target.value {
 			if name == "length" {
 				panic!(" object is read-only or non-configurable");
 			}
 		} 
-		// TODO
-		
+
+
 	}
 
 	pub fn setproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue) {
@@ -183,7 +189,7 @@ impl JsRuntime {
 	pub fn push_string(&mut self, v:String) {
 		let jv = JsValue::new_string(v);
 		self.stack.push(jv);
-	} 
+	}
 	pub fn push_from(&mut self, from: usize) {
 		if from >= self.stack.len() {
 			panic!("stack underflow! @ push_from");
@@ -218,7 +224,7 @@ impl JsRuntime {
 		let nv1: JsValue = JsValue::clone( &self.stack[top-2] );
 		let nv2: JsValue = JsValue::clone( &self.stack[top-1] );
 		self.stack.push(nv1);
-		self.stack.push(nv2);	
+		self.stack.push(nv2);
 	}
 	pub fn rot2(&mut self) {
 		if self.stack.len() < 2 {
@@ -245,7 +251,7 @@ impl JsRuntime {
 		let top = self.stack.len();
 		self.stack.swap(top-1, top-2);
 		self.stack.swap(top-2, top-3);
-		self.stack.swap(top-3, top-4);		
+		self.stack.swap(top-3, top-4);
 	}
 }
 
@@ -302,7 +308,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				let v = func.string(&mut pc);
 				rt.push_string(v);
 			},
-			
+
 			OpcodeType::OP_THIS => {
 				rt.push_from(bot);
 			},
@@ -318,14 +324,14 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			}
 			*/
 			_ => {}
-		}		
+		}
 	}
 }
 
 fn jscall_script(rt: &mut JsRuntime, argc: usize) {
 	let bot = rt.stack.len() - 1 - argc;
 
-	let fobj = rt.stack[bot-1].as_object();	
+	let fobj = rt.stack[bot-1].as_object();
 	let rfobj = fobj.borrow();
 	let vmf = &rfobj.get_func().vmf;
 
@@ -338,7 +344,7 @@ fn jscall_script(rt: &mut JsRuntime, argc: usize) {
 	/* scripts take no arguments */
 	rt.pop(argc);
 	jsrun(rt, vmf);
-	
+
 	/* clear stack */
 	let jv = rt.stack.pop().unwrap();
 	rt.pop(2);
@@ -348,7 +354,7 @@ fn jscall_script(rt: &mut JsRuntime, argc: usize) {
 fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 	let bot = rt.stack.len() - 1 - argc;
 
-	let fobj = rt.stack[bot-1].as_object();	
+	let fobj = rt.stack[bot-1].as_object();
 	let rfobj = fobj.borrow();
 	let vmf = &rfobj.get_func().vmf;
 
@@ -360,16 +366,16 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 	/* create arguments */
 	if vmf.numparams > 0 {
 		let mut arg_obj = JsObject::new_with_class( rt.prototypes.object_prototype.clone(), JsClass::object);
-		
+
 		let jv = JsValue::new_number(argc as f64);
 		rt.defproperty(&mut arg_obj, "length", jv,  JsPropertyAttr::DONTENUM, None, None);
 
 		for i in 0..argc {
 			let name = i.to_string();
-			let jv = rt.stack[bot+1+i].clone();			
+			let jv = rt.stack[bot+1+i].clone();
 			rt.defproperty(&mut arg_obj, &name, jv, JsPropertyAttr::NONE, None, None);
 		}
-		
+
 		let arg_value = JsValue::new_object(arg_obj);
 		rt.cenv.borrow_mut().init_var("arguments", arg_value);
 	}
@@ -387,9 +393,9 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 		let jv = JsValue::new_undefined();
 		rt.cenv.borrow_mut().init_var(&vmf.var_tab[i], jv);
 	}
-	
+
 	jsrun(rt, vmf);
-	
+
 	/* clear stack */
 	let jv = rt.stack.pop().unwrap();
 	rt.pop(2);
@@ -400,9 +406,7 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 }
 
 fn jscall_native(rt: &mut JsRuntime, argc: usize) {
-	assert!(rt.stack.len() >= argc + 2);
 	let bot = rt.stack.len() - 1 - argc;
-
 	let fobj = rt.stack[bot-1].as_object();
 	let native = fobj.borrow().get_native();
 
@@ -411,7 +415,7 @@ fn jscall_native(rt: &mut JsRuntime, argc: usize) {
 	}
 
 	(native.f)(rt);
-	
+
 	let jv = rt.stack.pop().unwrap();
 	rt.pop(argc + 2);
 	rt.push(jv);
@@ -421,16 +425,16 @@ pub fn jscall(rt: &mut JsRuntime, argc: usize) {
 	assert!(rt.stack.len() >= argc + 2);
 	let bot = rt.stack.len() - 1 - argc;
 
-	let fobj = rt.stack[bot-1].as_object();	
+	let fobj = rt.stack[bot-1].as_object();
 	if fobj.borrow().is_function() == true {
 		if fobj.borrow().get_func().vmf.script {
 			jscall_script(rt, argc);
-		} else {			
+		} else {
 			jscall_function(rt, argc);
 		}
 	} else if fobj.borrow().is_native() == true {
 		jscall_native(rt, argc);
-	} 
-
-	rt.pop(2+argc);
+	} else {
+        panic!("Can't call none function object");
+    }
 }

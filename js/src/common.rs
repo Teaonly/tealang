@@ -400,6 +400,7 @@ pub fn SharedScope_new(scope: JsEnvironment) -> SharedScope {
 	Rc::new(RefCell::new(scope))
 }
 
+// JsValue for access fast and memory effective 
 #[allow(non_camel_case_types)]
 #[derive(Clone)]
 pub enum JsValue {
@@ -427,8 +428,10 @@ pub struct JsNatveFunction {
 #[allow(non_camel_case_types)]
 pub enum JsClass {
 	object,
+	boolean(bool),
+	number(f64),
+	string(String),
 	array(Vec<JsValue>),
-	iter,
 	function(JsFunction),
 	native(JsNatveFunction),
 }
