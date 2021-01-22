@@ -6,7 +6,7 @@ use std::rc::Rc;
 use crate::common::*;
 use crate::vm::*;
 
-/* implementation for JsValue/JsObject/JsEnvironment/JsRuntime */
+/* implementation for JsValue/JsObject/JsRuntime */
 
 impl JsValue {
 	pub fn new_null() -> Self {
@@ -42,6 +42,40 @@ impl JsValue {
 			return obj.clone();
 		}
 		panic!("JsValue is not an object!");
+	}
+}
+
+impl JsProperty {
+	pub fn new() -> Self {
+		JsProperty {
+			value: JsValue::new_undefined(),
+			attr: JsPropertyAttr::NONE,
+			getter: None,
+			setter: None,
+		}
+	}
+
+	pub fn readonly(&self) -> bool {
+		if self.attr == JsPropertyAttr::READONLY || self.attr == JsPropertyAttr::READONLY_DONTENUM 
+			|| self.attr == JsPropertyAttr::READONLY_DONTCONF || self.attr == JsPropertyAttr::READONLY_DONTENUM_DONTCONF {
+			return true;
+		}
+		return false;
+	} 
+	
+	pub fn configable(&self) -> bool {
+		if self.attr == JsPropertyAttr::DONTCONF || self.attr == JsPropertyAttr::READONLY_DONTCONF 
+			|| self.attr == JsPropertyAttr::DONTENUM_DONTCONF || self.attr == JsPropertyAttr::READONLY_DONTENUM_DONTCONF {
+			return false;
+		}
+		return true;
+	}
+
+	pub fn fill(&mut self, jv: JsValue, attr: JsPropertyAttr, getter:Option<SharedObject>, setter: Option<SharedObject>) {
+		self.value = jv;
+		self.attr = attr;
+		self.getter = getter;
+		self.setter = setter;
 	}
 }
 
@@ -90,36 +124,26 @@ impl JsObject {
 	}
 
 	/* property's help functions */
-	pub fn setproperty(&mut self, name: &str, v: JsValue, attr: JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) { 
-		if let JsClass::array(ref vec) = self.value {
-			if name == "length" {
-				panic!("length is readonly for array object!");
-			}
-		} 
-	
-		let property = JsProperty {
-			value:	v,
-			attr:	attr,
-			getter:	None,
-			setter: None,
-		};
-
-		self.properties.insert(name.to_string(), property);		
+	pub fn get_property<'a>(&'a mut self, name: &str) -> &'a mut JsProperty {
+		return self.properties.get_mut(name).unwrap();
 	}
-}
-
-impl JsEnvironment {
-	pub fn init_var(&mut self, name: &str, jv: JsValue) {		
-		let attr = JsPropertyAttr::DONTENUM_DONTCONF;
-		self.variables.setproperty(name, jv, attr, None, None);
+	pub fn put_property(&mut self, name: &str) -> bool {		
+		let result = self.properties.get(name);
+		if result.is_some() {
+			return true;
+		}
+		if self.extensible == false {
+			return false;
+		}
+		self.properties.insert(name.to_string(), JsProperty::new());
+		return true;
 	}
-	pub fn new_from(outer: SharedScope) -> SharedScope {
-		let env = JsEnvironment {
-			variables: JsObject::new(),
-			outer: Some(outer),
-		};
-		SharedScope_new(env)
-	}
+	pub fn fetch_property<'a>(&'a mut self, name: &str) -> Option<&'a mut JsProperty> {
+		if self.put_property(name) {
+			return self.properties.get_mut(name);
+		}
+		return None;
+	}		
 }
 
 impl JsRuntime {

@@ -101,6 +101,20 @@ impl TryFrom<u16> for OpcodeType {
     }
 }
 
+impl JsEnvironment {
+	pub fn init_var(&mut self, name: &str, jv: JsValue) {		
+		let attr = JsPropertyAttr::DONTENUM_DONTCONF;
+		self.variables.fetch_property(name).unwrap().fill(jv, attr, None, None);
+	}
+	pub fn new_from(outer: SharedScope) -> SharedScope {
+		let env = JsEnvironment {
+			variables: JsObject::new(),
+			outer: Some(outer),
+		};
+		SharedScope_new(env)
+	}
+}
+
 impl VMFunction {
 	pub fn opcode(&self, pc:&mut usize) -> OpcodeType {
 		if *pc >= self.code.len() {
@@ -176,8 +190,17 @@ impl JsRuntime {
 			}			
 		}
 
-		
-		
+		if target.put_property(name) {
+			let prop = target.get_property(name);
+			if !prop.readonly() {
+				prop.value = value;
+			}
+			if !prop.configable() {
+				prop.setter = setter;
+				prop.getter = getter;
+			}
+			prop.attr = attr;
+		}		
 	}
 
 	pub fn setproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue) {

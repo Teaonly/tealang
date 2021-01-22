@@ -448,7 +448,7 @@ pub struct JsObject {
 
 /* Property attribute flags */
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum JsPropertyAttr {
 	NONE,
 	READONLY,
