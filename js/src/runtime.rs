@@ -49,7 +49,7 @@ impl JsValue {
 		}
 		return false;
 	}
-	pub fn as_object(&self) -> SharedObject {
+	pub fn get_object(&self) -> SharedObject {
 		if let JsValue::JSObject(obj) = self {
 			return obj.clone();
 		}

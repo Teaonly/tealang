@@ -165,8 +165,47 @@ impl VMFunction {
 
 
 impl JsRuntime {
-	/* properties operation */
+	/* JsValue upgraded to JsObject */
+	pub fn into_object(&mut self, idx: usize) -> bool {
+		if self.stack[idx].is_object() {
+			return true;
+		}
 
+		let nobj = match &self.stack[idx] {
+			JsValue::JSBoolean(v) => {
+				JsObject {
+					extensible: true,
+					prototype: Some(self.prototypes.boolean_prototype.clone()),
+					properties: HashMap::new(),
+					value:	JsClass::boolean(*v),
+				}
+			},
+			JsValue::JSNumber(v) => {
+				JsObject {
+					extensible: true,
+					prototype: Some(self.prototypes.number_prototype.clone()),
+					properties: HashMap::new(),
+					value:	JsClass::number(*v),
+				}
+			},
+			JsValue::JSString(ref v) => {
+				JsObject {
+					extensible: true,
+					prototype: Some(self.prototypes.string_prototype.clone()),
+					properties: HashMap::new(),
+					value:	JsClass::string(v.to_string()),
+				}
+			},
+			_ => {
+				return false;
+			}
+		};
+
+		self.stack[idx] = JsValue::new_object(nobj);
+		return true; 
+	}
+
+	/* properties operation */
     // make a new proptery for object
     pub fn defproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue,
 		attr:JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) {
@@ -365,7 +404,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 fn jscall_script(rt: &mut JsRuntime, argc: usize) {
 	let bot = rt.stack.len() - 1 - argc;
 
-	let fobj = rt.stack[bot-1].as_object();
+	let fobj = rt.stack[bot-1].get_object();
 	let rfobj = fobj.borrow();
 	let vmf = &rfobj.get_func().vmf;
 
@@ -388,7 +427,7 @@ fn jscall_script(rt: &mut JsRuntime, argc: usize) {
 fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 	let bot = rt.stack.len() - 1 - argc;
 
-	let fobj = rt.stack[bot-1].as_object();
+	let fobj = rt.stack[bot-1].get_object();
 	let rfobj = fobj.borrow();
 	let vmf = &rfobj.get_func().vmf;
 
@@ -441,7 +480,7 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 
 fn jscall_builtin(rt: &mut JsRuntime, argc: usize) {
 	let bot = rt.stack.len() - 1 - argc;
-	let fobj = rt.stack[bot-1].as_object();
+	let fobj = rt.stack[bot-1].get_object();
 	let builtin = fobj.borrow().get_builtin();
 
 	for _i in argc .. builtin.argc {
@@ -459,7 +498,7 @@ pub fn jscall(rt: &mut JsRuntime, argc: usize) {
 	assert!(rt.stack.len() >= argc + 2);
 	let bot = rt.stack.len() - 1 - argc;
 
-	let fobj = rt.stack[bot-1].as_object();
+	let fobj = rt.stack[bot-1].get_object();
 	if fobj.borrow().is_function() == true {
 		if fobj.borrow().get_func().vmf.script {
 			jscall_script(rt, argc);
