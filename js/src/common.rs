@@ -384,7 +384,7 @@ pub struct VMFunction {
 	pub num_tab:	Vec<f64>,
 	pub str_tab:	Vec<String>,
 	pub var_tab:	Vec<String>,
-	pub func_tab:	Vec<Box<VMFunction>>,
+	pub func_tab:	Vec<Rc<Box<VMFunction>>>,
 
 	pub jumps:		Vec<VMJumpTable>,
 }
@@ -415,7 +415,7 @@ pub enum JsValue {
 #[allow(non_camel_case_types)]
 pub struct JsFunction {
 	pub scope:	SharedScope,
-	pub vmf:	VMFunction, 
+	pub vmf:	Rc<Box<VMFunction>>, 
 }
 
 #[allow(non_camel_case_types)]

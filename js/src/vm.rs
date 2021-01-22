@@ -200,7 +200,7 @@ impl JsRuntime {
 				prop.getter = getter;
 			}
 			prop.attr = attr;
-		}		
+		}
 	}
 
 	pub fn setproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue) {

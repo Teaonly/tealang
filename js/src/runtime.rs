@@ -150,7 +150,7 @@ impl JsRuntime {
 	pub fn newobj_from_vmf(&mut self, vmf: VMFunction) -> JsObject {
 		let f = JsFunction {
 			scope:	self.cenv.clone(),
-			vmf:	vmf,
+			vmf:	Rc::new(Box::new(vmf)),
 		};
 		let jclass = JsClass::function(f);
 		let fobj = JsObject::new_with_class(self.prototypes.function_prototype.clone(), jclass);

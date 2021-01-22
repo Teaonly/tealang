@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use crate::common::*;
 use crate::ast::*;
 
@@ -320,7 +321,7 @@ impl VMFunction {
 
     fn addfunc(&mut self, func: VMFunction) -> u16 {
         let r = self.func_tab.len();
-        self.func_tab.push(Box::new(func));
+        self.func_tab.push(Rc::new(Box::new(func)));
         return r as u16;
     }
 
