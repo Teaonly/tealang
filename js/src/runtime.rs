@@ -31,6 +31,18 @@ impl JsValue {
 		let shared_obj = SharedObject_new(obj);
 		JsValue::JSObject(shared_obj)  
 	}
+	pub fn is_null(&self) -> bool {
+		if let JsValue::JSNULL = self {
+			return true;
+		}
+		return false;
+	}
+	pub fn is_undefined(&self) -> bool {
+		if let JsValue::JSUndefined = self {
+			return true;
+		}
+		return false;
+	}
 	pub fn is_object(&self) -> bool {
 		if let JsValue::JSObject(_obj) = self {
 			return true;
@@ -41,7 +53,7 @@ impl JsValue {
 		if let JsValue::JSObject(obj) = self {
 			return obj.clone();
 		}
-		panic!("JsValue is not an object!");
+		panic!("JsValue is not an object!");		
 	}
 }
 

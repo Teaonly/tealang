@@ -434,8 +434,7 @@ pub enum JsClass {
 	array(Vec<JsValue>),
 	function(JsFunction),
 	builtin(JsBuiltinFunction),
-	native,
-		
+	native,		
 }
 
 #[allow(non_camel_case_types)]

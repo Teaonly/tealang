@@ -203,8 +203,9 @@ impl JsRuntime {
 		}
 	}
 
+	// change value of the proptery for object
 	pub fn setproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue) {
-
+		
 	}
 
 	/* stack operations */
