@@ -373,10 +373,22 @@ readonly:
 			*/		
 		}
 
+		let prop_r = target.query_property(name);
+		if let Some((prop, own)) = prop_r {
+			if let Some(setter) = prop.setter {
+				self.push_object(setter.clone());
+				self.push_object(target_);
+				self.push(value);
+				jscall(self, 1);
+				self.pop(1);
+				return;
+			}
+			if prop.readonly() {
+				can_not_change(name);
+				return;
+			}
+		}
 
-		//let rprop = target.query_property(name);
-		
-				
 		return self.defproperty(target_, name, value, JsPropertyAttr::NONE, None, None);		
 	}
 
