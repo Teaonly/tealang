@@ -193,10 +193,11 @@ impl JsRuntime {
 	/* environment's variables */
 	pub fn getvariable(&mut self, name: &str) -> bool {
 		let mut env: SharedScope = self.cenv.clone();
-		loop {
-			
+		loop {			
 			let r = env.borrow().query_variable(name);
 			if r {
+				let prop = env.borrow_mut().variables.get_property(name);
+				// TODO
 				
 				return true;
 			}
@@ -204,7 +205,6 @@ impl JsRuntime {
 			if env.borrow().outer.is_none() {
 				return false;
 			} 
-
 			let r = env.borrow().fetch_outer();
 			env = r; 
 		}
