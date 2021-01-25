@@ -210,21 +210,21 @@ impl JsRuntime {
     pub fn defproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue,
 		attr:JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) {
 
-		fn goto_readonly() {
-			println!("Hello");
+		fn goto_readonly(name:&str) {
+			println!("property {} is readonly!", name);
 		}
 		
 		if let JsClass::array(ref _v) = target.value {
 			if name == "length" {
-				goto_readonly();
+				goto_readonly(name);
 			}
 		} else if let JsClass::string(ref s) = target.value {
 			if name == "length" {
-				goto_readonly();
+				goto_readonly(name);
 			}
 			if let Ok(index) = name.parse::<usize>() {
 				if index > s.len() {
-					goto_readonly();
+					goto_readonly(name);
 				}
 			}			
 		}
@@ -242,9 +242,134 @@ impl JsRuntime {
 		}
 	}
 
+/*
+static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
+{
+	js_Value *value = stackidx(J, -1);
+	js_Property *ref;
+	int k;
+	int own;
+
+	if (obj->type == JS_CARRAY) {
+		if (!strcmp(name, "length")) {
+			double rawlen = jsV_tonumber(J, value);
+			int newlen = jsV_numbertointeger(rawlen);
+			if (newlen != rawlen || newlen < 0)
+				js_rangeerror(J, "invalid array length");
+			jsV_resizearray(J, obj, newlen);
+			return;
+		}
+		if (js_isarrayindex(J, name, &k))
+			if (k >= obj->u.a.length)
+				obj->u.a.length = k + 1;
+	}
+
+	else if (obj->type == JS_CSTRING) {
+		if (!strcmp(name, "length"))
+			goto readonly;
+		if (js_isarrayindex(J, name, &k))
+			if (k >= 0 && k < obj->u.s.length)
+				goto readonly;
+	}
+
+	else if (obj->type == JS_CREGEXP) {
+		if (!strcmp(name, "source")) goto readonly;
+		if (!strcmp(name, "global")) goto readonly;
+		if (!strcmp(name, "ignoreCase")) goto readonly;
+		if (!strcmp(name, "multiline")) goto readonly;
+		if (!strcmp(name, "lastIndex")) {
+			obj->u.r.last = jsV_tointeger(J, value);
+			return;
+		}
+	}
+
+	else if (obj->type == JS_CUSERDATA) {
+		if (obj->u.user.put && obj->u.user.put(J, obj->u.user.data, name))
+			return;
+	}
+
+	/* First try to find a setter in prototype chain */
+	ref = jsV_getpropertyx(J, obj, name, &own);
+	if (ref) {
+		if (ref->setter) {
+			js_pushobject(J, ref->setter);
+			js_pushobject(J, obj);
+			js_pushvalue(J, *value);
+			js_call(J, 1);
+			js_pop(J, 1);
+			return;
+		} else {
+			if (J->strict)
+				if (ref->getter)
+					js_typeerror(J, "setting property '%s' that only has a getter", name);
+			if (ref->atts & JS_READONLY)
+				goto readonly;
+		}
+	}
+
+	/* Property not found on this object, so create one */
+	if (!ref || !own)
+		ref = jsV_setproperty(J, obj, name);
+
+	if (ref) {
+		if (!(ref->atts & JS_READONLY))
+			ref->value = *value;
+		else
+			goto readonly;
+	}
+
+	return;
+
+readonly:
+	if (J->strict)
+		js_typeerror(J, "'%s' is read-only", name);
+}
+
+*/
 	// change value of the proptery for object
 	pub fn setproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue) {
+		fn can_not_change(name:&str) {
+			println!("property {} can't be changed with value!", name);
+		}
 		
+		if let JsClass::array(ref mut a) = target.value {
+			if name == "length" {
+				if let Some(num) = value.to_number() {
+					let newlen = num as usize;
+					if (newlen as f64) == num {
+						a.resize(newlen, JsValue::new_undefined());
+						return;
+					}
+				}
+			}
+			if let Ok(idx) = name.parse::<usize>() {
+				if idx > a.len() {
+					a.resize(idx + 1, JsValue::new_undefined());
+				} 
+				a[idx] = value;
+				return;
+			}
+
+		} else if let JsClass::string(ref mut s) = target.value {
+			if name == "length" {
+				can_not_change(name);
+				return;
+			}
+			if let Ok(idx) = name.parse::<usize>() {
+				if idx < s.len() {
+					can_not_change(name);
+					return;
+				}
+			}
+		} else if let JsClass::native = target.value {
+			/*
+			if (obj->u.user.put && obj->u.user.put(J, obj->u.user.data, name))
+				return;
+			*/		
+		}
+
+
+
 	}
 
 	/* stack operations */

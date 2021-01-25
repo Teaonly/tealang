@@ -55,6 +55,15 @@ impl JsValue {
 		}
 		panic!("JsValue is not an object!");		
 	}
+	pub fn to_number(&self) -> Option<f64> {
+		if let JsValue::JSNumber(v) = self {
+			return Some(*v);
+		}
+		if let JsValue::JSObject(obj) = self {
+			return obj.borrow().to_number();
+		}
+		return None;
+	}
 }
 
 impl JsProperty {
@@ -110,6 +119,13 @@ impl JsObject {
         }
 	}
 
+	pub fn to_number(&self) -> Option<f64> {
+		if let JsClass::number(v) = self.value {
+			return Some(v);
+		}
+		return None;
+	}
+
 	pub fn is_builtin(&self) -> bool {
 		if let JsClass::builtin(_) = self.value {
 			return true;
@@ -134,8 +150,20 @@ impl JsObject {
 		}
 		panic!("Object can't be a func!")
 	}
+	
+	/* array helper functions */
+
+
 
 	/* property's help functions */
+	pub fn query_property<'a>(&'a mut self, name: &str) -> Option<&'a mut JsProperty> {
+		let r = self.properties.get_mut(name);
+		if r.is_some() {
+			return r;
+		}
+
+		return None;
+	}
 	pub fn get_property<'a>(&'a mut self, name: &str) -> &'a mut JsProperty {
 		return self.properties.get_mut(name).unwrap();
 	}
@@ -155,7 +183,7 @@ impl JsObject {
 			return self.properties.get_mut(name);
 		}
 		return None;
-	}		
+	}
 }
 
 impl JsRuntime {
