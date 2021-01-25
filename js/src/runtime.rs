@@ -163,11 +163,12 @@ impl JsObject {
 		}
 
 		if self.prototype.is_some() {
-			let mut proto = self.prototype.as_ref().unwrap().borrow();
+			let proto = self.prototype.as_ref().unwrap().borrow();
 			return Some((proto.query_property(name).unwrap().0, false));
 		}
 		return None;
 	}
+
 	pub fn get_property<'a>(&'a mut self, name: &str) -> &'a mut JsProperty {
 		return self.properties.get_mut(name).unwrap();
 	}
@@ -187,6 +188,36 @@ impl JsObject {
 			return self.properties.get_mut(name);
 		}
 		return None;
+	}
+}
+
+impl JsEnvironment {
+	pub fn init_var(&mut self, name: &str, jv: JsValue) {		
+		let attr = JsPropertyAttr::DONTENUM_DONTCONF;
+		self.variables.fetch_property(name).unwrap().fill(jv, attr, None, None);
+	}
+	pub fn new_from(outer: SharedScope) -> SharedScope {
+		let env = JsEnvironment {
+			variables: JsObject::new(),
+			outer: Some(outer),
+		};
+		SharedScope_new(env)
+	}
+
+	pub fn fetch_outer(&self) -> SharedScope {
+		if let Some(scope) = &self.outer {
+			return scope.clone();
+		}
+		panic!("Can't fetch outer from env!")
+	}
+	
+	pub fn query_variable(&self, name: &str) -> bool {
+		if let Some((_rprop, own)) = self.variables.query_property(name) {
+			if own {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 

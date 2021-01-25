@@ -101,19 +101,6 @@ impl TryFrom<u16> for OpcodeType {
     }
 }
 
-impl JsEnvironment {
-	pub fn init_var(&mut self, name: &str, jv: JsValue) {		
-		let attr = JsPropertyAttr::DONTENUM_DONTCONF;
-		self.variables.fetch_property(name).unwrap().fill(jv, attr, None, None);
-	}
-	pub fn new_from(outer: SharedScope) -> SharedScope {
-		let env = JsEnvironment {
-			variables: JsObject::new(),
-			outer: Some(outer),
-		};
-		SharedScope_new(env)
-	}
-}
 
 impl VMFunction {
 	pub fn opcode(&self, pc:&mut usize) -> OpcodeType {
@@ -162,8 +149,6 @@ impl VMFunction {
 	}
 }
 
-
-
 impl JsRuntime {
 	/* JsValue upgraded to JsObject */
 	pub fn into_object(&mut self, idx: usize) -> bool {
@@ -203,6 +188,27 @@ impl JsRuntime {
 
 		self.stack[idx] = JsValue::new_object(nobj);
 		return true; 
+	}	
+
+	/* environment's variables */
+	pub fn getvariable(&mut self, name: &str) -> bool {
+		let mut env: SharedScope = self.cenv.clone();
+		loop {
+			
+			let r = env.borrow().query_variable(name);
+			if r {
+				
+				return true;
+			}
+
+			if env.borrow().outer.is_none() {
+				return false;
+			} 
+
+			let r = env.borrow().fetch_outer();
+			env = r; 
+		}
+
 	}
 
 	/* properties operation */
@@ -244,90 +250,6 @@ impl JsRuntime {
 		}
 	}
 
-/*
-static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
-{
-	js_Value *value = stackidx(J, -1);
-	js_Property *ref;
-	int k;
-	int own;
-
-	if (obj->type == JS_CARRAY) {
-		if (!strcmp(name, "length")) {
-			double rawlen = jsV_tonumber(J, value);
-			int newlen = jsV_numbertointeger(rawlen);
-			if (newlen != rawlen || newlen < 0)
-				js_rangeerror(J, "invalid array length");
-			jsV_resizearray(J, obj, newlen);
-			return;
-		}
-		if (js_isarrayindex(J, name, &k))
-			if (k >= obj->u.a.length)
-				obj->u.a.length = k + 1;
-	}
-
-	else if (obj->type == JS_CSTRING) {
-		if (!strcmp(name, "length"))
-			goto readonly;
-		if (js_isarrayindex(J, name, &k))
-			if (k >= 0 && k < obj->u.s.length)
-				goto readonly;
-	}
-
-	else if (obj->type == JS_CREGEXP) {
-		if (!strcmp(name, "source")) goto readonly;
-		if (!strcmp(name, "global")) goto readonly;
-		if (!strcmp(name, "ignoreCase")) goto readonly;
-		if (!strcmp(name, "multiline")) goto readonly;
-		if (!strcmp(name, "lastIndex")) {
-			obj->u.r.last = jsV_tointeger(J, value);
-			return;
-		}
-	}
-
-	else if (obj->type == JS_CUSERDATA) {
-		if (obj->u.user.put && obj->u.user.put(J, obj->u.user.data, name))
-			return;
-	}
-
-	/* First try to find a setter in prototype chain */
-	ref = jsV_getpropertyx(J, obj, name, &own);
-	if (ref) {
-		if (ref->setter) {
-			js_pushobject(J, ref->setter);
-			js_pushobject(J, obj);
-			js_pushvalue(J, *value);
-			js_call(J, 1);
-			js_pop(J, 1);
-			return;
-		} else {
-			if (J->strict)
-				if (ref->getter)
-					js_typeerror(J, "setting property '%s' that only has a getter", name);
-			if (ref->atts & JS_READONLY)
-				goto readonly;
-		}
-	}
-
-	/* Property not found on this object, so create one */
-	if (!ref || !own)
-		ref = jsV_setproperty(J, obj, name);
-
-	if (ref) {
-		if (!(ref->atts & JS_READONLY))
-			ref->value = *value;
-		else
-			goto readonly;
-	}
-
-	return;
-
-readonly:
-	if (J->strict)
-		js_typeerror(J, "'%s' is read-only", name);
-}
-
-*/
 	// change value of the proptery for object
 	pub fn setproperty(&mut self, target_: SharedObject, name: &str, value: JsValue) {		
 		let mut target = target_.borrow_mut();
@@ -390,7 +312,7 @@ readonly:
 		}
 
 		return self.defproperty(target_, name, value, JsPropertyAttr::NONE, None, None);		
-	}
+	}	
 
 	/* stack operations */
 	pub fn push(&mut self, jv: JsValue) {
@@ -537,14 +459,12 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			OpcodeType::OP_CURRENT => {
 				rt.push_from(bot - 1);
 			},
-
-			/*
-			// TODO
+			
 			OpcodeType::OP_GETLOCAL => {
 				let v = func.string(&mut pc);
 
 			}
-			*/
+			
 			_ => {}
 		}
 	}
