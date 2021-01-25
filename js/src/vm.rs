@@ -207,8 +207,10 @@ impl JsRuntime {
 
 	/* properties operation */
     // make a new proptery for object
-    pub fn defproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue,
+    pub fn defproperty(&mut self, target_: SharedObject, name: &str, value: JsValue,
 		attr:JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) {
+
+		let mut target = target_.borrow_mut();
 
 		fn goto_readonly(name:&str) {
 			println!("property {} is readonly!", name);
@@ -327,7 +329,10 @@ readonly:
 
 */
 	// change value of the proptery for object
-	pub fn setproperty(&mut self, target: &mut JsObject, name: &str, value: JsValue) {
+	pub fn setproperty(&mut self, target_: SharedObject, name: &str, value: JsValue) {		
+		let mut target = target_.borrow_mut();
+		let target_ = target_.clone();
+
 		fn can_not_change(name:&str) {
 			println!("property {} can't be changed with value!", name);
 		}
@@ -369,7 +374,10 @@ readonly:
 		}
 
 
-
+		//let rprop = target.query_property(name);
+		
+				
+		return self.defproperty(target_, name, value, JsPropertyAttr::NONE, None, None);		
 	}
 
 	/* stack operations */
@@ -386,6 +394,10 @@ readonly:
 	}
 	pub fn push_string(&mut self, v:String) {
 		let jv = JsValue::new_string(v);
+		self.stack.push(jv);
+	}
+	pub fn push_object(&mut self, target: SharedObject) {		
+		let jv = JsValue::JSObject(target);
 		self.stack.push(jv);
 	}
 	pub fn push_from(&mut self, from: usize) {
@@ -563,18 +575,19 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 
 	/* create arguments */
 	if vmf.numparams > 0 {
-		let mut arg_obj = JsObject::new_with_class( rt.prototypes.object_prototype.clone(), JsClass::object);
+		let arg_obj = JsObject::new_with_class( rt.prototypes.object_prototype.clone(), JsClass::object);
+		let arg_value = JsValue::new_object(arg_obj);
 
 		let jv = JsValue::new_number(argc as f64);
-		rt.defproperty(&mut arg_obj, "length", jv,  JsPropertyAttr::DONTENUM, None, None);
+		rt.defproperty(arg_value.get_object(), "length", jv,  JsPropertyAttr::DONTENUM, None, None);
 
 		for i in 0..argc {
 			let name = i.to_string();
 			let jv = rt.stack[bot+1+i].clone();
-			rt.defproperty(&mut arg_obj, &name, jv, JsPropertyAttr::NONE, None, None);
+			rt.defproperty(arg_value.get_object(), &name, jv, JsPropertyAttr::NONE, None, None);
 		}
 
-		let arg_value = JsValue::new_object(arg_obj);
+		
 		rt.cenv.borrow_mut().init_var("arguments", arg_value);
 	}
 

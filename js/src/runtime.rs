@@ -156,12 +156,16 @@ impl JsObject {
 
 
 	/* property's help functions */
-	pub fn query_property<'a>(&'a mut self, name: &str) -> Option<&'a mut JsProperty> {
-		let r = self.properties.get_mut(name);
+	pub fn query_property(&self, name: &str) -> Option<(JsProperty, bool)> {
+		let r = self.properties.get(name);
 		if r.is_some() {
-			return r;
+			return Some((r.unwrap().clone(), true));
 		}
 
+		if self.prototype.is_some() {
+			let mut proto = self.prototype.as_ref().unwrap().borrow();
+			return Some((proto.query_property(name).unwrap().0, false));
+		}
 		return None;
 	}
 	pub fn get_property<'a>(&'a mut self, name: &str) -> &'a mut JsProperty {
