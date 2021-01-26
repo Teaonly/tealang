@@ -205,18 +205,19 @@ impl JsObject {
 		self.properties.insert(name.to_string(), JsProperty::new());
 		return true;
 	}
-	pub fn fetch_property<'a>(&'a mut self, name: &str) -> Option<&'a mut JsProperty> {
-		if self.put_property(name) {
-			return self.properties.get_mut(name);
-		}
-		return None;
-	}
 }
 
 impl JsEnvironment {
-	pub fn init_var(&mut self, name: &str, jv: SharedValue) {		
-		let attr = JsPropertyAttr::DONTENUM_DONTCONF;
-		self.variables.fetch_property(name).unwrap().fill(jv, attr, None, None);
+	pub fn init_var(&mut self, name: &str, jv: SharedValue) {
+		let prop = JsProperty {
+			value: jv,
+			attr: JsPropertyAttr::DONTENUM_DONTCONF,
+			getter: None,
+			setter: None,
+		};
+		if ( self.variables.put_property(name) ) {
+			self.variables.set_property(name, prop);
+		}
 	}
 	pub fn new_from(outer: SharedScope) -> SharedScope {
 		let env = JsEnvironment {

@@ -185,13 +185,26 @@ impl JsRuntime {
 					self.push(prop.value.clone());						// this object
 					self.push_from( self.stack.len() - 3);				// value
 					jscall(self, 1);
-					self.pop(1);
+					self.pop(1);					
 				} else {
-					prop.value.swap( self.stack.first().unwrap().clone() );
-				}
-				//				
-			}
+					if !prop.readonly() {
+						prop.value.swap( self.stack.first().unwrap().clone() );
+					}
+				}	
+				return;		
+			} 
+			if env.borrow().outer.is_none() {
+				break;
+			} 
+			let r = env.borrow().fetch_outer();
+			env = r; 
 		}
+		
+		let value = self.stack.first().unwrap().clone();
+		self.genv.borrow_mut().variables.put_property(name);
+		let mut prop = self.genv.borrow_mut().variables.get_property(name);
+		prop.value = value;
+		self.genv.borrow_mut().variables.set_property(name, prop);
 	}
 
 	/* properties operation */
