@@ -9,6 +9,9 @@ use crate::vm::*;
 /* implementation for JsValue/JsObject/JsRuntime */
 
 impl SharedValue {
+	pub fn swap(&self, other: SharedValue) {
+		self.value.swap(&other.value);
+	}
 	pub fn new_null() -> Self {
 		let v = JsValue::JSNULL;		
 		SharedValue {

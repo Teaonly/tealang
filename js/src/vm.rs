@@ -211,7 +211,7 @@ impl JsRuntime {
 		}
 
 		let prop_r = target.query_property(name);
-		if let Some((prop, own)) = prop_r {
+		if let Some((mut prop, own)) = prop_r {
 			if let Some(setter) = prop.setter {
 				self.push_object(setter.clone());
 				self.push_object(target_);
@@ -223,9 +223,13 @@ impl JsRuntime {
 			if prop.readonly() {
 				println!("Cant write property for specia object!");
 				return;
+			} else {				
+				prop.value.swap( value );
+				return;
 			}
 		}
 
+		/* Property not found on this object, so create one */
 		return self.defproperty(target_, name, value, JsPropertyAttr::NONE, None, None);		
 	}	
 
