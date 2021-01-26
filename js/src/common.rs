@@ -407,8 +407,7 @@ pub enum JsValue {
 	JSUndefined,
 	JSNULL,
 	JSBoolean(bool),
-	JSNumber(f64),
-	JSString(String),
+	JSNumber(f64),	
 	JSObject(SharedObject),
 }
 
@@ -435,6 +434,7 @@ pub struct JsBuiltinFunction {
 pub enum JsClass {
 	object,
 	native,
+	string(String),
 	array(Vec<SharedValue>),
 	function(JsFunction),
 	builtin(JsBuiltinFunction),
@@ -481,11 +481,9 @@ pub struct JsEnvironment {
 pub struct JsPrototype {
 	/* prototype for different objects */
 	pub object_prototype:	SharedObject,
+	pub string_prototype:	SharedObject,
 	pub array_prototype:	SharedObject,
 	pub function_prototype: SharedObject,
-	pub boolean_prototype:	SharedObject,
-	pub number_prototype:	SharedObject,
-	pub string_prototype:	SharedObject,
 	
 	pub error_prototype:	SharedObject,
 	pub range_err_proto:	SharedObject,

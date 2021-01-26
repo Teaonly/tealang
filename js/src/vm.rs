@@ -150,46 +150,6 @@ impl VMFunction {
 }
 
 impl JsRuntime {
-	/* JsValue upgraded to JsObject */
-	pub fn into_object(&mut self, idx: usize) -> bool {
-		if self.stack[idx].is_object() {
-			return true;
-		}
-
-		let nobj = match &self.stack[idx] {
-			JsValue::JSBoolean(v) => {
-				JsObject {
-					extensible: true,
-					prototype: Some(self.prototypes.boolean_prototype.clone()),
-					properties: HashMap::new(),
-					value:	JsClass::boolean(*v),
-				}
-			},
-			JsValue::JSNumber(v) => {
-				JsObject {
-					extensible: true,
-					prototype: Some(self.prototypes.number_prototype.clone()),
-					properties: HashMap::new(),
-					value:	JsClass::number(*v),
-				}
-			},
-			JsValue::JSString(ref v) => {
-				JsObject {
-					extensible: true,
-					prototype: Some(self.prototypes.string_prototype.clone()),
-					properties: HashMap::new(),
-					value:	JsClass::string(v.to_string()),
-				}
-			},
-			_ => {
-				return false;
-			}
-		};
-
-		self.stack[idx] = JsValue::new_object(nobj);
-		return true; 
-	}	
-
 	/* environment's variables */
 	pub fn getvariable(&mut self, name: &str) -> bool {
 		let mut env: SharedScope = self.cenv.clone();
@@ -201,40 +161,27 @@ impl JsRuntime {
 				
 				return true;
 			}
-
 			if env.borrow().outer.is_none() {
 				return false;
 			} 
 			let r = env.borrow().fetch_outer();
 			env = r; 
 		}
-
 	}
 
 	/* properties operation */
     // make a new proptery for object
-    pub fn defproperty(&mut self, target_: SharedObject, name: &str, value: JsValue,
+    pub fn defproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue,
 		attr:JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) {
 
 		let mut target = target_.borrow_mut();
 
-		fn goto_readonly(name:&str) {
-			println!("property {} is readonly!", name);
-		}
-		
-		if let JsClass::array(ref _v) = target.value {
-			if name == "length" {
-				goto_readonly(name);
+		match target.value {
+			JsClass::object => {},
+			_ => {
+				println!("Cant define property for specia object!");
+				return;
 			}
-		} else if let JsClass::string(ref s) = target.value {
-			if name == "length" {
-				goto_readonly(name);
-			}
-			if let Ok(index) = name.parse::<usize>() {
-				if index > s.len() {
-					goto_readonly(name);
-				}
-			}			
 		}
 
 		if target.put_property(name) {
@@ -251,48 +198,16 @@ impl JsRuntime {
 	}
 
 	// change value of the proptery for object
-	pub fn setproperty(&mut self, target_: SharedObject, name: &str, value: JsValue) {		
+	pub fn setproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue) {		
 		let mut target = target_.borrow_mut();
 		let target_ = target_.clone();
 
-		fn can_not_change(name:&str) {
-			println!("property {} can't be changed with value!", name);
-		}
-		
-		if let JsClass::array(ref mut a) = target.value {
-			if name == "length" {
-				if let Some(num) = value.to_number() {
-					let newlen = num as usize;
-					if (newlen as f64) == num {
-						a.resize(newlen, JsValue::new_undefined());
-						return;
-					}
-				}
-			}
-			if let Ok(idx) = name.parse::<usize>() {
-				if idx > a.len() {
-					a.resize(idx + 1, JsValue::new_undefined());
-				} 
-				a[idx] = value;
+		match target.value {
+			JsClass::object => {},
+			_ => {
+				println!("Cant write property for specia object!");
 				return;
 			}
-
-		} else if let JsClass::string(ref mut s) = target.value {
-			if name == "length" {
-				can_not_change(name);
-				return;
-			}
-			if let Ok(idx) = name.parse::<usize>() {
-				if idx < s.len() {
-					can_not_change(name);
-					return;
-				}
-			}
-		} else if let JsClass::native = target.value {
-			/*
-			if (obj->u.user.put && obj->u.user.put(J, obj->u.user.data, name))
-				return;
-			*/		
 		}
 
 		let prop_r = target.query_property(name);
@@ -306,7 +221,7 @@ impl JsRuntime {
 				return;
 			}
 			if prop.readonly() {
-				can_not_change(name);
+				println!("Cant write property for specia object!");
 				return;
 			}
 		}
@@ -315,30 +230,32 @@ impl JsRuntime {
 	}	
 
 	/* stack operations */
-	pub fn push(&mut self, jv: JsValue) {
+	pub fn push(&mut self, jv: SharedValue) {
 		self.stack.push(jv);
 	}
 	pub fn push_undefined(&mut self) {
-		let jv = JsValue::new_undefined();
+		let jv = SharedValue::new_undefined();
 		self.stack.push(jv);
 	}
 	pub fn push_number(&mut self, v:f64) {
-		let jv = JsValue::new_number(v);
+		let jv = SharedValue::new_number(v);
 		self.stack.push(jv);
 	}
 	pub fn push_string(&mut self, v:String) {
-		let jv = JsValue::new_string(v);
+		let jclass = JsClass::string(v);
+		let jobj = JsObject::new_with_class(self.prototypes.string_prototype.clone(), jclass);
+		let jv = SharedValue::new_object(jobj);
 		self.stack.push(jv);
 	}
 	pub fn push_object(&mut self, target: SharedObject) {		
-		let jv = JsValue::JSObject(target);
+		let jv = SharedValue::new_sobject(target);
 		self.stack.push(jv);
 	}
 	pub fn push_from(&mut self, from: usize) {
 		if from >= self.stack.len() {
 			panic!("stack underflow! @ push_from");
 		}
-		let jv = JsValue::clone( &self.stack[from] );
+		let jv = SharedValue::clone( &self.stack[from] );
 		self.stack.push(jv);
 	}
 	/* opcode helper*/
@@ -353,7 +270,7 @@ impl JsRuntime {
 	}
 	pub fn dup(&mut self) {
 		if let Some(ref v) = self.stack.first() {
-			let nv: JsValue = JsValue::clone(v);
+			let nv: SharedValue = SharedValue::clone(v);
 			self.stack.push(nv);
 		} else {
 			panic!("stack underflow! @ dup");
@@ -365,8 +282,8 @@ impl JsRuntime {
 		}
 
 		let top = self.stack.len();
-		let nv1: JsValue = JsValue::clone( &self.stack[top-2] );
-		let nv2: JsValue = JsValue::clone( &self.stack[top-1] );
+		let nv1: SharedValue = SharedValue::clone( &self.stack[top-2] );
+		let nv2: SharedValue = SharedValue::clone( &self.stack[top-1] );
 		self.stack.push(nv1);
 		self.stack.push(nv2);
 	}
@@ -428,16 +345,16 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 
 			OpcodeType::OP_UNDEF => {
-				rt.push(JsValue::new_undefined());
+				rt.push(SharedValue::new_undefined());
 			},
 			OpcodeType::OP_NULL => {
-				rt.push(JsValue::new_null());
+				rt.push(SharedValue::new_null());
 			},
 			OpcodeType::OP_FALSE => {
-				rt.push(JsValue::new_false());
+				rt.push(SharedValue::new_false());
 			},
 			OpcodeType::OP_TRUE => {
-				rt.push(JsValue::new_false());
+				rt.push(SharedValue::new_false());
 			},
 
 			OpcodeType::OP_INTEGER => {
@@ -479,7 +396,7 @@ fn jscall_script(rt: &mut JsRuntime, argc: usize) {
 
 	/* init var in current env*/
 	for var in &vmf.var_tab {
-		let jv = JsValue::new_undefined();
+		let jv = SharedValue::new_undefined();
 		rt.cenv.borrow_mut().init_var(var, jv);
 	}
 
@@ -508,9 +425,9 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 	/* create arguments */
 	if vmf.numparams > 0 {
 		let arg_obj = JsObject::new_with_class( rt.prototypes.object_prototype.clone(), JsClass::object);
-		let arg_value = JsValue::new_object(arg_obj);
+		let arg_value = SharedValue::new_object(arg_obj);
 
-		let jv = JsValue::new_number(argc as f64);
+		let jv = SharedValue::new_number(argc as f64);
 		rt.defproperty(arg_value.get_object(), "length", jv,  JsPropertyAttr::DONTENUM, None, None);
 
 		for i in 0..argc {
@@ -533,7 +450,7 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 
 	/* init var in current env*/
 	for i in min_argc..vmf.var_tab.len() {
-		let jv = JsValue::new_undefined();
+		let jv = SharedValue::new_undefined();
 		rt.cenv.borrow_mut().init_var(&vmf.var_tab[i], jv);
 	}
 
