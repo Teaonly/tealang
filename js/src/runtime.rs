@@ -188,8 +188,11 @@ impl JsObject {
 		return None;
 	}
 
-	pub fn get_property<'a>(&'a mut self, name: &str) -> &'a mut JsProperty {
-		return self.properties.get_mut(name).unwrap();
+	pub fn get_property(&self, name: &str) -> JsProperty {
+		return self.properties.get(name).unwrap().clone();
+	}
+	pub fn set_property(&mut self, name: &str, prop: JsProperty) {
+		self.properties.insert(name.to_string(), prop);
 	}
 	pub fn put_property(&mut self, name: &str) -> bool {		
 		let result = self.properties.get(name);

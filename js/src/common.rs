@@ -401,8 +401,8 @@ pub fn SharedScope_new(scope: JsEnvironment) -> SharedScope {
 }
 
 // JsValue for access fast and memory effective 
+// to simpilify implementation remvoed prototype for boolean/number
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
 pub enum JsValue {
 	JSUndefined,
 	JSNULL,

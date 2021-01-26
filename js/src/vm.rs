@@ -157,8 +157,13 @@ impl JsRuntime {
 			let r = env.borrow().query_variable(name);
 			if r {
 				let prop = env.borrow_mut().variables.get_property(name);
-				// TODO
-				
+				if prop.getter.is_some() {
+					self.push_object(prop.getter.unwrap().clone());		// function object
+					self.push(prop.value.clone());						// this object
+					jscall(self, 1);
+				} else {
+					self.push(prop.value.clone());
+				}
 				return true;
 			}
 			if env.borrow().outer.is_none() {
@@ -185,7 +190,7 @@ impl JsRuntime {
 		}
 
 		if target.put_property(name) {
-			let prop = target.get_property(name);
+			let mut prop = target.get_property(name);
 			if !prop.readonly() {
 				prop.value = value;
 			}
@@ -194,6 +199,7 @@ impl JsRuntime {
 				prop.getter = getter;
 			}
 			prop.attr = attr;
+			target.set_property(name, prop);
 		}
 	}
 
@@ -383,9 +389,14 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			
 			OpcodeType::OP_GETLOCAL => {
 				let v = func.string(&mut pc);
+				if rt.getvariable(&v) == false {
+					println!("'{}' is not defined", v);
+				}
+			},
+			OpcodeType::OP_SETLOCAL => {
+				let v = func.string(&mut pc);
 
-			}
-			
+			},
 			_ => {}
 		}
 	}
