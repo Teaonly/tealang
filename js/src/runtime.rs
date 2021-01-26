@@ -8,59 +8,82 @@ use crate::vm::*;
 
 /* implementation for JsValue/JsObject/JsRuntime */
 
-impl JsValue {
+impl SharedValue {
 	pub fn new_null() -> Self {
-		JsValue::JSNULL
+		let v = JsValue::JSNULL;		
+		SharedValue {
+			value: Rc::new(RefCell::new(v))
+		}
 	}
 	pub fn new_undefined() -> Self {
-		JsValue::JSUndefined
+		let v = JsValue::JSUndefined;
+		SharedValue {
+			value: Rc::new(RefCell::new(v))
+		}
 	}
 	pub fn new_false() -> Self {
-		JsValue::JSBoolean(false)
+		let v = JsValue::JSBoolean(false);
+		SharedValue {
+			value: Rc::new(RefCell::new(v))
+		}
 	}
 	pub fn new_true() -> Self {
-		JsValue::JSBoolean(true)
+		let v = JsValue::JSBoolean(true);
+		SharedValue {
+			value: Rc::new(RefCell::new(v))
+		}
 	}
 	pub fn new_number(v:f64) -> Self {
-		JsValue::JSNumber(v)
+		let v = JsValue::JSNumber(v);
+		SharedValue {
+			value: Rc::new(RefCell::new(v))
+		}
 	}
 	pub fn new_string(v:String) -> Self {
-		JsValue::JSString(v)
+		let v = JsValue::JSString(v);
+		SharedValue {
+			value: Rc::new(RefCell::new(v))
+		}
 	}
 	pub fn new_object(obj:JsObject) -> Self {
 		let shared_obj = SharedObject_new(obj);
-		JsValue::JSObject(shared_obj)  
+		let v = JsValue::JSObject(shared_obj);
+		SharedValue {
+			value: Rc::new(RefCell::new(v))
+		}
 	}
 	pub fn is_null(&self) -> bool {
-		if let JsValue::JSNULL = self {
+		let v = self.value.borrow();
+		if let JsValue::JSNULL = *v {
 			return true;
 		}
 		return false;
 	}
 	pub fn is_undefined(&self) -> bool {
-		if let JsValue::JSUndefined = self {
+		let v = self.value.borrow();
+		if let JsValue::JSUndefined = *v {
 			return true;
 		}
 		return false;
 	}
 	pub fn is_object(&self) -> bool {
-		if let JsValue::JSObject(_obj) = self {
+		let v = self.value.borrow();
+		if let JsValue::JSObject(ref _obj) = *v {
 			return true;
 		}
 		return false;
 	}
 	pub fn get_object(&self) -> SharedObject {
-		if let JsValue::JSObject(obj) = self {
+		let v = self.value.borrow();
+		if let JsValue::JSObject(ref obj) = *v {
 			return obj.clone();
 		}
 		panic!("JsValue is not an object!");		
 	}
 	pub fn to_number(&self) -> Option<f64> {
-		if let JsValue::JSNumber(v) = self {
+		let v = self.value.borrow();
+		if let JsValue::JSNumber(ref v) = *v {
 			return Some(*v);
-		}
-		if let JsValue::JSObject(obj) = self {
-			return obj.borrow().to_number();
 		}
 		return None;
 	}
@@ -69,7 +92,7 @@ impl JsValue {
 impl JsProperty {
 	pub fn new() -> Self {
 		JsProperty {
-			value: JsValue::new_undefined(),
+			value: SharedValue::new_undefined(),
 			attr: JsPropertyAttr::NONE,
 			getter: None,
 			setter: None,
@@ -92,7 +115,7 @@ impl JsProperty {
 		return true;
 	}
 
-	pub fn fill(&mut self, jv: JsValue, attr: JsPropertyAttr, getter:Option<SharedObject>, setter: Option<SharedObject>) {
+	pub fn fill(&mut self, jv: SharedValue, attr: JsPropertyAttr, getter:Option<SharedObject>, setter: Option<SharedObject>) {
 		self.value = jv;
 		self.attr = attr;
 		self.getter = getter;
@@ -117,13 +140,6 @@ impl JsObject {
             properties: HashMap::new(),
             value: value
         }
-	}
-
-	pub fn to_number(&self) -> Option<f64> {
-		if let JsClass::number(v) = self.value {
-			return Some(v);
-		}
-		return None;
 	}
 
 	pub fn is_builtin(&self) -> bool {
@@ -192,7 +208,7 @@ impl JsObject {
 }
 
 impl JsEnvironment {
-	pub fn init_var(&mut self, name: &str, jv: JsValue) {		
+	pub fn init_var(&mut self, name: &str, jv: SharedValue) {		
 		let attr = JsPropertyAttr::DONTENUM_DONTCONF;
 		self.variables.fetch_property(name).unwrap().fill(jv, attr, None, None);
 	}
@@ -272,7 +288,7 @@ pub fn new_runtime<'a>() -> JsRuntime<'a> {
 pub fn execute_global(rt: &mut JsRuntime, vmf: VMFunction) {
 	// variable to the enviroment
 	rt.cenv = rt.genv.clone();	
-	let jv = JsValue::new_object(rt.newobj_from_vmf(vmf));
+	let jv = SharedValue::new_object(rt.newobj_from_vmf(vmf));
 	rt.push(jv);			// function object
 	rt.push_undefined();	// this, undefined for global in strict mode
 

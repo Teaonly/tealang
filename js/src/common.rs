@@ -413,6 +413,12 @@ pub enum JsValue {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(Clone)]
+pub struct SharedValue {
+	pub value:	Rc<RefCell<JsValue>>,	
+}
+
+#[allow(non_camel_case_types)]
 pub struct JsFunction {
 	pub scope:	SharedScope,
 	pub vmf:	Rc<Box<VMFunction>>, 
@@ -428,13 +434,10 @@ pub struct JsBuiltinFunction {
 #[allow(non_camel_case_types)]
 pub enum JsClass {
 	object,
-	boolean(bool),
-	number(f64),
-	string(String),
-	array(Vec<JsValue>),
+	native,
+	array(Vec<SharedValue>),
 	function(JsFunction),
 	builtin(JsBuiltinFunction),
-	native,		
 }
 
 #[allow(non_camel_case_types)]
@@ -462,7 +465,7 @@ pub enum JsPropertyAttr {
 #[allow(non_camel_case_types)]
 #[derive(Clone)]
 pub struct JsProperty {
-	pub value:	JsValue,
+	pub value:	SharedValue,
 	pub attr:	JsPropertyAttr,
 	pub getter:	Option<SharedObject>,
 	pub setter:	Option<SharedObject>,
@@ -498,5 +501,5 @@ pub struct JsRuntime {
 	pub genv:			SharedScope,	
 	pub cenv:			SharedScope,
 
-	pub stack:			Vec<JsValue>,
+	pub stack:			Vec<SharedValue>,
 }
