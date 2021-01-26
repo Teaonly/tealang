@@ -10,81 +10,81 @@ use crate::vm::*;
 
 impl SharedValue {
 	pub fn swap(&self, other: SharedValue) {
-		self.value.swap(&other.value);
+		self.v.swap(&other.v);
 	}
 	pub fn new_null() -> Self {
 		let v = JsValue::JSNULL;		
 		SharedValue {
-			value: Rc::new(RefCell::new(v))
+			v: Rc::new(RefCell::new(v))
 		}
 	}
 	pub fn new_undefined() -> Self {
 		let v = JsValue::JSUndefined;
 		SharedValue {
-			value: Rc::new(RefCell::new(v))
+			v: Rc::new(RefCell::new(v))
 		}
 	}
 	pub fn new_false() -> Self {
 		let v = JsValue::JSBoolean(false);
 		SharedValue {
-			value: Rc::new(RefCell::new(v))
+			v: Rc::new(RefCell::new(v))
 		}
 	}
 	pub fn new_true() -> Self {
 		let v = JsValue::JSBoolean(true);
 		SharedValue {
-			value: Rc::new(RefCell::new(v))
+			v: Rc::new(RefCell::new(v))
 		}
 	}
 	pub fn new_number(v:f64) -> Self {
 		let v = JsValue::JSNumber(v);
 		SharedValue {
-			value: Rc::new(RefCell::new(v))
+			v: Rc::new(RefCell::new(v))
 		}
 	}	
 	pub fn new_object(obj:JsObject) -> Self {
 		let shared_obj = SharedObject_new(obj);
 		let v = JsValue::JSObject(shared_obj);
 		SharedValue {
-			value: Rc::new(RefCell::new(v))
+			v: Rc::new(RefCell::new(v))
 		}
 	}
 	pub fn new_sobject(obj:SharedObject) -> Self {
 		let v = JsValue::JSObject(obj);
 		SharedValue {
-			value: Rc::new(RefCell::new(v))
+			v: Rc::new(RefCell::new(v))
 		}
 	}
 	pub fn is_null(&self) -> bool {
-		let v = self.value.borrow();
+		let v = self.v.borrow();
 		if let JsValue::JSNULL = *v {
 			return true;
 		}
 		return false;
 	}
 	pub fn is_undefined(&self) -> bool {
-		let v = self.value.borrow();
+		let v = self.v.borrow();
 		if let JsValue::JSUndefined = *v {
 			return true;
 		}
 		return false;
 	}
 	pub fn is_object(&self) -> bool {
-		let v = self.value.borrow();
+		let v = self.v.borrow();
 		if let JsValue::JSObject(ref _obj) = *v {
 			return true;
 		}
 		return false;
 	}
 	pub fn get_object(&self) -> SharedObject {
-		let v = self.value.borrow();
+		let v = self.v.borrow();
 		if let JsValue::JSObject(ref obj) = *v {
 			return obj.clone();
 		}
 		panic!("JsValue is not an object!");		
 	}
 	pub fn to_number(&self) -> Option<f64> {
-		let v = self.value.borrow();
+		let v = self.v.borrow();
 		if let JsValue::JSNumber(ref v) = *v {
 			return Some(*v);
 		}
