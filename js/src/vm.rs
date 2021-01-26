@@ -160,7 +160,7 @@ impl JsRuntime {
 				if prop.getter.is_some() {
 					self.push_object(prop.getter.unwrap().clone());		// function object
 					self.push(prop.value.clone());						// this object
-					jscall(self, 1);
+					jscall(self, 0);
 				} else {
 					self.push(prop.value.clone());
 				}
@@ -171,6 +171,26 @@ impl JsRuntime {
 			} 
 			let r = env.borrow().fetch_outer();
 			env = r; 
+		}
+	}
+
+	pub fn setvariable(&mut self, name: &str) {
+		let mut env: SharedScope = self.cenv.clone();
+		loop {
+			let r = env.borrow().query_variable(name);
+			if r {
+				let prop = env.borrow_mut().variables.get_property(name);
+				if prop.setter.is_some() {
+					self.push_object(prop.setter.unwrap().clone());		// function object
+					self.push(prop.value.clone());						// this object
+					self.push_from( self.stack.len() - 3);				// value
+					jscall(self, 1);
+					self.pop(1);
+				} else {
+					prop.value.swap( self.stack.first().unwrap().clone() );
+				}
+				//				
+			}
 		}
 	}
 
@@ -395,7 +415,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_SETLOCAL => {
 				let v = func.string(&mut pc);
-
+				rt.setvariable(&v)
 			},
 			_ => {}
 		}
