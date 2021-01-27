@@ -240,7 +240,7 @@ impl JsRuntime {
 	}
 
 	/* properties operation */
-    // make a new proptery for object
+    // make a new  or replace proptery o for object
     pub fn defproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue,
 		attr:JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) {
 
@@ -260,10 +260,20 @@ impl JsRuntime {
 				prop.value = value;
 			}
 			if !prop.configable() {
-				prop.setter = setter;
-				prop.getter = getter;
+				if let Some(setter) = setter {
+					if setter.borrow().callable() {
+						prop.setter = Some(setter);
+					}
+				}
+				if let Some(getter) = getter {
+					if getter.borrow().callable() {
+						prop.getter = Some(getter);
+					}
+				}
 			}
-			prop.attr = attr;
+			if attr != JsPropertyAttr::NONE {
+				prop.attr = attr;
+			}
 			target.set_property(name, prop);
 		}
 	}
@@ -367,9 +377,6 @@ impl JsRuntime {
 		self.getproperty(target.get_object(), "toString");
 		let object = self.top(-1);
 		self.pop(1);
-		if let Some(s) = object.to_string() {
-			return s;
-		}
 		if object.get_object().borrow().callable() {
 			self.push(object);	// func
 			self.push(target);	// this
@@ -579,14 +586,20 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				let r = rt.delvariable(s);
 				rt.push_boolean(r);
 			},
+			
 			OpcodeType::OP_INITPROP => {
 				let target = rt.top(-3).get_object();
 				let name = rt.as_string( rt.top(-2));
-
 				let value = rt.top(-1);
 				rt.setproperty(target, &name, value);
-				rt.pop(3);
+				rt.pop(2);
 			},
+			OpcodeType::OP_INITGETTER => {
+				let target = rt.top(-3).get_object();
+				let name = rt.as_string( rt.top(-2));
+				let func = rt.top(-1);
+			},
+
 
 			_ => {}
 		}
