@@ -257,17 +257,23 @@ impl JsRuntime {
 		if target.put_property(name) {
 			let mut prop = target.get_property(name);
 			if !prop.readonly() {
-				prop.value = value;
+				if !value.is_undefined() {
+					prop.value = value;
+				}
 			}
 			if !prop.configable() {
 				if let Some(setter) = setter {
 					if setter.borrow().callable() {
 						prop.setter = Some(setter);
+					} else {
+						println!("setter should be callable");
 					}
 				}
 				if let Some(getter) = getter {
 					if getter.borrow().callable() {
 						prop.getter = Some(getter);
+					} else {
+						println!("getter should be callable");
 					}
 				}
 			}
@@ -486,6 +492,24 @@ impl JsRuntime {
 		self.stack.swap(top-2, top-3);
 		self.stack.swap(top-3, top-4);
 	}
+	pub fn rot3pop2(&mut self) {
+		if self.stack.len() < 3 {
+			panic!("stack underflow! @ rot3pop2");
+		}
+		/* A B C -> C */
+		let top = self.stack.len();
+		self.stack[top-3] = self.stack[top-1].clone(); 
+		self.pop(2);
+	}
+	pub fn rot2pop1(&mut self) {
+		if self.stack.len() < 2 {
+			panic!("stack underflow! @ rot3pop2");
+		}
+		/* A B -> B */
+		let top = self.stack.len();
+		self.stack[top-2] = self.stack[top-1].clone(); 
+		self.pop(1);
+	}
 }
 
 fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
@@ -598,8 +622,36 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				let target = rt.top(-3).get_object();
 				let name = rt.as_string( rt.top(-2));
 				let func = rt.top(-1);
+				if func.is_object() {
+					rt.defproperty(target, &name, SharedValue::new_undefined(), JsPropertyAttr::NONE, Some(func.get_object()), None);
+				} else {
+					println!("getter should be a object!");
+				}
+				rt.pop(2);
 			},
-
+			OpcodeType::OP_INITSETTER => {
+				let target = rt.top(-3).get_object();
+				let name = rt.as_string( rt.top(-2));
+				let func = rt.top(-1);
+				if func.is_object() {
+					rt.defproperty(target, &name, SharedValue::new_undefined(), JsPropertyAttr::NONE, None, Some(func.get_object()));
+				} else {
+					println!("setter should be a object!");
+				}
+				rt.pop(2);
+			},
+			OpcodeType::OP_GETPROP => {
+				let target = rt.top(-2).get_object();
+				let name = rt.as_string( rt.top(-2));
+				rt.getproperty(target, &name);
+				rt.rot3pop2();
+			},
+			OpcodeType::OP_GETPROP_S => {
+				let target = rt.top(-1).get_object();
+				let name = func.string(&mut pc);
+				rt.getproperty(target, &name);
+				rt.rot2pop1();
+			},
 
 			_ => {}
 		}
