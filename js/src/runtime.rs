@@ -24,14 +24,8 @@ impl SharedValue {
 			v: Rc::new(RefCell::new(v))
 		}
 	}
-	pub fn new_false() -> Self {
-		let v = JsValue::JSBoolean(false);
-		SharedValue {
-			v: Rc::new(RefCell::new(v))
-		}
-	}
-	pub fn new_true() -> Self {
-		let v = JsValue::JSBoolean(true);
+	pub fn new_boolean(v:bool) -> Self {
+		let v = JsValue::JSBoolean(v);
 		SharedValue {
 			v: Rc::new(RefCell::new(v))
 		}

@@ -312,6 +312,10 @@ impl JsRuntime {
 		let jv = SharedValue::new_undefined();
 		self.stack.push(jv);
 	}
+	pub fn push_boolean(&mut self, v: bool) {
+		let jv = SharedValue::new_boolean(v);
+		self.stack.push(jv);
+	}
 	pub fn push_number(&mut self, v:f64) {
 		let jv = SharedValue::new_number(v);
 		self.stack.push(jv);
@@ -426,10 +430,10 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				rt.push(SharedValue::new_null());
 			},
 			OpcodeType::OP_FALSE => {
-				rt.push(SharedValue::new_false());
+				rt.push_boolean(false);
 			},
 			OpcodeType::OP_TRUE => {
-				rt.push(SharedValue::new_false());
+				rt.push_boolean(true);
 			},
 
 			OpcodeType::OP_INTEGER => {
@@ -464,7 +468,8 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_DELLOCAL => {
 				let v = func.var(&mut pc);
-				rt.delvariable(v);
+				let r = rt.delvariable(v);
+				rt.push_boolean(r);
 			},
 
 			OpcodeType::OP_GETVAR => {
