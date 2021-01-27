@@ -134,7 +134,7 @@ impl VMFunction {
 		*pc = *pc + 1;
 		return value;
 	}
-	pub fn var(&self, pc:&mut usize) -> String {
+	pub fn var(&self, pc:&mut usize) -> &str {
 		if *pc >= self.code.len() {
 			panic!("fetch raw out of code");
 		}
@@ -142,12 +142,11 @@ impl VMFunction {
 		if id > self.var_tab.len() {
 			panic!("var out of vm");
 		}
-		let value = String::clone(&self.var_tab[id]);
 
 		*pc = *pc + 1;
-		return value;
+		return &self.var_tab[id];
 	}
-	pub fn string(&self, pc:&mut usize) -> String {
+	pub fn string(&self, pc:&mut usize) -> &str {
 		if *pc >= self.code.len() {
 			panic!("fetch raw out of code");
 		}
@@ -155,10 +154,9 @@ impl VMFunction {
 		if id > self.str_tab.len() {
 			panic!("string out of vm");
 		}
-		let value = String::clone(&self.str_tab[id]);
 
 		*pc = *pc + 1;
-		return value;
+		return &self.str_tab[id];
 	}
 }
 
@@ -184,6 +182,7 @@ impl JsRuntime {
 			env = r; 
 		}
 	}
+
 	pub fn getvariable(&mut self, name: &str) -> bool {
 		let mut env: SharedScope = self.cenv.clone();
 		loop {			
@@ -443,7 +442,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_STRING => {
 				let v = func.string(&mut pc);
-				rt.push_string(v);
+				rt.push_string(v.to_string());
 			},
 
 			OpcodeType::OP_THIS => {
@@ -461,12 +460,20 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_SETLOCAL => {
 				let v = func.var(&mut pc);
-				rt.setvariable(&v)
+				rt.setvariable(v)
 			},
 			OpcodeType::OP_DELLOCAL => {
 				let v = func.var(&mut pc);
-				rt.delvariable(&v);
-			}
+				rt.delvariable(v);
+			},
+
+			OpcodeType::OP_GETVAR => {
+				let s = func.string(&mut pc);
+				if rt.getvariable(s) == false {
+					println!("'{}' is not defined", s);
+				}
+			},
+
 			_ => {}
 		}
 	}
