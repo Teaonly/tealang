@@ -305,6 +305,14 @@ impl JsRuntime {
 	}	
 
 	/* stack operations */
+	pub fn top(&mut self, offset: isize) -> SharedValue {
+		if offset < 0 {
+			let offset: usize = (-1 * offset) as usize;
+			let pos = self.stack.len() + offset;
+			return self.stack[pos].clone();
+		}
+		panic!("top access only support negtive offset!")
+	}
 	pub fn push(&mut self, jv: SharedValue) {
 		self.stack.push(jv);
 	}
@@ -360,9 +368,8 @@ impl JsRuntime {
 			panic!("stack underflow! @ dup2");
 		}
 
-		let top = self.stack.len();
-		let nv1: SharedValue = SharedValue::clone( &self.stack[top-2] );
-		let nv2: SharedValue = SharedValue::clone( &self.stack[top-1] );
+		let nv1: SharedValue = self.top(-2);
+		let nv2: SharedValue = self.top(-1);
 		self.stack.push(nv1);
 		self.stack.push(nv2);
 	}
@@ -464,7 +471,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_SETLOCAL => {
 				let v = func.var(&mut pc);
-				rt.setvariable(v)
+				rt.setvariable(v);
 			},
 			OpcodeType::OP_DELLOCAL => {
 				let v = func.var(&mut pc);
@@ -477,6 +484,32 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				if rt.getvariable(s) == false {
 					println!("'{}' is not defined", s);
 				}
+			},
+			OpcodeType::OP_HASVAR => {
+				let s = func.string(&mut pc);
+				if rt.getvariable(&s) == false {
+					rt.push_undefined();
+				}
+			},
+			OpcodeType::OP_SETVAR => {
+				let s = func.string(&mut pc);
+				rt.setvariable(s);
+			},
+			OpcodeType::OP_DELVAR => {
+				let s = func.string(&mut pc);
+				let r = rt.delvariable(s);
+				rt.push_boolean(r);
+			},
+			/*		
+			case OP_INITPROP:
+				obj = js_toobject(J, -3);
+				str = js_tostring(J, -2);
+				jsR_setproperty(J, obj, str);
+				js_pop(J, 2);
+				break;
+			*/
+			OpcodeType::OP_INITPROP => {
+				// TODO
 			},
 
 			_ => {}
