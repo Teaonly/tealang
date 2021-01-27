@@ -205,6 +205,9 @@ impl JsObject {
 		self.properties.insert(name.to_string(), JsProperty::new());
 		return true;
 	}
+	pub fn drop_property(&mut self, name: &str) {		
+		self.properties.remove(name);
+	}
 }
 
 impl JsEnvironment {
