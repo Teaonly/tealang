@@ -84,6 +84,34 @@ impl SharedValue {
 		}
 		return None;
 	}
+	pub fn to_string(&self) -> Option<String> {
+		let v = self.v.borrow();
+		match &*v {
+			JsValue::JSUndefined => {
+				return Some("undefined".to_string());
+			},
+			JsValue::JSNULL => {
+				return Some("null".to_string());
+			},
+			JsValue::JSBoolean(b) => {
+				if *b {
+					return Some("true".to_string());
+				} else {
+					return Some("false".to_string());
+				}
+			},
+			JsValue::JSNumber(num) => {
+				return Some(num.to_string());
+			},
+			JsValue::JSObject(obj) => {
+				if obj.borrow().is_string() {
+					return Some(obj.borrow().get_string());
+				} else {
+					return None;
+				}
+			}
+		}
+	}
 }
 
 impl JsProperty {
@@ -149,7 +177,7 @@ impl JsObject {
 		if let JsClass::builtin(ref func) = self.value {
 			return func.clone();
 		}
-		panic!("Object can't be a func!")
+		panic!("Object can't be a builtin!")
 	}
 	pub fn is_function(&self) -> bool {
 		if let JsClass::function(ref _func) = self.value {
@@ -163,7 +191,19 @@ impl JsObject {
 		}
 		panic!("Object can't be a func!")
 	}
-	
+	pub fn is_string(&self) -> bool {
+		if let JsClass::string(ref _func) = self.value {
+			return true;
+		}
+		return false;
+	}
+	pub fn get_string(&self) -> String {
+		if let JsClass::string(ref s) = self.value {
+			return s.to_string();
+		}
+		panic!("Object can't be a string!")
+	}
+
 	/* array helper functions */
 
 

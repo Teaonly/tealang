@@ -304,6 +304,12 @@ impl JsRuntime {
 		return self.defproperty(target_, name, value, JsPropertyAttr::NONE, None, None);		
 	}	
 
+	/* convert object to string */
+	pub fn as_string(&mut self, target: SharedObject) -> String {
+		panic!("TODO")
+	} 
+
+
 	/* stack operations */
 	pub fn top(&mut self, offset: isize) -> SharedValue {
 		if offset < 0 {
@@ -500,16 +506,17 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				let r = rt.delvariable(s);
 				rt.push_boolean(r);
 			},
-			/*		
-			case OP_INITPROP:
-				obj = js_toobject(J, -3);
-				str = js_tostring(J, -2);
-				jsR_setproperty(J, obj, str);
-				js_pop(J, 2);
-				break;
-			*/
 			OpcodeType::OP_INITPROP => {
-				// TODO
+				let target = rt.top(-3).get_object();
+				let name = if let Some(string) = rt.top(-2).to_string() {
+					string
+				} else {
+					let obj = rt.top(-2).get_object();
+					rt.as_string( obj )
+				};
+				let value = rt.top(-1);
+				rt.setproperty(target, &name, value);
+				rt.pop(3);
 			},
 
 			_ => {}
