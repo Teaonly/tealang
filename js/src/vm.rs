@@ -371,6 +371,30 @@ impl JsRuntime {
 			self.push_undefined();
 		}
 	}	
+	pub fn delproperty(&mut self, target_: SharedObject, name: &str) -> bool {		
+		let mut target = target_.borrow_mut();
+		let target_ = target_.clone();
+
+		match target.value {
+			JsClass::object => {},
+			_ => {
+				println!("Cant delete property for specia object!");
+				return false;
+			}
+		}
+
+		let prop_r = target.query_property(name);
+		if let Some((prop, own)) = prop_r {
+			if own {
+				if !prop.configable() {
+					target.drop_property(name);
+					return true;
+				}
+			} 
+		}
+		return false;
+	}	
+
 
 	/* convert object to string */
 	pub fn as_string(&mut self, target: SharedValue) -> String {
@@ -642,7 +666,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_GETPROP => {
 				let target = rt.top(-2).get_object();
-				let name = rt.as_string( rt.top(-2));
+				let name = rt.as_string( rt.top(-1));
 				rt.getproperty(target, &name);
 				rt.rot3pop2();
 			},
@@ -652,7 +676,27 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				rt.getproperty(target, &name);
 				rt.rot2pop1();
 			},
-
+			OpcodeType::OP_SETPROP => {
+				let target = rt.top(-3).get_object();
+				let name = rt.as_string( rt.top(-2));
+				let value = rt.top(-1);
+				rt.setproperty(target, &name, value);
+				rt.rot3pop2();
+			},
+			OpcodeType::OP_SETPROP_S => {
+				let target = rt.top(-2).get_object();
+				let value = rt.top(-1);
+				let name = func.string(&mut pc);
+				rt.setproperty(target, &name, value);
+				rt.rot2pop1();
+			},
+			OpcodeType::OP_DELPROP => {
+				let target = rt.top(-2).get_object();
+				let name = rt.as_string( rt.top(-1));
+				let b = rt.delproperty(target, &name);
+				rt.pop(2);
+				rt.push_boolean(b);
+			},
 			_ => {}
 		}
 	}
