@@ -203,6 +203,12 @@ impl JsObject {
 		}
 		panic!("Object can't be a string!")
 	}
+	pub fn callable(&self) -> bool {
+		if self.is_function() || self.is_builtin() {
+			return true;
+		}
+		return false;
+	}
 
 	/* array helper functions */
 

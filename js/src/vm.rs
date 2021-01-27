@@ -304,14 +304,71 @@ impl JsRuntime {
 		return self.defproperty(target_, name, value, JsPropertyAttr::NONE, None, None);		
 	}	
 
-	/* convert object to string */
-	pub fn as_string(&mut self, target: SharedObject) -> String {
-		panic!("TODO")
-	} 
+	// get value from the proptery for object
+	pub fn hasproperty(&mut self, target_: SharedObject, name: &str) -> bool {		
+		let mut target = target_.borrow_mut();
+		let target_ = target_.clone();
 
+		match target.value {
+			JsClass::string(ref s) => {
+				if name == "length" {
+					self.push_number( s.len() as f64);
+					return true;
+				} 
+				if let Ok(idx) = name.parse::<usize>() {
+					if idx < s.len() {
+						self.push_string( s[idx..idx+1].to_string() ); 
+						return true;
+					}
+				}
+			},
+			JsClass::array(ref v) => {
+				if name == "length" {
+					self.push_number( v.len() as f64);
+					return true;
+				} 
+				if let Ok(idx) = name.parse::<usize>() {
+					if idx < v.len() {
+						self.push( v[idx].clone() );
+						return true;
+					}
+				}
+			},
+			_ => {}
+		}
+
+		let prop_r = target.query_property(name);
+		if let Some((mut prop, own)) = prop_r {
+			if let Some(getter) = prop.getter {
+				self.push_object(getter.clone());
+				self.push_object(target_);
+				jscall(self, 0);
+			} else {
+				self.push(prop.value.clone());
+			}
+			return true;
+		}
+		return false;
+	}
+	pub fn getproperty(&mut self, target: SharedObject, name: &str) {		
+		if !self.hasproperty(target, name) {
+			self.push_undefined();
+		}
+	}	
+
+	/* convert object to string */
+	pub fn as_string(&mut self, target: SharedValue) -> String {
+		/* primitive value to string */
+		if let Some(s) = target.to_string() {
+			return s;
+		}
+
+		panic!("TODO")
+
+	}
 
 	/* stack operations */
-	pub fn top(&mut self, offset: isize) -> SharedValue {
+	pub fn top(&self, offset: isize) -> SharedValue {
 		if offset < 0 {
 			let offset: usize = (-1 * offset) as usize;
 			let pos = self.stack.len() + offset;
@@ -508,12 +565,8 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_INITPROP => {
 				let target = rt.top(-3).get_object();
-				let name = if let Some(string) = rt.top(-2).to_string() {
-					string
-				} else {
-					let obj = rt.top(-2).get_object();
-					rt.as_string( obj )
-				};
+				let name = rt.as_string( rt.top(-2));
+
 				let value = rt.top(-1);
 				rt.setproperty(target, &name, value);
 				rt.pop(3);
