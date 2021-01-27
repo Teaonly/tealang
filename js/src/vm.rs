@@ -363,8 +363,24 @@ impl JsRuntime {
 			return s;
 		}
 
-		panic!("TODO")
-
+		/* try to executing toString() */
+		self.getproperty(target.get_object(), "toString");
+		let object = self.top(-1);
+		self.pop(1);
+		if let Some(s) = object.to_string() {
+			return s;
+		}
+		if object.get_object().borrow().callable() {
+			self.push(object);	// func
+			self.push(target);	// this
+			jscall(self, 0);
+			let object = self.top(-1);
+			self.pop(1);
+			if let Some(s) = object.to_string() {
+				return s;
+			}
+		}
+		return "[object]".to_string();
 	}
 
 	/* stack operations */
