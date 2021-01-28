@@ -664,6 +664,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				}
 				rt.pop(2);
 			},
+
 			OpcodeType::OP_GETPROP => {
 				let target = rt.top(-2).get_object();
 				let name = rt.as_string( rt.top(-1));
@@ -697,6 +698,23 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				rt.pop(2);
 				rt.push_boolean(b);
 			},
+			OpcodeType::OP_DELPROP_S => {
+				let target = rt.top(-1).get_object();
+				let name = func.string(&mut pc);
+				let b = rt.delproperty(target, &name);
+				rt.pop(1);
+				rt.push_boolean(b);
+			},
+
+			OpcodeType::OP_ITERATOR => {
+				let target = rt.top(-1).get_object();
+				if target.borrow().is_vanilla() {
+					let iter = JsObject::new_iterator(target);
+					rt.pop(1);
+					rt.push( SharedValue::new_object(iter) );
+				}
+			},
+
 			_ => {}
 		}
 	}

@@ -431,9 +431,17 @@ pub struct JsBuiltinFunction {
 }
 
 #[allow(non_camel_case_types)]
+pub struct JsIterator {
+	pub target: SharedObject,
+	pub keys:	Vec<String>,
+	pub index:	usize,
+}
+
+#[allow(non_camel_case_types)]
 pub enum JsClass {
 	object,
 	native,
+	iterator(JsIterator),
 	string(String),
 	array(Vec<SharedValue>),
 	function(JsFunction),

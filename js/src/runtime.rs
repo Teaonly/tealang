@@ -167,6 +167,31 @@ impl JsObject {
         }
 	}
 
+	pub fn new_iterator(target_: SharedObject) -> JsObject {
+		let target = target_.borrow();
+		let target_ =  target_.clone();
+
+		let keys = (*target).properties.keys().cloned().collect();
+		let it = JsIterator {
+			target: target_,
+			keys: keys,
+			index: 0,
+		};
+		JsObject {
+			extensible:	false,
+			prototype: None,
+			properties: HashMap::new(),
+			value: JsClass::iterator(it),
+
+		}
+	}
+
+	pub fn is_vanilla(&self) -> bool {
+		if let JsClass::object = self.value {
+			return true;
+		}
+		return false;
+	}
 	pub fn is_builtin(&self) -> bool {
 		if let JsClass::builtin(_) = self.value {
 			return true;
@@ -258,7 +283,7 @@ impl JsEnvironment {
 			getter: None,
 			setter: None,
 		};
-		if ( self.variables.put_property(name) ) {
+		if self.variables.put_property(name) {
 			self.variables.set_property(name, prop);
 		}
 	}
