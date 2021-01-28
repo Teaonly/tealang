@@ -707,13 +707,35 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 
 			OpcodeType::OP_ITERATOR => {
-				let target = rt.top(-1).get_object();
-				if target.borrow().is_vanilla() {
-					let iter = JsObject::new_iterator(target);
-					rt.pop(1);
-					rt.push( SharedValue::new_object(iter) );
+				if rt.top(-1).is_object() {
+					let target = rt.top(-1).get_object();
+					if target.borrow().is_vanilla() {
+						let iter = JsObject::new_iterator(target);
+						rt.pop(1);
+						rt.push( SharedValue::new_object(iter) );
+					}
 				}
 			},
+
+			OpcodeType::OP_NEXTITER => {
+				if rt.top(-1).is_object() {
+					let target = rt.top(-1).get_object();
+					if target.borrow().is_iterator() {
+						let mut target = target.borrow_mut();
+						let it: &mut JsIterator = target.get_iterator();
+						if let Some(s) = it.next() {						
+							rt.push_string(s);
+							rt.push_boolean(true);
+						} else {
+							rt.pop(1);
+							rt.push_boolean(false);
+						}
+						continue;
+					}
+				}
+				rt.pop(1);
+				rt.push_boolean(false);
+			}
 
 			_ => {}
 		}

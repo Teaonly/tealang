@@ -432,7 +432,6 @@ pub struct JsBuiltinFunction {
 
 #[allow(non_camel_case_types)]
 pub struct JsIterator {
-	pub target: SharedObject,
 	pub keys:	Vec<String>,
 	pub index:	usize,
 }

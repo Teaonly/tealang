@@ -148,6 +148,26 @@ impl JsProperty {
 	}
 }
 
+impl JsIterator {
+	pub fn new(target_: SharedObject) -> Self {
+		let target = target_.borrow();
+
+		let keys = (*target).properties.keys().cloned().collect();
+		JsIterator {
+			keys: keys,
+			index: 0,
+		}
+	}
+	pub fn next(&mut self) -> Option<String> {
+		if self.index >=  self.keys.len() {
+			return None;
+		}
+		let s = self.keys[self.index].clone();
+		self.index = self.index + 1;
+		return Some(s);
+	}
+}
+
 impl JsObject {
     pub fn new() -> JsObject {
         JsObject {
@@ -168,15 +188,7 @@ impl JsObject {
 	}
 
 	pub fn new_iterator(target_: SharedObject) -> JsObject {
-		let target = target_.borrow();
-		let target_ =  target_.clone();
-
-		let keys = (*target).properties.keys().cloned().collect();
-		let it = JsIterator {
-			target: target_,
-			keys: keys,
-			index: 0,
-		};
+		let it = JsIterator::new(target_);
 		JsObject {
 			extensible:	false,
 			prototype: None,
@@ -192,6 +204,18 @@ impl JsObject {
 		}
 		return false;
 	}
+	pub fn is_iterator(&self) -> bool {
+		if let JsClass::iterator(_) = self.value {
+			return true;
+		}
+		return false;
+	}
+	pub fn get_iterator(&mut self) -> &mut JsIterator {
+		if let JsClass::iterator(ref mut it) = self.value {
+			return it;
+		}
+		panic!("Object can't be a iterator!")
+	}		
 	pub fn is_builtin(&self) -> bool {
 		if let JsClass::builtin(_) = self.value {
 			return true;
