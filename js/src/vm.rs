@@ -395,6 +395,10 @@ impl JsRuntime {
 		return false;
 	}	
 
+	/* item + item */
+	pub fn concat_add(&mut self) {
+		self.pop(2);
+	}
 
 	/* convert object to string */
 	pub fn as_string(&mut self, target: SharedValue) -> String {
@@ -812,6 +816,86 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				rt.pop(1);
 				rt.push_string(str);
 			},
+
+			OpcodeType::OP_POS => {
+				let n = rt.top(-1).to_number();
+				rt.pop(1);
+				rt.push_number(n);
+			},
+			OpcodeType::OP_NEG => {
+				let n = rt.top(-1).to_number();
+				rt.pop(1);
+				rt.push_number(-n);
+			},
+			OpcodeType::OP_BITNOT => {
+				let n = rt.top(-1).to_number() as i32;
+				rt.pop(1);
+				rt.push_number( (!n) as f64 );
+			},
+			OpcodeType::OP_LOGNOT => {
+				let n = rt.top(-1).to_boolean();
+				rt.pop(1);
+				rt.push_boolean(n);
+			},
+			OpcodeType::OP_INC => {
+				let n = rt.top(-1).to_number();
+				rt.pop(1);
+				rt.push_number(n+1.0);
+			},
+			OpcodeType::OP_DEC => {
+				let n = rt.top(-1).to_number();
+				rt.pop(1);
+				rt.push_number(n-1.0);
+			},
+			OpcodeType::OP_POSTINC => {
+				let n = rt.top(-1).to_number();
+				rt.pop(1);
+				rt.push_number(n+1.0);
+				rt.push_number(n);
+			},
+			OpcodeType::OP_POSTDEC => {
+				let n = rt.top(-1).to_number();
+				rt.pop(1);
+				rt.push_number(n-1.0);
+				rt.push_number(n);
+			},
+			
+			/* Multiplicative operators */
+			OpcodeType::OP_MUL => {
+				let x = rt.top(-2).to_number();
+				let y = rt.top(-1).to_number();
+				rt.pop(2);
+				rt.push_number(x * y);
+			},
+			OpcodeType::OP_DIV => {
+				let x = rt.top(-2).to_number();
+				let y = rt.top(-1).to_number();
+				rt.pop(2);
+				rt.push_number(x / y);
+			},
+			OpcodeType::OP_MOD => {
+				let x = rt.top(-2).to_number();
+				let y = rt.top(-1).to_number();
+				rt.pop(2);
+				rt.push_number(x % y);
+			},
+
+			/* Additive operators */
+			OpcodeType::OP_ADD => {
+				rt.concat_add();
+			},
+			OpcodeType::OP_SUB => {
+				let x = rt.top(-2).to_number();
+				let y = rt.top(-1).to_number();
+				rt.pop(2);
+				rt.push_number(x - y);
+			},
+
+			/* Shift operators */
+			OpcodeType::OP_SHL => {
+				// TODO
+			},
+
 			_ => {}
 		}
 	}

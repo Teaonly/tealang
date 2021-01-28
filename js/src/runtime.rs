@@ -77,12 +77,25 @@ impl SharedValue {
 		}
 		panic!("JsValue is not an object!");		
 	}
-	pub fn to_number(&self) -> Option<f64> {
+	pub fn to_boolean(&self) -> bool {
+		let v = self.v.borrow();
+		if let JsValue::JSBoolean(ref v) = *v {
+			return *v;
+		}
+		if self.is_null() {
+			return false;
+		}
+		if self.is_undefined() {
+			return false;
+		}
+		return true;
+	}
+	pub fn to_number(&self) -> f64 {
 		let v = self.v.borrow();
 		if let JsValue::JSNumber(ref v) = *v {
-			return Some(*v);
+			return *v;
 		}
-		return None;
+		return std::f64::NAN;
 	}
 	pub fn type_string(&self) -> String {
 		let v = self.v.borrow();
