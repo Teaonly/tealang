@@ -84,6 +84,26 @@ impl SharedValue {
 		}
 		return None;
 	}
+	pub fn type_string(&self) -> String {
+		let v = self.v.borrow();
+		match &*v {
+			JsValue::JSUndefined => {
+				return "undefined".to_string();
+			},
+			JsValue::JSNULL => {
+				return "null".to_string();
+			},
+			JsValue::JSBoolean(b) => {
+				return "boolean".to_string();
+			},
+			JsValue::JSNumber(num) => {
+				return "number".to_string();
+			},
+			JsValue::JSObject(obj) => {
+				return obj.borrow().type_string();
+			}
+		}
+	}
 	pub fn to_string(&self) -> Option<String> {
 		let v = self.v.borrow();
 		match &*v {
@@ -177,7 +197,6 @@ impl JsObject {
             value: JsClass::object,
         }
 	}
-	
 	pub fn new_with_class(prototype: SharedObject, value: JsClass) -> JsObject {
         JsObject {
 			extensible:	true,
@@ -195,6 +214,23 @@ impl JsObject {
 			properties: HashMap::new(),
 			value: JsClass::iterator(it),
 
+		}
+	}
+
+	pub fn type_string(&self) -> String {
+		match &self.value {
+			JsClass::string(_) => {
+				"string".to_string()
+			},
+			JsClass::builtin(_) => {
+				"function".to_string()
+			},
+			JsClass::function(_) => {
+				"function".to_string()
+			},
+			_ => {
+				"object".to_string()
+			}
 		}
 	}
 

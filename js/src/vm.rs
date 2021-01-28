@@ -420,6 +420,52 @@ impl JsRuntime {
 		return "[object]".to_string();
 	}
 
+	/* create new object */
+	pub fn call_new(&mut self, argc: usize) {
+		let obj = self.top(-1 - argc as isize).get_object();
+		let fobj = obj.borrow();
+		let obj = obj.clone();
+
+		/* built-in constructors create their own objects, give them a 'null' this */
+		if fobj.is_builtin() {
+			self.push_null();
+			if argc > 0 {
+				self.rot(argc+1);				
+			}
+			jscall_builtin(self, argc);
+			return;
+		}
+		
+		/* extract the function object's prototype property */
+		self.getproperty(obj, "prototype");
+		let proto = 
+			if self.top(-1).is_object() {
+				self.top(-1).get_object()
+			} else {
+				self.prototypes.object_prototype.clone()
+			};
+		
+		self.pop(1);
+
+		/* create a new object with above prototype, and shift it into the 'this' slot */
+		let mut nobj = JsObject::new();
+		nobj.prototype = Some(self.prototypes.object_prototype.clone());
+		let nobj = SharedObject_new(nobj);
+		self.push_object(nobj.clone());
+		if argc > 0 {
+			self.rot(argc+1);				
+		}
+
+		/* call the function */
+		jscall(self, argc);
+
+		/* if result is not an object, return the original object we created */
+		if !self.top(-1).is_object() {
+			self.pop(1);
+			self.push_object(nobj);
+		}		
+	}
+
 	/* stack operations */
 	pub fn top(&self, offset: isize) -> SharedValue {
 		if offset < 0 {
@@ -434,6 +480,10 @@ impl JsRuntime {
 	}
 	pub fn push_undefined(&mut self) {
 		let jv = SharedValue::new_undefined();
+		self.stack.push(jv);
+	}
+	pub fn push_null(&mut self) {
+		let jv = SharedValue::new_null();
 		self.stack.push(jv);
 	}
 	pub fn push_boolean(&mut self, v: bool) {
@@ -488,6 +538,15 @@ impl JsRuntime {
 		let nv2: SharedValue = self.top(-1);
 		self.stack.push(nv1);
 		self.stack.push(nv2);
+	}
+	pub fn rot(&mut self, n: usize) {
+		if self.stack.len() < n {
+			panic!("stack underflow! @ rot");
+		}
+		let top = self.stack.len();
+		for i in 0..n-1 {
+			self.stack.swap(top-1, top-2);
+		}
 	}
 	pub fn rot2(&mut self) {
 		if self.stack.len() < 2 {
@@ -716,7 +775,6 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 					}
 				}
 			},
-
 			OpcodeType::OP_NEXTITER => {
 				if rt.top(-1).is_object() {
 					let target = rt.top(-1).get_object();
@@ -735,8 +793,25 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				}
 				rt.pop(1);
 				rt.push_boolean(false);
-			}
+			},
+			
+			/* Function calls */
+			OpcodeType::OP_CALL => {
+				let n = func.int(&mut pc) as usize;
+				jscall(rt, n);
+			},
+			OpcodeType::OP_NEW => {
+				let n = func.int(&mut pc) as usize;
+				rt.call_new(n);
+			},
 
+			/* Unary operators */
+			OpcodeType::OP_TYPEOF => {
+				let target = rt.top(-1);
+				let str = target.type_string();
+				rt.pop(1);
+				rt.push_string(str);
+			},
 			_ => {}
 		}
 	}
@@ -791,7 +866,6 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 			rt.defproperty(arg_value.get_object(), &name, jv, JsPropertyAttr::NONE, None, None);
 		}
 
-		
 		rt.cenv.borrow_mut().init_var("arguments", arg_value);
 	}
 
