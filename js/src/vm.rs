@@ -25,7 +25,6 @@ impl TryFrom<u16> for OpcodeType {
 			x if x == OpcodeType::OP_CLOSURE as u16 => Ok(OpcodeType::OP_CLOSURE),
 			x if x == OpcodeType::OP_NEWARRAY as u16 => Ok(OpcodeType::OP_NEWARRAY),
 			x if x == OpcodeType::OP_NEWOBJECT as u16 => Ok(OpcodeType::OP_NEWOBJECT),
-			x if x == OpcodeType::OP_NEWREGEXP as u16 => Ok(OpcodeType::OP_NEWREGEXP),
 			x if x == OpcodeType::OP_UNDEF as u16 => Ok(OpcodeType::OP_UNDEF),
 			x if x == OpcodeType::OP_NULL as u16 => Ok(OpcodeType::OP_NULL),
 			x if x == OpcodeType::OP_TRUE as u16 => Ok(OpcodeType::OP_TRUE),
@@ -88,14 +87,11 @@ impl TryFrom<u16> for OpcodeType {
 			x if x == OpcodeType::OP_ENDTRY as u16 => Ok(OpcodeType::OP_ENDTRY),
 			x if x == OpcodeType::OP_CATCH as u16 => Ok(OpcodeType::OP_CATCH),
 			x if x == OpcodeType::OP_ENDCATCH as u16 => Ok(OpcodeType::OP_ENDCATCH),
-			x if x == OpcodeType::OP_WITH as u16 => Ok(OpcodeType::OP_WITH),
-			x if x == OpcodeType::OP_ENDWITH as u16 => Ok(OpcodeType::OP_ENDWITH),
 			x if x == OpcodeType::OP_DEBUGGER as u16 => Ok(OpcodeType::OP_DEBUGGER),
 			x if x == OpcodeType::OP_JUMP as u16 => Ok(OpcodeType::OP_JUMP),
 			x if x == OpcodeType::OP_JTRUE as u16 => Ok(OpcodeType::OP_JTRUE),
 			x if x == OpcodeType::OP_JFALSE as u16 => Ok(OpcodeType::OP_JFALSE),
 			x if x == OpcodeType::OP_RETURN as u16 => Ok(OpcodeType::OP_RETURN),
-			x if x == OpcodeType::OP_LAST as u16 => Ok(OpcodeType::OP_LAST),
 			_ => Err(()),
         }
     }
@@ -157,6 +153,22 @@ impl VMFunction {
 
 		*pc = *pc + 1;
 		return &self.str_tab[id];
+	}
+	pub fn function(&self, pc:&mut usize) -> SharedFunction {
+		if *pc >= self.code.len() {
+			panic!("fetch function out of code");			
+		}
+		let id = self.code[*pc] as usize;
+		if id > self.func_tab.len() {
+			panic!("function out of vm");
+		}
+		*pc = *pc + 1;
+		return self.func_tab[id].clone();
+	}
+	pub fn address(&self, pc:&mut usize) -> usize {
+		let addr = self.code[*pc] as usize + (self.code[*pc+1] as usize) << 16;
+		*pc = *pc + 2;
+		return addr;
 	}
 }
 
@@ -747,6 +759,18 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				rt.push_string(v.to_string());
 			},
 
+			/* Creating objects */
+			OpcodeType::OP_CLOSURE => {
+				let f = func.function(&mut pc);
+				let fobj = JsObject::new_function(f, rt.cenv.clone());
+			},
+			OpcodeType::OP_NEWOBJECT => {
+				
+			},
+			OpcodeType::OP_NEWARRAY => {
+				
+			},
+
 			OpcodeType::OP_THIS => {
 				rt.push_from(bot);
 			},
@@ -1081,12 +1105,56 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				rt.push_number( (x | y) as f64);	
 			},
 
-			/* Try and Catch */
+			/* Try and Catch */			
+			OpcodeType::OP_TRY => {
+				
+			},
+			OpcodeType::OP_ENDTRY => {
+				
+			},
+			OpcodeType::OP_CATCH => {
+				
+			},
+			OpcodeType::OP_ENDCATCH => {
+				
+			},
+			OpcodeType::OP_THROW => {
+				
+			},	
 			
 			/* Branching & Flow control */
+			OpcodeType::OP_JCASE => {
+				
+			},	
+			OpcodeType::OP_JUMP => {
+				let addr = func.address(&mut pc);
+				pc = addr;
+			},
+			OpcodeType::OP_JTRUE => {
+				let addr = func.address(&mut pc);
+				let b = rt.top(-1).to_boolean();
+				rt.pop(1);
+				if b {
+					pc = addr;
+				}
+			},
+			OpcodeType::OP_JFALSE => {
+				let addr = func.address(&mut pc);
+				let b = rt.top(-1).to_boolean();
+				rt.pop(1);
+				if !b {
+					pc = addr;
+				}
+			},
+			OpcodeType::OP_RETURN => {
+				return;
+			},
 
-
-			_ => {}
+			/* do nothing */
+			OpcodeType::OP_DEBUGGER => {},			
+			OpcodeType::OP_EVAL => {},
+			OpcodeType::OP_NOP => {},
+			OpcodeType::OP_LAST => {},
 		}
 	}
 }

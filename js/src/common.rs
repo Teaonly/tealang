@@ -258,7 +258,6 @@ pub enum OpcodeType {
 
 	OP_NEWARRAY,
 	OP_NEWOBJECT,
-	OP_NEWREGEXP,	/* -S,opts- <regexp> */
 
 	OP_UNDEF,
 	OP_NULL,
@@ -337,9 +336,6 @@ pub enum OpcodeType {
 	OP_CATCH,	/* push scope chain with exception variable */
 	OP_ENDCATCH,
 
-	OP_WITH,
-	OP_ENDWITH,
-
 	OP_DEBUGGER,
 	OP_JUMP,
 	OP_JTRUE,
@@ -392,6 +388,7 @@ pub struct VMFunction {
 // runtime stuff
 pub type SharedObject = Rc<RefCell<JsObject>>;
 pub type SharedScope = Rc<RefCell<JsEnvironment>>;
+pub type SharedFunction = Rc<Box<VMFunction>>;
 
 pub fn SharedObject_new(obj: JsObject) -> SharedObject {
 	Rc::new(RefCell::new(obj))
@@ -418,9 +415,9 @@ pub struct SharedValue {
 }
 
 #[allow(non_camel_case_types)]
-pub struct JsFunction {
+pub struct JsFunction {	
+	pub vmf:	SharedFunction, 
 	pub scope:	SharedScope,
-	pub vmf:	Rc<Box<VMFunction>>, 
 }
 
 #[allow(non_camel_case_types)]

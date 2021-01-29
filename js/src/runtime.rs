@@ -243,6 +243,19 @@ impl JsObject {
 
 		}
 	}
+	
+	pub fn new_function(f: SharedFunction, scope: SharedScope) -> JsObject {
+		let fvalue = JsClass::function(JsFunction {
+			vmf: f,
+			scope: scope,
+		});
+		JsObject {
+			extensible:	false,
+			prototype: None,
+			properties: HashMap::new(),
+			value: fvalue,
+		}
+	}
 
 	pub fn type_string(&self) -> String {
 		match &self.value {
@@ -321,10 +334,6 @@ impl JsObject {
 		}
 		return false;
 	}
-
-	/* array helper functions */
-
-
 
 	/* property's help functions */
 	pub fn query_property(&self, name: &str) -> Option<(JsProperty, bool)> {
