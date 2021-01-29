@@ -395,9 +395,62 @@ impl JsRuntime {
 		return false;
 	}	
 
+/*
+void js_concat(js_State *J)
+{
+	js_toprimitive(J, -2, JS_HNONE);
+	js_toprimitive(J, -1, JS_HNONE);
+
+	if (js_isstring(J, -2) || js_isstring(J, -1)) {
+		const char *sa = js_tostring(J, -2);
+		const char *sb = js_tostring(J, -1);
+		/* TODO: create js_String directly */
+		char *sab = js_malloc(J, strlen(sa) + strlen(sb) + 1);
+		strcpy(sab, sa);
+		strcat(sab, sb);
+		if (js_try(J)) {
+			js_free(J, sab);
+			js_throw(J);
+		}
+		js_pop(J, 2);
+		js_pushstring(J, sab);
+		js_endtry(J);
+		js_free(J, sab);
+	} else {
+		double x = js_tonumber(J, -2);
+		double y = js_tonumber(J, -1);
+		js_pop(J, 2);
+		js_pushnumber(J, x + y);
+	}
+}
+*/	
 	/* item + item */
 	pub fn concat_add(&mut self) {
+		let x = self.top(-2);
+		let y = self.top(-1);
 		self.pop(2);
+
+		if x.is_number() {			
+			let x = x.to_number();
+			let y = y.to_number();
+			self.push_number(x+y);
+			return;
+		}
+		
+		let x = if let Some(s) = x.to_string() {
+			s
+		} else {
+			"[object]".to_string()
+		};
+		
+		let y = if let Some(s) = y.to_string() {
+			s
+		} else {
+			"[object]".to_string()
+		};
+
+		self.push_string( x + &y);
+
 	}
 
 	/* convert object to string */
@@ -442,12 +495,12 @@ impl JsRuntime {
 		
 		/* extract the function object's prototype property */
 		self.getproperty(obj, "prototype");
-		let proto = 
-			if self.top(-1).is_object() {
-				self.top(-1).get_object()
-			} else {
-				self.prototypes.object_prototype.clone()
-			};
+		
+		let proto = if self.top(-1).is_object() {
+			self.top(-1).get_object()
+		} else {
+			self.prototypes.object_prototype.clone()
+		};
 		
 		self.pop(1);
 

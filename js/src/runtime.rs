@@ -90,6 +90,13 @@ impl SharedValue {
 		}
 		return true;
 	}
+	pub fn is_number(&self) -> bool {
+		let v = self.v.borrow();
+		if let JsValue::JSNumber(ref v) = *v {
+			return true;
+		}
+		return false;
+	}
 	pub fn to_number(&self) -> f64 {
 		let v = self.v.borrow();
 		if let JsValue::JSNumber(ref v) = *v {
