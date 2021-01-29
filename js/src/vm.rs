@@ -437,6 +437,47 @@ impl JsRuntime {
 		return None;
 	}
 
+	pub fn instanceof(&mut self) -> bool {
+		let x = self.top(-2);
+		let y = self.top(-1);
+		
+		if !x.is_object() {
+			return false;
+		}
+		if !y.is_object() {
+			println!("instanceof: invalid operand");
+			return false;
+		}
+		let mut x = x.get_object();
+		let y = y.get_object();
+		if !y.borrow().callable() {
+			println!("instanceof: invalid operand");
+			return false;
+		}
+
+		self.getproperty(y, "prototype");
+		let o = self.top(-1);
+		self.pop(1);
+		if !o.is_object() {
+			println!("instanceof: 'prototype' property is not an object");
+			return false;
+		}
+		let o = o.get_object();
+
+		loop {
+			let proto = x.borrow().prototype.clone();
+			if let Some( proto ) = proto {
+				x = proto;
+				if o.as_ptr() == x.as_ptr() {
+					return true;
+				}
+			} else {
+				break;
+			}
+		}
+		return false;
+	}
+
 	/* convert object to string */
 	pub fn to_string(&mut self, target: SharedValue) -> String {
 		/* primitive value to string */
@@ -982,6 +1023,10 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				}
 			},
 
+			OpcodeType::OP_INSTANCEOF => {
+				rt.instanceof();
+			},
+			
 			_ => {}
 		}
 	}
