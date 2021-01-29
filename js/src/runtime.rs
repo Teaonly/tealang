@@ -124,7 +124,14 @@ impl SharedValue {
 			}
 		}
 	}
-	pub fn to_string(&self) -> Option<String> {
+	pub fn to_string(&self) -> String {
+		if let Some(s) = self.as_string() {
+			return s;
+		} else {
+			return "[object]".to_string();
+		}
+	}
+	pub fn as_string(&self) -> Option<String> {
 		let v = self.v.borrow();
 		match &*v {
 			JsValue::JSUndefined => {
@@ -243,7 +250,7 @@ impl JsObject {
 				"string".to_string()
 			},
 			JsClass::builtin(_) => {
-				"function".to_string()
+				"builtin".to_string()
 			},
 			JsClass::function(_) => {
 				"function".to_string()

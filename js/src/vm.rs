@@ -395,35 +395,6 @@ impl JsRuntime {
 		return false;
 	}	
 
-/*
-void js_concat(js_State *J)
-{
-	js_toprimitive(J, -2, JS_HNONE);
-	js_toprimitive(J, -1, JS_HNONE);
-
-	if (js_isstring(J, -2) || js_isstring(J, -1)) {
-		const char *sa = js_tostring(J, -2);
-		const char *sb = js_tostring(J, -1);
-		/* TODO: create js_String directly */
-		char *sab = js_malloc(J, strlen(sa) + strlen(sb) + 1);
-		strcpy(sab, sa);
-		strcat(sab, sb);
-		if (js_try(J)) {
-			js_free(J, sab);
-			js_throw(J);
-		}
-		js_pop(J, 2);
-		js_pushstring(J, sab);
-		js_endtry(J);
-		js_free(J, sab);
-	} else {
-		double x = js_tonumber(J, -2);
-		double y = js_tonumber(J, -1);
-		js_pop(J, 2);
-		js_pushnumber(J, x + y);
-	}
-}
-*/	
 	/* item + item */
 	pub fn concat_add(&mut self) {
 		let x = self.top(-2);
@@ -437,26 +408,39 @@ void js_concat(js_State *J)
 			return;
 		}
 		
-		let x = if let Some(s) = x.to_string() {
-			s
-		} else {
-			"[object]".to_string()
-		};
-		
-		let y = if let Some(s) = y.to_string() {
-			s
-		} else {
-			"[object]".to_string()
-		};
+		let x = x.to_string();		
+		let y = y.to_string();
 
 		self.push_string( x + &y);
+	}
 
+	/* item compare item */
+	pub fn compare_item(&mut self) -> Option<i32> {
+		let x = self.top(-2);
+		let y = self.top(-1);
+		self.pop(2);
+
+		if x.is_number() {
+			let x = x.to_number();
+			let y = y.to_number();
+			if x == f64::NAN || y == f64::NAN {
+				return None;
+			}
+			if x > y {
+				return Some(1);
+			} else if x == y {
+				return Some(0);
+			} else  {
+				return Some(-1);
+			}
+		}		
+		return None;
 	}
 
 	/* convert object to string */
-	pub fn as_string(&mut self, target: SharedValue) -> String {
+	pub fn to_string(&mut self, target: SharedValue) -> String {
 		/* primitive value to string */
-		if let Some(s) = target.to_string() {
+		if let Some(s) = target.as_string() {
 			return s;
 		}
 
@@ -470,7 +454,7 @@ void js_concat(js_State *J)
 			jscall(self, 0);
 			let object = self.top(-1);
 			self.pop(1);
-			if let Some(s) = object.to_string() {
+			if let Some(s) = object.as_string() {
 				return s;
 			}
 		}
@@ -753,14 +737,14 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			
 			OpcodeType::OP_INITPROP => {
 				let target = rt.top(-3).get_object();
-				let name = rt.as_string( rt.top(-2));
+				let name = rt.to_string( rt.top(-2));
 				let value = rt.top(-1);
 				rt.setproperty(target, &name, value);
 				rt.pop(2);
 			},
 			OpcodeType::OP_INITGETTER => {
 				let target = rt.top(-3).get_object();
-				let name = rt.as_string( rt.top(-2));
+				let name = rt.to_string( rt.top(-2));
 				let func = rt.top(-1);
 				if func.is_object() {
 					rt.defproperty(target, &name, SharedValue::new_undefined(), JsPropertyAttr::NONE, Some(func.get_object()), None);
@@ -771,7 +755,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_INITSETTER => {
 				let target = rt.top(-3).get_object();
-				let name = rt.as_string( rt.top(-2));
+				let name = rt.to_string( rt.top(-2));
 				let func = rt.top(-1);
 				if func.is_object() {
 					rt.defproperty(target, &name, SharedValue::new_undefined(), JsPropertyAttr::NONE, None, Some(func.get_object()));
@@ -783,7 +767,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 
 			OpcodeType::OP_GETPROP => {
 				let target = rt.top(-2).get_object();
-				let name = rt.as_string( rt.top(-1));
+				let name = rt.to_string( rt.top(-1));
 				rt.getproperty(target, &name);
 				rt.rot3pop2();
 			},
@@ -795,7 +779,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_SETPROP => {
 				let target = rt.top(-3).get_object();
-				let name = rt.as_string( rt.top(-2));
+				let name = rt.to_string( rt.top(-2));
 				let value = rt.top(-1);
 				rt.setproperty(target, &name, value);
 				rt.rot3pop2();
@@ -809,7 +793,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_DELPROP => {
 				let target = rt.top(-2).get_object();
-				let name = rt.as_string( rt.top(-1));
+				let name = rt.to_string( rt.top(-1));
 				let b = rt.delproperty(target, &name);
 				rt.pop(2);
 				rt.push_boolean(b);
@@ -946,7 +930,56 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 
 			/* Shift operators */
 			OpcodeType::OP_SHL => {
-				// TODO
+				let x = rt.top(-1).to_number() as i32;
+				let y = rt.top(-1).to_number() as u32;
+				rt.pop(2);
+				rt.push_number( (x << (y&0x1F)) as f64);	
+			},
+			OpcodeType::OP_SHR => {
+				let x = rt.top(-1).to_number() as i32;
+				let y = rt.top(-1).to_number() as u32;
+				rt.pop(2);
+				rt.push_number( (x >> (y&0x1F)) as f64);	
+			},
+			OpcodeType::OP_USHR => {
+				let x = rt.top(-1).to_number() as u32;
+				let y = rt.top(-1).to_number() as u32;
+				rt.pop(2);
+				rt.push_number( (x >> (y&0x1F)) as f64);	
+			},
+
+			/* Relational operators */
+			OpcodeType::OP_LT => {
+				let r = rt.compare_item();
+				if let Some(b) = r {
+					rt.push_boolean( b < 0 );
+				} else {
+					rt.push_boolean(false);
+				}
+			},
+			OpcodeType::OP_GT => {
+				let r = rt.compare_item();
+				if let Some(b) = r {
+					rt.push_boolean( b > 0);
+				} else {
+					rt.push_boolean(false);
+				}
+			},
+			OpcodeType::OP_LE => {
+				let r = rt.compare_item();
+				if let Some(b) = r {
+					rt.push_boolean( b <= 0 );
+				} else {
+					rt.push_boolean(false);
+				}
+			},
+			OpcodeType::OP_GE => {
+				let r = rt.compare_item();
+				if let Some(b) = r {
+					rt.push_boolean( b >= 0);
+				} else {
+					rt.push_boolean(false);
+				}
 			},
 
 			_ => {}
