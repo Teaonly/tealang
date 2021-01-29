@@ -414,7 +414,16 @@ impl JsRuntime {
 		self.push_string( x + &y);
 	}
 
-	/* item compare item */
+	/* item op item */
+	pub fn equal(&mut self) -> bool {
+		// TODO
+		true
+	}
+	pub fn strict_equal(&mut self) -> bool {
+		// TODO
+		true
+	}
+
 	pub fn compare_item(&mut self) -> Option<i32> {
 		let x = self.top(-2);
 		let y = self.top(-1);
@@ -440,26 +449,30 @@ impl JsRuntime {
 	pub fn instanceof(&mut self) -> bool {
 		let x = self.top(-2);
 		let y = self.top(-1);
+		self.pop(2);
 		
 		if !x.is_object() {
 			return false;
 		}
 		if !y.is_object() {
 			println!("instanceof: invalid operand");
+			self.push_boolean(false);
 			return false;
 		}
 		let mut x = x.get_object();
 		let y = y.get_object();
 		if !y.borrow().callable() {
 			println!("instanceof: invalid operand");
+			self.push_boolean(false);
 			return false;
 		}
 
 		self.getproperty(y, "prototype");
 		let o = self.top(-1);
 		self.pop(1);
-		if !o.is_object() {
+		if !o.is_object() {			
 			println!("instanceof: 'prototype' property is not an object");
+			self.push_boolean(false);
 			return false;
 		}
 		let o = o.get_object();
@@ -469,12 +482,15 @@ impl JsRuntime {
 			if let Some( proto ) = proto {
 				x = proto;
 				if o.as_ptr() == x.as_ptr() {
+					self.push_boolean(true);
 					return true;
 				}
 			} else {
 				break;
 			}
 		}
+
+		self.push_boolean(false);
 		return false;
 	}
 
@@ -1026,7 +1042,50 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			OpcodeType::OP_INSTANCEOF => {
 				rt.instanceof();
 			},
+
+			/* Equality */
+			OpcodeType::OP_EQ => {
+				let b = rt.equal();
+				rt.push_boolean(b);
+			},
+			OpcodeType::OP_NE => {
+				let b = rt.equal();
+				rt.push_boolean(!b);
+			},
+			OpcodeType::OP_STRICTEQ => {
+				let b = rt.strict_equal();
+				rt.push_boolean(b);
+			},
+			OpcodeType::OP_STRICTNE => {
+				let b = rt.strict_equal();
+				rt.push_boolean(!b);
+			},
+
+			/* Binary bitwise operators */
+			OpcodeType::OP_BITAND => {
+				let x = rt.top(-1).to_number() as i32;
+				let y = rt.top(-1).to_number() as i32;
+				rt.pop(2);
+				rt.push_number( (x & y) as f64);	
+			},
+			OpcodeType::OP_BITXOR => {
+				let x = rt.top(-1).to_number() as i32;
+				let y = rt.top(-1).to_number() as i32;
+				rt.pop(2);
+				rt.push_number( (x ^ y) as f64);	
+			},
+			OpcodeType::OP_BITOR => {
+				let x = rt.top(-1).to_number() as i32;
+				let y = rt.top(-1).to_number() as i32;
+				rt.pop(2);
+				rt.push_number( (x | y) as f64);	
+			},
+
+			/* Try and Catch */
 			
+			/* Branching & Flow control */
+
+
 			_ => {}
 		}
 	}
