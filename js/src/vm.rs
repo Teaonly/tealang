@@ -531,7 +531,7 @@ impl JsRuntime {
 	}
 
 	/* create new object */
-	pub fn call_new(&mut self, argc: usize) {
+	pub fn new_call(&mut self, argc: usize) {
 		let obj = self.top(-1 - argc as isize).get_object();
 		let fobj = obj.borrow();
 		let obj = obj.clone();
@@ -575,6 +575,34 @@ impl JsRuntime {
 			self.push_object(nobj);
 		}		
 	}
+
+/*
+	void js_newfunction(js_State *J, js_Function *fun, js_Environment *scope)
+	{
+		js_Object *obj = jsV_newobject(J, JS_CFUNCTION, J->Function_prototype);
+		obj->u.f.function = fun;
+		obj->u.f.scope = scope;
+		js_pushobject(J, obj);
+		{
+			js_pushnumber(J, fun->numparams);
+			js_defproperty(J, -2, "length", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
+			js_newobject(J);
+			{
+				js_copy(J, -2);
+				js_defproperty(J, -2, "constructor", JS_DONTENUM);
+			}
+			js_defproperty(J, -2, "prototype", JS_DONTENUM | JS_DONTCONF);
+		}
+	}
+*/
+	pub fn new_closure(&mut self, f: SharedFunction) {
+		let fobj = SharedObject_new(JsObject::new_function(f.clone(), self.cenv.clone()));		
+
+		let v = SharedValue::new_number(f.numparams as f64);
+		self.defproperty(fobj, "length", v,  JsPropertyAttr::READONLY_DONTENUM_DONTCONF, None, None);
+
+	}
+
 
 	/* stack operations */
 	pub fn top(&self, offset: isize) -> SharedValue {
@@ -762,7 +790,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			/* Creating objects */
 			OpcodeType::OP_CLOSURE => {
 				let f = func.function(&mut pc);
-				let fobj = JsObject::new_function(f, rt.cenv.clone());
+				rt.new_closure(f);
 			},
 			OpcodeType::OP_NEWOBJECT => {
 				
@@ -924,7 +952,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_NEW => {
 				let n = func.int(&mut pc) as usize;
-				rt.call_new(n);
+				rt.new_call(n);
 			},
 
 			/* Unary operators */
@@ -1122,9 +1150,16 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				
 			},	
 			
-			/* Branching & Flow control */
+			/* Branching & Flow control */			
 			OpcodeType::OP_JCASE => {
-				
+				let offset = func.address(&mut pc);
+				let b = rt.strict_equal();
+				if b {
+					rt.pop(2);
+					pc = offset;
+				} else {
+					rt.pop(1);
+				}
 			},	
 			OpcodeType::OP_JUMP => {
 				let addr = func.address(&mut pc);
