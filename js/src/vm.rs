@@ -576,33 +576,12 @@ impl JsRuntime {
 		}		
 	}
 
-/*
-	void js_newfunction(js_State *J, js_Function *fun, js_Environment *scope)
-	{
-		js_Object *obj = jsV_newobject(J, JS_CFUNCTION, J->Function_prototype);
-		obj->u.f.function = fun;
-		obj->u.f.scope = scope;
-		js_pushobject(J, obj);
-		{
-			js_pushnumber(J, fun->numparams);
-			js_defproperty(J, -2, "length", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
-			js_newobject(J);
-			{
-				js_copy(J, -2);
-				js_defproperty(J, -2, "constructor", JS_DONTENUM);
-			}
-			js_defproperty(J, -2, "prototype", JS_DONTENUM | JS_DONTCONF);
-		}
-	}
-*/
 	pub fn new_closure(&mut self, f: SharedFunction) {
 		let fobj = SharedObject_new(JsObject::new_function(f.clone(), self.cenv.clone()));		
 
 		let v = SharedValue::new_number(f.numparams as f64);
-		self.defproperty(fobj, "length", v,  JsPropertyAttr::READONLY_DONTENUM_DONTCONF, None, None);
-
+		self.defproperty(fobj, "length", v,  JsPropertyAttr::READONLY_DONTENUM_DONTCONF, None, None);		
 	}
-
 
 	/* stack operations */
 	pub fn top(&self, offset: isize) -> SharedValue {
@@ -793,10 +772,14 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				rt.new_closure(f);
 			},
 			OpcodeType::OP_NEWOBJECT => {
-				
+				let obj = SharedValue::new_vanilla();
+				rt.push(obj);
 			},
 			OpcodeType::OP_NEWARRAY => {
-				
+				let a = JsClass::array(Vec::new());
+				let obj = JsObject::new_with_class(rt.prototypes.array_prototype.clone(), a);
+				let jv = SharedValue::new_object(obj);
+				rt.push(jv);
 			},
 
 			OpcodeType::OP_THIS => {

@@ -36,6 +36,13 @@ impl SharedValue {
 			v: Rc::new(RefCell::new(v))
 		}
 	}	
+	pub fn new_vanilla() -> Self {
+		let shared_obj = SharedObject_new(JsObject::new());
+		let v = JsValue::JSObject(shared_obj);
+		SharedValue {
+			v: Rc::new(RefCell::new(v))
+		}
+	}
 	pub fn new_object(obj:JsObject) -> Self {
 		let shared_obj = SharedObject_new(obj);
 		let v = JsValue::JSObject(shared_obj);
