@@ -430,6 +430,7 @@ impl JsRuntime {
 	pub fn equal(&mut self) -> bool {
 		let x = self.top(-2);
 		let y = self.top(-1);
+		self.pop(2);
 
 		// string with others
 		if x.is_string() {
@@ -510,9 +511,66 @@ impl JsRuntime {
 		return false;
 		
 	}
+
 	pub fn strict_equal(&mut self) -> bool {
-		// TODO
-		true
+		let x = self.top(-2);
+		let y = self.top(-1);
+		self.pop(2);
+		
+		// string with others
+		if x.is_string() {
+			let x_str = x.to_string();
+			if y.is_string() {
+				let y_str = y.to_string();
+				if x_str == y_str {
+					return true;
+				}
+			} 
+			return false;
+		}
+
+		// null with defineded
+		if x.is_undefined() {
+			if y.is_undefined() {
+				return true;
+			}			
+			return false;
+		}
+
+		if x.is_null() {			
+			if y.is_null() {
+				return true;
+			}
+			return false;
+		}
+
+		// boolean with boolean
+		if x.is_boolean()  {
+			if y.is_boolean() {
+				return x.to_boolean() == y.to_boolean();
+			}
+			return false;
+		}
+
+		// number with others
+		if x.is_number() {
+			let x_num = x.to_number();
+			if y.is_number() {
+				let y_num = y.to_number();
+				if x_num == y_num {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		// object with object
+		let x_obj = x.get_object();
+		if y.is_object() {
+			let y_obj = y.get_object();
+			return Rc::ptr_eq(&x_obj, &y_obj);
+		}
+		return false;
 	}
 
 	pub fn compare_item(&mut self) -> Option<i32> {
