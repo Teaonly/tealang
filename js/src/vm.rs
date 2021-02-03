@@ -428,8 +428,87 @@ impl JsRuntime {
 
 	/* item op item */
 	pub fn equal(&mut self) -> bool {
-		// TODO
-		true
+		let x = self.top(-2);
+		let y = self.top(-1);
+
+		// string with others
+		if x.is_string() {
+			let x_str = x.to_string();
+			if y.is_string() {
+				let y_str = y.to_string();
+				if x_str == y_str {
+					return true;
+				} else {
+					return false;
+				}
+			} else if y.is_number() {
+				let y_str = y.to_number().to_string();
+				if x_str == y_str {
+					return true;
+				} else {
+					return false;
+				}
+			}
+			return false;
+		}
+
+		// null with defineded
+		if x.is_undefined() {
+			if y.is_undefined() {
+				return true;
+			}
+			if y.is_null() {
+				return true;
+			}
+			return false;
+		}
+
+		if x.is_null() {
+			if y.is_undefined() {
+				return true;
+			}
+			if y.is_null() {
+				return true;
+			}
+			return false;
+		}
+		
+		// boolean with boolean
+		if x.is_boolean()  {
+			if y.is_boolean() {
+				return x.to_boolean() == y.to_boolean();
+			}
+			return false;
+		}
+
+		// number with others
+		if x.is_number() {
+			let x_num = x.to_number();
+			if y.is_number() {
+				let y_num = y.to_number();
+				if x_num == y_num {
+					return true;
+				} else {
+					return false;
+				}
+			}
+			if y.is_string() {
+				let y_str = y.to_string();
+				if let Ok(y_num) = y_str.parse::<f64>() {
+					return x_num == y_num;
+				}
+			} 
+			return false;
+		}
+
+		// object with object
+		let x_obj = x.get_object();
+		if y.is_object() {
+			let y_obj = y.get_object();
+			return Rc::ptr_eq(&x_obj, &y_obj);
+		}
+		return false;
+		
 	}
 	pub fn strict_equal(&mut self) -> bool {
 		// TODO
@@ -508,26 +587,24 @@ impl JsRuntime {
 
 	/* convert object to string */
 	pub fn to_string(&mut self, target: SharedValue) -> String {
-		/* primitive value to string */
-		if let Some(s) = target.as_string() {
-			return s;
-		}
-
+		
 		/* try to executing toString() */
 		self.getproperty(target.get_object(), "toString");
 		let object = self.top(-1);
 		self.pop(1);
-		if object.get_object().borrow().callable() {
-			self.push(object);	// func
-			self.push(target);	// this
-			jscall(self, 0);
-			let object = self.top(-1);
-			self.pop(1);
-			if let Some(s) = object.as_string() {
-				return s;
+		if object.is_object() {
+			if object.get_object().borrow().callable() {
+				self.push(object);	// func
+				self.push(target);	// this
+				jscall(self, 0);
+				let str_result = self.top(-1);
+				self.pop(1);
+				return str_result.to_string();
 			}
 		}
-		return "[object]".to_string();
+
+		return target.to_string();
+		
 	}
 
 	/* create new object */

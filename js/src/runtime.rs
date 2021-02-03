@@ -84,6 +84,13 @@ impl SharedValue {
 		}
 		panic!("JsValue is not an object!");		
 	}
+	pub fn is_boolean(&self) -> bool {
+		let v = self.v.borrow();
+		if let JsValue::JSBoolean(ref v) = *v {
+			return true;
+		}
+		return false;
+	}
 	pub fn to_boolean(&self) -> bool {
 		let v = self.v.borrow();
 		if let JsValue::JSBoolean(ref v) = *v {
@@ -131,37 +138,37 @@ impl SharedValue {
 			}
 		}
 	}
-	pub fn to_string(&self) -> String {
-		if let Some(s) = self.as_string() {
-			return s;
-		} else {
-			return "[object]".to_string();
+	pub fn is_string(&self) -> bool {
+		let v = self.v.borrow();
+		if let JsValue::JSObject(obj) = &*v {
+			return obj.borrow().is_string();
 		}
+		return false;
 	}
-	pub fn as_string(&self) -> Option<String> {
+	pub fn to_string(&self) -> String {
 		let v = self.v.borrow();
 		match &*v {
 			JsValue::JSUndefined => {
-				return Some("undefined".to_string());
+				return "undefined".to_string();
 			},
 			JsValue::JSNULL => {
-				return Some("null".to_string());
+				return "null".to_string();
 			},
 			JsValue::JSBoolean(b) => {
 				if *b {
-					return Some("true".to_string());
+					return "true".to_string();
 				} else {
-					return Some("false".to_string());
+					return "false".to_string();
 				}
 			},
 			JsValue::JSNumber(num) => {
-				return Some(num.to_string());
+				return num.to_string();
 			},
 			JsValue::JSObject(obj) => {
 				if obj.borrow().is_string() {
-					return Some(obj.borrow().get_string());
+					return obj.borrow().get_string();
 				} else {
-					return None;
+					return "[object]".to_string();
 				}
 			}
 		}
