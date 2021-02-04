@@ -1254,25 +1254,19 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			/* Try and Catch */		
 			// TODO	
 			OpcodeType::OP_TRY => {
+				panic!("TODO: exception support!");
 			},
-			OpcodeType::OP_ENDTRY => {
-				
+			OpcodeType::OP_ENDTRY => {				
+				panic!("TODO: exception support!");
 			},
-			OpcodeType::OP_CATCH => {
-				let catch_varname = func.string(&mut pc);
-				let catch_value = rt.top(-1);
-				rt.pop(1);
-
-				let new_env = JsEnvironment::new_from(rt.cenv.clone());
-				new_env.borrow_mut().init_var(catch_varname, catch_value);
-				rt.cenv = new_env;				
+			OpcodeType::OP_CATCH => {				
+				panic!("TODO: exception support!");		
 			},
 			OpcodeType::OP_ENDCATCH => {
-				let outer: SharedScope = rt.cenv.borrow().outer.as_ref().unwrap().clone();
-				rt.cenv = outer;
+				panic!("TODO: exception support!");
 			},
 			OpcodeType::OP_THROW => {
-				
+				panic!("TODO: exception support!");
 			},	
 			
 			/* Branching & Flow control */			
