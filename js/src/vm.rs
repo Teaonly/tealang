@@ -1406,7 +1406,7 @@ fn jscall_builtin(rt: &mut JsRuntime, argc: usize) {
 	rt.push(jv);
 }
 
-pub fn jscall(rt: &mut JsRuntime, argc: usize) {
+pub fn jscall(rt: &mut JsRuntime, argc: usize) -> Option<JsException> {
 	assert!(rt.stack.len() >= argc + 2);
 	let bot = rt.stack.len() - 1 - argc;
 
@@ -1421,5 +1421,7 @@ pub fn jscall(rt: &mut JsRuntime, argc: usize) {
 		jscall_builtin(rt, argc);
 	} else {
         panic!("Can't call none function object");
-    }
+	}
+	
+	return None;
 }

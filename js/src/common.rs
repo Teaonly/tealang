@@ -488,12 +488,10 @@ pub struct JsPrototype {
 	pub string_prototype:	SharedObject,
 	pub array_prototype:	SharedObject,
 	pub function_prototype: SharedObject,
-	
-	pub error_prototype:	SharedObject,
-	pub range_err_proto:	SharedObject,
-	pub ref_err_proto:		SharedObject,
-	pub syntax_err_proto:	SharedObject,
-	pub type_err_proto:		SharedObject,
+}
+
+pub struct JsException {
+	pub e: SharedObject,
 }
 
 #[allow(non_camel_case_types)]
