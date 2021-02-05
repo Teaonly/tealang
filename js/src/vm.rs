@@ -1365,10 +1365,10 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 				pc = catch_block;
 			},
 			OpcodeType::OP_ENDTRY => {				
-				panic!("TODO: exception support!");	
+				catch_scopes.pop();
 			},
 			OpcodeType::OP_CATCH => {				
-				panic!("TODO: exception support!");		
+				panic!("TODO: exception support!");	
 			},
 			OpcodeType::OP_ENDCATCH => {
 				panic!("TODO: exception support!");
