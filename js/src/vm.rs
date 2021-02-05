@@ -1,11 +1,8 @@
 use std::convert::TryFrom;
-use std::cell::Cell;
 use std::rc::Rc;
-use std::collections::HashMap;
 use std::cmp;
 
 use crate::common::*;
-use crate::runtime::*;
 
 impl TryFrom<u16> for OpcodeType {
     type Error = ();
@@ -300,7 +297,7 @@ impl JsRuntime {
 
 	// change value of the proptery for object
 	pub fn setproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue) -> Result<(), JsException> {		
-		let mut target = target_.borrow_mut();
+		let target = target_.borrow_mut();
 		let target_ = target_.clone();
 
 		match target.value {
@@ -312,7 +309,7 @@ impl JsRuntime {
 		}
 
 		let prop_r = target.query_property(name);
-		if let Some((mut prop, own)) = prop_r {
+		if let Some((prop, _own)) = prop_r {
 			if let Some(setter) = prop.setter {
 				self.push_object(setter.clone());
 				self.push_object(target_);
@@ -337,7 +334,7 @@ impl JsRuntime {
 
 	// get value from the proptery for object
 	pub fn hasproperty(&mut self, target_: SharedObject, name: &str) -> Result<bool, JsException> {		
-		let mut target = target_.borrow_mut();
+		let target = target_.borrow_mut();
 		let target_ = target_.clone();
 
 		match target.value {
@@ -369,7 +366,7 @@ impl JsRuntime {
 		}
 
 		let prop_r = target.query_property(name);
-		if let Some((mut prop, own)) = prop_r {
+		if let Some((prop, _own)) = prop_r {
 			if let Some(getter) = prop.getter {
 				self.push_object(getter.clone());
 				self.push_object(target_);
@@ -389,7 +386,6 @@ impl JsRuntime {
 	}	
 	pub fn delproperty(&mut self, target_: SharedObject, name: &str) -> bool {		
 		let mut target = target_.borrow_mut();
-		let target_ = target_.clone();
 
 		match target.value {
 			JsClass::object => {},
@@ -698,7 +694,7 @@ impl JsRuntime {
 
 		/* create a new object with above prototype, and shift it into the 'this' slot */
 		let mut nobj = JsObject::new();
-		nobj.prototype = Some(self.prototypes.object_prototype.clone());
+		nobj.prototype = Some(proto);
 		let nobj = SharedObject_new(nobj);
 		self.push_object(nobj.clone());
 		if argc > 0 {
@@ -802,7 +798,7 @@ impl JsRuntime {
 		}
 		let top = self.stack.len();
 		for i in 0..n-1 {
-			self.stack.swap(top-1, top-2);
+			self.stack.swap(top-1-i, top-2-i);
 		}
 	}
 	pub fn rot2(&mut self) {

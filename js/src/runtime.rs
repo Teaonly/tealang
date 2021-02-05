@@ -1,4 +1,3 @@
-use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -86,7 +85,7 @@ impl SharedValue {
 	}
 	pub fn is_boolean(&self) -> bool {
 		let v = self.v.borrow();
-		if let JsValue::JSBoolean(ref v) = *v {
+		if let JsValue::JSBoolean(ref _v) = *v {
 			return true;
 		}
 		return false;
@@ -106,7 +105,7 @@ impl SharedValue {
 	}
 	pub fn is_number(&self) -> bool {
 		let v = self.v.borrow();
-		if let JsValue::JSNumber(ref v) = *v {
+		if let JsValue::JSNumber(ref _v) = *v {
 			return true;
 		}
 		return false;
@@ -127,10 +126,10 @@ impl SharedValue {
 			JsValue::JSNULL => {
 				return "null".to_string();
 			},
-			JsValue::JSBoolean(b) => {
+			JsValue::JSBoolean(_b) => {
 				return "boolean".to_string();
 			},
-			JsValue::JSNumber(num) => {
+			JsValue::JSNumber(_num) => {
 				return "number".to_string();
 			},
 			JsValue::JSObject(obj) => {
