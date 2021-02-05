@@ -117,6 +117,13 @@ impl SharedValue {
 		}
 		return std::f64::NAN;
 	}
+	pub fn is_exception(&self) -> bool {
+		let v = self.v.borrow();
+		if let JsValue::JSObject(obj) = &*v {
+			return obj.borrow().is_exception();
+		}
+		return false;
+	}
 	pub fn type_string(&self) -> String {
 		let v = self.v.borrow();
 		match &*v {
@@ -208,6 +215,12 @@ impl JsProperty {
 	}
 }
 
+impl JsException {
+	pub fn new() -> JsException {
+		JsException{}
+	}
+}
+
 impl JsIterator {
 	pub fn new(target_: SharedObject) -> Self {
 		let target = target_.borrow();
@@ -244,6 +257,16 @@ impl JsObject {
             properties: HashMap::new(),
             value: value
         }
+	}
+	
+	pub fn new_exception(e: JsException) -> JsObject {		
+		JsObject {
+			extensible:	false,
+			prototype: None,
+			properties: HashMap::new(),
+			value: JsClass::exception(e),
+
+		}
 	}
 
 	pub fn new_iterator(target_: SharedObject) -> JsObject {
@@ -289,6 +312,12 @@ impl JsObject {
 
 	pub fn is_vanilla(&self) -> bool {
 		if let JsClass::object = self.value {
+			return true;
+		}
+		return false;
+	}
+	pub fn is_exception(&self) -> bool {
+		if let JsClass::exception(_e) = &self.value {
 			return true;
 		}
 		return false;
@@ -418,14 +447,6 @@ impl JsEnvironment {
 			}
 		}
 		return false;
-	}
-}
-
-impl JsException {
-	pub fn new() -> JsException {
-		JsException {
-			e: SharedObject_new(JsObject::new())
-		}
 	}
 }
 

@@ -427,15 +427,22 @@ pub struct JsBuiltinFunction {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(Clone)]
 pub struct JsIterator {
 	pub keys:	Vec<String>,
 	pub index:	usize,
 }
 
 #[allow(non_camel_case_types)]
+pub struct JsException {
+
+}
+
+#[allow(non_camel_case_types)]
 pub enum JsClass {
 	object,
 	native,
+	exception(JsException),
 	iterator(JsIterator),
 	string(String),
 	array(Vec<SharedValue>),
@@ -487,10 +494,6 @@ pub struct JsPrototype {
 	pub string_prototype:	SharedObject,
 	pub array_prototype:	SharedObject,
 	pub function_prototype: SharedObject,
-}
-
-pub struct JsException {
-	pub e: SharedObject,
 }
 
 #[allow(non_camel_case_types)]

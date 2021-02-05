@@ -719,6 +719,8 @@ impl JsRuntime {
 		self.defproperty(fobj, "length", v,  JsPropertyAttr::READONLY_DONTENUM_DONTCONF, None, None);		
 	}
 
+	/* Exceptions */
+
 	/* stack operations */
 	pub fn top(&self, offset: isize) -> SharedValue {
 		if offset < 0 {
@@ -853,6 +855,8 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 	let mut pc:usize = 0;
 	let bot:usize = rt.stack.len() - 1;
 
+	let mut with_exception: Option<JsException> = None;
+
 	loop {
 		let opcode = func.opcode(&mut pc);
 
@@ -927,13 +931,30 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 			
 			OpcodeType::OP_GETLOCAL => {
 				let v = func.var(&mut pc);
-				if rt.getvariable(&v)? == false {
-					println!("'{}' is not defined", v);
-				}
+				let result = rt.getvariable(&v);
+				let excp = match result {
+					Ok(br) => {
+						if br == true {
+							continue;
+						} else {
+							// println!("'{}' is not defined", s);
+							JsException::new()
+						}
+					},
+					Err(e) => {
+						e
+					},
+				};
+				with_exception = Some(excp);
+				break;
 			},
 			OpcodeType::OP_SETLOCAL => {
 				let v = func.var(&mut pc);
-				rt.setvariable(v)?;
+				let result = rt.setvariable(v);
+				if let Err(e) = result {
+					with_exception = Some(e);
+					break;
+				}
 			},
 			OpcodeType::OP_DELLOCAL => {
 				let v = func.var(&mut pc);
@@ -943,15 +964,39 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 
 			OpcodeType::OP_GETVAR => {
 				let s = func.string(&mut pc);
-				if rt.getvariable(s)? == false {
-					println!("'{}' is not defined", s);
-				}
+				let result = rt.getvariable(&s);
+				let excp = match result {
+					Ok(br) => {
+						if br == true {
+							continue;
+						} else {
+							// println!("'{}' is not defined", s);
+							JsException::new()
+						}
+					},
+					Err(e) => {
+						e
+					},
+				};
+				with_exception = Some(excp);
+				break;
 			},
 			OpcodeType::OP_HASVAR => {
 				let s = func.string(&mut pc);
-				if rt.getvariable(&s)? == false {
-					rt.push_undefined();
-				}
+				let result = rt.getvariable(&s);
+				let excp = match result {
+					Ok(br) => {
+						if br == false {
+							rt.push_undefined();
+						}
+						continue;
+					},
+					Err(e) => {
+						e
+					},
+				};
+				with_exception = Some(excp);
+				break;
 			},
 			OpcodeType::OP_SETVAR => {
 				let s = func.string(&mut pc);
@@ -1302,7 +1347,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 				}
 			},
 			OpcodeType::OP_RETURN => {
-				return Ok(());
+				break;
 			},
 
 			/* do nothing */
@@ -1312,6 +1357,14 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 			OpcodeType::OP_LAST => {},
 		}
 	}
+
+	// handle exception
+	if let Some(e) = with_exception {
+		// TODO, checking try scope
+		
+		return Err(e);
+	} 
+	return Ok(());
 }
 
 fn jscall_script(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
