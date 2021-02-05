@@ -1022,12 +1022,21 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 					}
 				};
 				let value = rt.top(-1);
-				rt.setproperty(target, &name, value)?;
+				if let Err(e) = rt.setproperty(target, &name, value) {
+					with_exception = Some(e);
+					break;
+				}
 				rt.pop(2);
 			},
 			OpcodeType::OP_INITGETTER => {
 				let target = rt.top(-3).get_object();
-				let name = rt.to_string( rt.top(-2))?;
+				let name = match rt.to_string( rt.top(-2)) {
+					Ok(s) => s,
+					Err(e) => {
+						with_exception = Some(e);
+						break;
+					}
+				};
 				let func = rt.top(-1);
 				if func.is_object() {
 					rt.defproperty(target, &name, SharedValue::new_undefined(), JsPropertyAttr::NONE, Some(func.get_object()), None);
@@ -1038,7 +1047,13 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 			},
 			OpcodeType::OP_INITSETTER => {
 				let target = rt.top(-3).get_object();
-				let name = rt.to_string( rt.top(-2))?;
+				let name =match rt.to_string( rt.top(-2)) {
+					Ok(s) => s,
+					Err(e) => {
+						with_exception = Some(e);
+						break;
+					}
+				};
 				let func = rt.top(-1);
 				if func.is_object() {
 					rt.defproperty(target, &name, SharedValue::new_undefined(), JsPropertyAttr::NONE, None, Some(func.get_object()));
