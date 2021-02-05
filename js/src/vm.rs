@@ -1065,33 +1065,57 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 
 			OpcodeType::OP_GETPROP => {
 				let target = rt.top(-2).get_object();
-				let name = rt.to_string( rt.top(-1))?;
-				rt.getproperty(target, &name)?;
+				let name = match rt.to_string( rt.top(-1)) {
+					Ok(s) => s,
+					Err(e) => {
+						with_exception = Some(e);
+						break;
+					}
+				};
+				if let Err(e) = rt.getproperty(target, &name) {
+					with_exception = Some(e);
+					break;
+				}
 				rt.rot3pop2();
 			},
 			OpcodeType::OP_GETPROP_S => {
 				let target = rt.top(-1).get_object();
 				let name = func.string(&mut pc);
-				rt.getproperty(target, &name)?;
+				if let Err(e) = rt.getproperty(target, &name) {
+					with_exception = Some(e);
+					break;
+				}
 				rt.rot2pop1();
 			},
 			OpcodeType::OP_SETPROP => {
 				let target = rt.top(-3).get_object();
 				let name = rt.to_string( rt.top(-2))?;
 				let value = rt.top(-1);
-				rt.setproperty(target, &name, value)?;
+				if let Err(e) = rt.setproperty(target, &name, value) {
+					with_exception = Some(e);
+					break;
+				}
 				rt.rot3pop2();
 			},
 			OpcodeType::OP_SETPROP_S => {
 				let target = rt.top(-2).get_object();
 				let value = rt.top(-1);
 				let name = func.string(&mut pc);
-				rt.setproperty(target, &name, value)?;
+				if let Err(e) = rt.setproperty(target, &name, value) {
+					with_exception = Some(e);
+					break;
+				}
 				rt.rot2pop1();
 			},
 			OpcodeType::OP_DELPROP => {
 				let target = rt.top(-2).get_object();
-				let name = rt.to_string( rt.top(-1))?;
+				let name = match rt.to_string( rt.top(-1)) {
+					Ok(s) => s,
+					Err(e) => {
+						with_exception = Some(e);
+						break;
+					}
+				};
 				let b = rt.delproperty(target, &name);
 				rt.pop(2);
 				rt.push_boolean(b);
@@ -1137,11 +1161,17 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 			/* Function calls */
 			OpcodeType::OP_CALL => {
 				let n = func.int(&mut pc) as usize;
-				jscall(rt, n)?;
+				if let Err(e) = jscall(rt, n) {
+					with_exception = Some(e);
+					break;
+				}
 			},
 			OpcodeType::OP_NEW => {
 				let n = func.int(&mut pc) as usize;
-				rt.new_call(n)?;
+				if let Err(e) = rt.new_call(n) {
+					with_exception = Some(e);
+					break;
+				}
 			},
 
 			/* Unary operators */
@@ -1281,7 +1311,10 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 			},
 
 			OpcodeType::OP_INSTANCEOF => {
-				rt.instanceof()?;
+				if let Err(e) = rt.instanceof() {
+					with_exception = Some(e);
+					break;
+				}
 			},
 
 			/* Equality */
