@@ -1000,7 +1000,11 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 			},
 			OpcodeType::OP_SETVAR => {
 				let s = func.string(&mut pc);
-				rt.setvariable(s)?;
+				let result = rt.setvariable(s);
+				if let Err(e) = result {
+					with_exception = Some(e);
+					break;
+				}
 			},
 			OpcodeType::OP_DELVAR => {
 				let s = func.string(&mut pc);
@@ -1010,7 +1014,13 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 			
 			OpcodeType::OP_INITPROP => {
 				let target = rt.top(-3).get_object();
-				let name = rt.to_string( rt.top(-2))?;
+				let name = match rt.to_string( rt.top(-2)) {
+					Ok(s) => s,
+					Err(e) => {
+						with_exception = Some(e);
+						break;
+					}
+				};
 				let value = rt.top(-1);
 				rt.setproperty(target, &name, value)?;
 				rt.pop(2);
