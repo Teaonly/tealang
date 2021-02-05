@@ -1368,16 +1368,6 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 				catch_scopes.pop();
 			},
 			OpcodeType::OP_CATCH => {				
-				/*
-				str = ST[*pc++];
-				obj = jsV_newobject(J, JS_COBJECT, NULL);
-				js_pushobject(J, obj);
-				js_rot2(J);
-				js_setproperty(J, -2, str);
-				J->E = jsR_newenvironment(J, obj, J->E);
-				js_pop(J, 1);
-				*/
-
 				let str = func.string(&mut pc);
 				let eobj = rt.top(-1);
 				rt.pop(1);
@@ -1391,8 +1381,12 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 				rt.cenv = outer;
 			},
 			OpcodeType::OP_THROW => {
-				panic!("TODO: exception support!");
-			},	
+				let evalue = rt.top(-1);
+				rt.pop(1);
+				let e = evalue.get_object().borrow().get_exception();
+				with_exception = Some(e);
+				break;		
+			},
 			
 			/* Branching & Flow control */			
 			OpcodeType::OP_JCASE => {

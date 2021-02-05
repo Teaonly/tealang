@@ -322,6 +322,12 @@ impl JsObject {
 		}
 		return false;
 	}
+	pub fn get_exception(&self) -> JsException {
+		if let JsClass::exception(e) = &self.value {
+			return e.clone();
+		}
+		panic!("Object can't be a exception!")
+	}
 	pub fn is_iterator(&self) -> bool {
 		if let JsClass::iterator(_) = self.value {
 			return true;

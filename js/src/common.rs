@@ -434,6 +434,7 @@ pub struct JsIterator {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(Clone)]
 pub struct JsException {
 
 }
