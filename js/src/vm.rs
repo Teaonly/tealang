@@ -851,9 +851,9 @@ impl JsRuntime {
 }
 
 
-fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
+fn jsrun (rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsException> {
 	assert!(rt.stack.len() > 0);
-	let mut pc:usize = 0;
+	let mut pc:usize = pc;
 	let bot:usize = rt.stack.len() - 1;
 
 	let mut with_exception: Option<JsException> = None;
@@ -1357,8 +1357,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 				rt.push_number( (x | y) as f64);	
 			},
 
-			/* Try and Catch */		
-			// TODO	
+			/* Try and Catch */	
 			OpcodeType::OP_TRY => {
 				let catch_block = func.address(&mut pc);
 				catch_scopes.push((pc, rt.stack.len()));
@@ -1433,7 +1432,13 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 
 	// handle exception
 	if let Some(e) = with_exception {
-		// TODO, checking try scope
+		if let Some((new_pc, new_top)) = catch_scopes.pop() {
+			let dropped = rt.stack.len() - new_top;
+			rt.pop(dropped);
+
+			rt.push( SharedValue::new_object( JsObject::new_exception(e)));
+			return jsrun(rt, func, new_pc);
+		}
 		
 		return Err(e);
 	} 
@@ -1455,7 +1460,7 @@ fn jscall_script(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 
 	/* scripts take no arguments */
 	rt.pop(argc);
-	jsrun(rt, vmf)?;
+	jsrun(rt, vmf, 0)?;
 
 	/* clear stack */
 	let jv = rt.stack.pop().unwrap();
@@ -1508,7 +1513,7 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 		rt.cenv.borrow_mut().init_var(&vmf.var_tab[i], jv);
 	}
 
-	jsrun(rt, vmf)?;
+	jsrun(rt, vmf, 0)?;
 
 	/* clear stack */
 	let jv = rt.stack.pop().unwrap();
