@@ -422,6 +422,14 @@ impl JsEnvironment {
 	}
 }
 
+impl JsException {
+	pub fn new() -> JsException {
+		JsException {
+			e: SharedObject_new(JsObject::new())
+		}
+	}
+}
+
 impl JsRuntime {
 	pub fn newobj_from_vmf(&mut self, vmf: VMFunction) -> JsObject {
 		let f = JsFunction {

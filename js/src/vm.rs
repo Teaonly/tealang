@@ -194,8 +194,8 @@ impl JsRuntime {
 			env = r; 
 		}
 	}
-
-	pub fn getvariable(&mut self, name: &str) -> bool {
+	
+	pub fn getvariable(&mut self, name: &str) -> Result<bool, JsException> {
 		let mut env: SharedScope = self.cenv.clone();
 		loop {			
 			let r = env.borrow().query_variable(name);
@@ -204,21 +204,21 @@ impl JsRuntime {
 				if prop.getter.is_some() {
 					self.push_object(prop.getter.unwrap().clone());		// function object
 					self.push(prop.value.clone());						// this object
-					jscall(self, 0);
+					jscall(self, 0)?;					
 				} else {
 					self.push(prop.value.clone());
 				}
-				return true;
+				return Ok(true);
 			}
 			if env.borrow().outer.is_none() {
-				return false;
+				return Ok(false);
 			} 
 			let r = env.borrow().fetch_outer();
 			env = r; 
 		}
 	}
 
-	pub fn setvariable(&mut self, name: &str) {
+	pub fn setvariable(&mut self, name: &str) -> Result<(), JsException> {
 		let mut env: SharedScope = self.cenv.clone();
 		loop {
 			let r = env.borrow().query_variable(name);
@@ -228,14 +228,14 @@ impl JsRuntime {
 					self.push_object(prop.setter.unwrap().clone());		// function object
 					self.push(prop.value.clone());						// this object
 					self.push_from( self.stack.len() - 3);				// value
-					jscall(self, 1);
-					self.pop(1);					
+					jscall(self, 1)?;
+					self.pop(1);				
 				} else {
 					if !prop.readonly() {
 						prop.value.swap( self.stack.first().unwrap().clone() );
 					}
 				}	
-				return;		
+				return Ok(());
 			} 
 			if env.borrow().outer.is_none() {
 				break;
@@ -249,6 +249,8 @@ impl JsRuntime {
 		let mut prop = self.genv.borrow_mut().variables.get_property(name);
 		prop.value = value;
 		self.genv.borrow_mut().variables.set_property(name, prop);
+
+		return Ok(());
 	}
 
 	/* properties operation */
@@ -297,7 +299,7 @@ impl JsRuntime {
 	}
 
 	// change value of the proptery for object
-	pub fn setproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue) {		
+	pub fn setproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue) -> Result<(), JsException> {		
 		let mut target = target_.borrow_mut();
 		let target_ = target_.clone();
 
@@ -305,7 +307,7 @@ impl JsRuntime {
 			JsClass::object => {},
 			_ => {
 				println!("Cant write property for specia object!");
-				return;
+				return Err( JsException::new());
 			}
 		}
 
@@ -315,25 +317,26 @@ impl JsRuntime {
 				self.push_object(setter.clone());
 				self.push_object(target_);
 				self.push(value);
-				jscall(self, 1);
+				jscall(self, 1)?;
 				self.pop(1);
-				return;
+				return Ok(());
 			}
 			if prop.readonly() {
 				println!("Cant write property for specia object!");
-				return;
+				return Err( JsException::new());
 			} else {				
 				prop.value.swap( value );
-				return;
+				return Ok(());
 			}
 		}
 
 		/* Property not found on this object, so create one */
-		return self.defproperty(target_, name, value, JsPropertyAttr::NONE, None, None);		
+		self.defproperty(target_, name, value, JsPropertyAttr::NONE, None, None);
+		return Ok(());	
 	}	
 
 	// get value from the proptery for object
-	pub fn hasproperty(&mut self, target_: SharedObject, name: &str) -> bool {		
+	pub fn hasproperty(&mut self, target_: SharedObject, name: &str) -> Result<bool, JsException> {		
 		let mut target = target_.borrow_mut();
 		let target_ = target_.clone();
 
@@ -341,24 +344,24 @@ impl JsRuntime {
 			JsClass::string(ref s) => {
 				if name == "length" {
 					self.push_number( s.len() as f64);
-					return true;
+					return Ok(true);
 				} 
 				if let Ok(idx) = name.parse::<usize>() {
 					if idx < s.len() {
 						self.push_string( s[idx..idx+1].to_string() ); 
-						return true;
+						return Ok(true);
 					}
 				}
 			},
 			JsClass::array(ref v) => {
 				if name == "length" {
 					self.push_number( v.len() as f64);
-					return true;
+					return Ok(true);
 				} 
 				if let Ok(idx) = name.parse::<usize>() {
 					if idx < v.len() {
 						self.push( v[idx].clone() );
-						return true;
+						return Ok(true);
 					}
 				}
 			},
@@ -370,18 +373,19 @@ impl JsRuntime {
 			if let Some(getter) = prop.getter {
 				self.push_object(getter.clone());
 				self.push_object(target_);
-				jscall(self, 0);
+				jscall(self, 0)?;
 			} else {
 				self.push(prop.value.clone());
 			}
-			return true;
+			return Ok(true);
 		}
-		return false;
+		return Ok(false);
 	}
-	pub fn getproperty(&mut self, target: SharedObject, name: &str) {		
-		if !self.hasproperty(target, name) {
+	pub fn getproperty(&mut self, target: SharedObject, name: &str) -> Result<(), JsException> {
+		if !self.hasproperty(target, name)? {
 			self.push_undefined();
 		}
+		return Ok(());
 	}	
 	pub fn delproperty(&mut self, target_: SharedObject, name: &str) -> bool {		
 		let mut target = target_.borrow_mut();
@@ -595,34 +599,34 @@ impl JsRuntime {
 		return None;
 	}
 
-	pub fn instanceof(&mut self) -> bool {
+	pub fn instanceof(&mut self) -> Result<bool, JsException> {
 		let x = self.top(-2);
 		let y = self.top(-1);
 		self.pop(2);
 		
 		if !x.is_object() {
-			return false;
+			return Ok(false);
 		}
 		if !y.is_object() {
 			println!("instanceof: invalid operand");
 			self.push_boolean(false);
-			return false;
+			return Ok(false);
 		}
 		let mut x = x.get_object();
 		let y = y.get_object();
 		if !y.borrow().callable() {
 			println!("instanceof: invalid operand");
 			self.push_boolean(false);
-			return false;
+			return Ok(false);
 		}
 
-		self.getproperty(y, "prototype");
+		self.getproperty(y, "prototype")?;
 		let o = self.top(-1);
 		self.pop(1);
 		if !o.is_object() {			
 			println!("instanceof: 'prototype' property is not an object");
 			self.push_boolean(false);
-			return false;
+			return Ok(false);
 		}
 		let o = o.get_object();
 
@@ -632,7 +636,7 @@ impl JsRuntime {
 				x = proto;
 				if o.as_ptr() == x.as_ptr() {
 					self.push_boolean(true);
-					return true;
+					return Ok(true);
 				}
 			} else {
 				break;
@@ -640,33 +644,33 @@ impl JsRuntime {
 		}
 
 		self.push_boolean(false);
-		return false;
+		return Ok(false);
 	}
 
 	/* convert object to string */
-	pub fn to_string(&mut self, target: SharedValue) -> String {
+	pub fn to_string(&mut self, target: SharedValue) -> Result<String, JsException> {
 		
 		/* try to executing toString() */
-		self.getproperty(target.get_object(), "toString");
+		self.getproperty(target.get_object(), "toString")?;
 		let object = self.top(-1);
 		self.pop(1);
 		if object.is_object() {
 			if object.get_object().borrow().callable() {
 				self.push(object);	// func
 				self.push(target);	// this
-				jscall(self, 0);
+				jscall(self, 0)?;
 				let str_result = self.top(-1);
 				self.pop(1);
-				return str_result.to_string();
+				return Ok(str_result.to_string());
 			}
 		}
 
-		return target.to_string();
+		return Ok(target.to_string());
 		
 	}
 
 	/* create new object */
-	pub fn new_call(&mut self, argc: usize) {
+	pub fn new_call(&mut self, argc: usize) -> Result<(), JsException> {
 		let obj = self.top(-1 - argc as isize).get_object();
 		let fobj = obj.borrow();
 		let obj = obj.clone();
@@ -678,11 +682,11 @@ impl JsRuntime {
 				self.rot(argc+1);				
 			}
 			jscall_builtin(self, argc);
-			return;
+			return Ok(());
 		}
 		
 		/* extract the function object's prototype property */
-		self.getproperty(obj, "prototype");
+		self.getproperty(obj, "prototype")?;
 		
 		let proto = if self.top(-1).is_object() {
 			self.top(-1).get_object()
@@ -702,13 +706,14 @@ impl JsRuntime {
 		}
 
 		/* call the function */
-		jscall(self, argc);
+		jscall(self, argc)?;
 
 		/* if result is not an object, return the original object we created */
 		if !self.top(-1).is_object() {
 			self.pop(1);
 			self.push_object(nobj);
-		}		
+		}
+		return Ok(());
 	}
 
 	pub fn new_closure(&mut self, f: SharedFunction) {
@@ -847,7 +852,7 @@ impl JsRuntime {
 	}
 }
 
-fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
+fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 	assert!(rt.stack.len() > 0);
 	let mut pc:usize = 0;
 	let bot:usize = rt.stack.len() - 1;
@@ -926,13 +931,13 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			
 			OpcodeType::OP_GETLOCAL => {
 				let v = func.var(&mut pc);
-				if rt.getvariable(&v) == false {
+				if rt.getvariable(&v)? == false {
 					println!("'{}' is not defined", v);
 				}
 			},
 			OpcodeType::OP_SETLOCAL => {
 				let v = func.var(&mut pc);
-				rt.setvariable(v);
+				rt.setvariable(v)?;
 			},
 			OpcodeType::OP_DELLOCAL => {
 				let v = func.var(&mut pc);
@@ -942,19 +947,19 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 
 			OpcodeType::OP_GETVAR => {
 				let s = func.string(&mut pc);
-				if rt.getvariable(s) == false {
+				if rt.getvariable(s)? == false {
 					println!("'{}' is not defined", s);
 				}
 			},
 			OpcodeType::OP_HASVAR => {
 				let s = func.string(&mut pc);
-				if rt.getvariable(&s) == false {
+				if rt.getvariable(&s)? == false {
 					rt.push_undefined();
 				}
 			},
 			OpcodeType::OP_SETVAR => {
 				let s = func.string(&mut pc);
-				rt.setvariable(s);
+				rt.setvariable(s)?;
 			},
 			OpcodeType::OP_DELVAR => {
 				let s = func.string(&mut pc);
@@ -964,14 +969,14 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			
 			OpcodeType::OP_INITPROP => {
 				let target = rt.top(-3).get_object();
-				let name = rt.to_string( rt.top(-2));
+				let name = rt.to_string( rt.top(-2))?;
 				let value = rt.top(-1);
-				rt.setproperty(target, &name, value);
+				rt.setproperty(target, &name, value)?;
 				rt.pop(2);
 			},
 			OpcodeType::OP_INITGETTER => {
 				let target = rt.top(-3).get_object();
-				let name = rt.to_string( rt.top(-2));
+				let name = rt.to_string( rt.top(-2))?;
 				let func = rt.top(-1);
 				if func.is_object() {
 					rt.defproperty(target, &name, SharedValue::new_undefined(), JsPropertyAttr::NONE, Some(func.get_object()), None);
@@ -982,7 +987,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 			OpcodeType::OP_INITSETTER => {
 				let target = rt.top(-3).get_object();
-				let name = rt.to_string( rt.top(-2));
+				let name = rt.to_string( rt.top(-2))?;
 				let func = rt.top(-1);
 				if func.is_object() {
 					rt.defproperty(target, &name, SharedValue::new_undefined(), JsPropertyAttr::NONE, None, Some(func.get_object()));
@@ -994,33 +999,33 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 
 			OpcodeType::OP_GETPROP => {
 				let target = rt.top(-2).get_object();
-				let name = rt.to_string( rt.top(-1));
-				rt.getproperty(target, &name);
+				let name = rt.to_string( rt.top(-1))?;
+				rt.getproperty(target, &name)?;
 				rt.rot3pop2();
 			},
 			OpcodeType::OP_GETPROP_S => {
 				let target = rt.top(-1).get_object();
 				let name = func.string(&mut pc);
-				rt.getproperty(target, &name);
+				rt.getproperty(target, &name)?;
 				rt.rot2pop1();
 			},
 			OpcodeType::OP_SETPROP => {
 				let target = rt.top(-3).get_object();
-				let name = rt.to_string( rt.top(-2));
+				let name = rt.to_string( rt.top(-2))?;
 				let value = rt.top(-1);
-				rt.setproperty(target, &name, value);
+				rt.setproperty(target, &name, value)?;
 				rt.rot3pop2();
 			},
 			OpcodeType::OP_SETPROP_S => {
 				let target = rt.top(-2).get_object();
 				let value = rt.top(-1);
 				let name = func.string(&mut pc);
-				rt.setproperty(target, &name, value);
+				rt.setproperty(target, &name, value)?;
 				rt.rot2pop1();
 			},
 			OpcodeType::OP_DELPROP => {
 				let target = rt.top(-2).get_object();
-				let name = rt.to_string( rt.top(-1));
+				let name = rt.to_string( rt.top(-1))?;
 				let b = rt.delproperty(target, &name);
 				rt.pop(2);
 				rt.push_boolean(b);
@@ -1066,11 +1071,11 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			/* Function calls */
 			OpcodeType::OP_CALL => {
 				let n = func.int(&mut pc) as usize;
-				jscall(rt, n);
+				jscall(rt, n)?;
 			},
 			OpcodeType::OP_NEW => {
 				let n = func.int(&mut pc) as usize;
-				rt.new_call(n);
+				rt.new_call(n)?;
 			},
 
 			/* Unary operators */
@@ -1210,7 +1215,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 			},
 
 			OpcodeType::OP_INSTANCEOF => {
-				rt.instanceof();
+				rt.instanceof()?;
 			},
 
 			/* Equality */
@@ -1301,7 +1306,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 				}
 			},
 			OpcodeType::OP_RETURN => {
-				return;
+				return Ok(());
 			},
 
 			/* do nothing */
@@ -1313,7 +1318,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) {
 	}
 }
 
-fn jscall_script(rt: &mut JsRuntime, argc: usize) {
+fn jscall_script(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 	let bot = rt.stack.len() - 1 - argc;
 
 	let fobj = rt.stack[bot-1].get_object();
@@ -1328,15 +1333,17 @@ fn jscall_script(rt: &mut JsRuntime, argc: usize) {
 
 	/* scripts take no arguments */
 	rt.pop(argc);
-	jsrun(rt, vmf);
+	jsrun(rt, vmf)?;
 
 	/* clear stack */
 	let jv = rt.stack.pop().unwrap();
 	rt.pop(2);
 	rt.push(jv);
+
+	return Ok(())
 }
 
-fn jscall_function(rt: &mut JsRuntime, argc: usize) {
+fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 	let bot = rt.stack.len() - 1 - argc;
 
 	let fobj = rt.stack[bot-1].get_object();
@@ -1379,7 +1386,7 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 		rt.cenv.borrow_mut().init_var(&vmf.var_tab[i], jv);
 	}
 
-	jsrun(rt, vmf);
+	jsrun(rt, vmf)?;
 
 	/* clear stack */
 	let jv = rt.stack.pop().unwrap();
@@ -1388,6 +1395,8 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) {
 
 	/* restore old env */
 	rt.cenv = old_env;
+
+	return Ok(());
 }
 
 fn jscall_builtin(rt: &mut JsRuntime, argc: usize) {
@@ -1406,22 +1415,24 @@ fn jscall_builtin(rt: &mut JsRuntime, argc: usize) {
 	rt.push(jv);
 }
 
-pub fn jscall(rt: &mut JsRuntime, argc: usize) -> Option<JsException> {
+pub fn jscall(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 	assert!(rt.stack.len() >= argc + 2);
 	let bot = rt.stack.len() - 1 - argc;
 
 	let fobj = rt.stack[bot-1].get_object();
 	if fobj.borrow().is_function() == true {
+
 		if fobj.borrow().get_func().vmf.script {
-			jscall_script(rt, argc);
+			jscall_script(rt, argc)?;
 		} else {
-			jscall_function(rt, argc);
-		}
+			jscall_function(rt, argc)?;
+		};
+
 	} else if fobj.borrow().is_builtin() == true {
 		jscall_builtin(rt, argc);
 	} else {
         panic!("Can't call none function object");
 	}
 	
-	return None;
+	return Ok(());
 }
