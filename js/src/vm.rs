@@ -850,12 +850,14 @@ impl JsRuntime {
 	}
 }
 
+
 fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 	assert!(rt.stack.len() > 0);
 	let mut pc:usize = 0;
 	let bot:usize = rt.stack.len() - 1;
 
 	let mut with_exception: Option<JsException> = None;
+	let mut catch_scopes: Vec<(usize, usize)> = Vec::new();
 
 	loop {
 		let opcode = func.opcode(&mut pc);
@@ -1358,10 +1360,12 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction) -> Result<(), JsException> {
 			/* Try and Catch */		
 			// TODO	
 			OpcodeType::OP_TRY => {
-				panic!("TODO: exception support!");
+				let catch_block = func.address(&mut pc);
+				catch_scopes.push((pc, rt.stack.len()));
+				pc = catch_block;
 			},
 			OpcodeType::OP_ENDTRY => {				
-				panic!("TODO: exception support!");
+				panic!("TODO: exception support!");	
 			},
 			OpcodeType::OP_CATCH => {				
 				panic!("TODO: exception support!");		
