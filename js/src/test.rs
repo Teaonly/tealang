@@ -8,7 +8,7 @@ use ast::*;
 
 fn test_ast() {
     let script = r#"
-        a();
+        a()
     "#;
 
     let result = build_ast_from_script(script);
