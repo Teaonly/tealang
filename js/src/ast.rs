@@ -1076,6 +1076,5 @@ mod test {
         let result = build_ast_from_script(script).unwrap();
         println!("{:?}", result);
     }
-
-
+    
 }

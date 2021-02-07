@@ -713,7 +713,8 @@ impl JsRuntime {
 	}
 
 	pub fn new_closure(&mut self, f: SharedFunction) {
-		let fobj = SharedObject_new(JsObject::new_function(f.clone(), self.cenv.clone()));		
+		let fobj = SharedObject_new(JsObject::new_function(f.clone(), self.cenv.clone()));	
+		fobj.borrow_mut().prototype = Some(self.prototypes.function_prototype.clone());
 
 		let v = SharedValue::new_number(f.numparams as f64);
 		self.defproperty(fobj, "length", v,  JsPropertyAttr::READONLY_DONTENUM_DONTCONF, None, None);		
