@@ -8,7 +8,8 @@ use ast::*;
 
 fn test_ast() {
     let script = r#"
-        a()
+        ;
+        var isPrime = true;
     "#;
 
     let result = build_ast_from_script(script);

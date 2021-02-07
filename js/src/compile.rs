@@ -1112,6 +1112,9 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
         AstType::STM_EMPTY => {
             // do nothing
         },
+        AstType::STM_VAR => {
+            compile_varinit(f, stm.a());
+        },
         AstType::STM_IF => {
             if stm.c.is_some() {
                 compile_exp(f, stm.a.as_ref().unwrap());
