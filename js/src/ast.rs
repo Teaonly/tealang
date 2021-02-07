@@ -139,6 +139,14 @@ fn tk_expect(tkr: &mut Tokenlizer, tkt: TokenType) -> Result<Token, String> {
     return Ok(ntk);
 }
 
+fn tk_lookahead(tkr: &mut Tokenlizer, tkt: TokenType) -> Result<bool, String> {
+    let fwd = tkr.forward()?;
+    if fwd.tk_type == tkt {
+        return Ok(true);
+    }
+    return Ok(false);
+}
+
 fn ast_identifier(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let id = tk_expect(tkr, TokenType::TK_IDENTIFIER)?;
     let node = AstNode::new_string(AstType::AST_IDENTIFIER, tkr.line(), &id.tk_value.unwrap());
@@ -991,7 +999,7 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         let stm = AstNode::new_a(AstType::STM_VAR, tkr.line(), lst);
         return Ok(stm);
 
-    } else if tk_accept(tkr, TokenType::TK_IDENTIFIER)? {
+    } else if tk_lookahead(tkr, TokenType::TK_IDENTIFIER)? {
         let mut a = ast_expression(tkr)?;
         if a.ast_type == AstType::EXP_IDENTIFIER {
             if tk_accept(tkr, TokenType::TK_COLON)? {
@@ -1002,7 +1010,7 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
             }
         }
         ast_semicolon(tkr)?;
-        return Ok(a);
+        return Ok(a);        
     }
 
     let stm = ast_expression(tkr)?;

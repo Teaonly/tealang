@@ -8,6 +8,15 @@ use ast::*;
 
 fn test_ast() {
     let script = r#"
+        a();
+    "#;
+
+    let result = build_ast_from_script(script);
+    println!("{:?}", result);
+}
+
+fn test_token() {
+    let script = r#"
     function bubbleSort(arr){
         //start the endIndex at the last index of the array
         let endIndex = arr.length - 1;
@@ -40,50 +49,43 @@ fn test_ast() {
         }    
         return arr;
     }
-    "#;
 
-    let result = build_ast_from_script(script).unwrap();
-    println!("{:?}", result);
-}
+    // program to check if a number is prime or not
+    // take input from the user
+    const number = parseInt(prompt("Enter a positive number: "));
+    var isPrime = true;
 
-fn test_token() {
-    let script = r#"
-        // program to check if a number is prime or not
-        // take input from the user
-        const number = parseInt(prompt("Enter a positive number: "));
-        var isPrime = true;
+    if ( number >= 1.342E+3+45.01 ) {
+        console.log("number is too bigger");
+    }
 
-        if ( number >= 1.342E+3+45.01 ) {
-            console.log("number is too bigger");
-        }
+    // check if number is equal to 1
+    if (number === 1) {
+        console.log("1 is neither prime nor composite number.");
+    }
 
-        // check if number is equal to 1
-        if (number === 1) {
-            console.log("1 is neither prime nor composite number.");
-        }
+    // check if number is greater than 1
+    else if (number > 1) {
 
-        // check if number is greater than 1
-        else if (number > 1) {
-
-            // looping through 2 to number-1
-            for (var i = 2; i < number; i++) {
-                if (number % i == 0) {
-                    isPrime = false;
-                    break;
-                }
-            }
-
-            if (isPrime) {
-                console.log('${number} is a prime number');
-            } else {
-                console.log('${number} is a not prime number');
+        // looping through 2 to number-1
+        for (var i = 2; i < number; i++) {
+            if (number % i == 0) {
+                isPrime = false;
+                break;
             }
         }
 
-        // check if number is less than 1
-        else {
-            console.log("The number is not a prime number.");
+        if (isPrime) {
+            console.log('${number} is a prime number');
+        } else {
+            console.log('${number} is a not prime number');
         }
+    }
+
+    // check if number is less than 1
+    else {
+        console.log("The number is not a prime number.");
+    }    
     "#;
 
     let mut tokens = Tokenlizer::new(script);
@@ -103,6 +105,6 @@ fn test_token() {
 }
 
 pub fn main() {
-    test_token();
+    //test_token();
     test_ast();
 }
