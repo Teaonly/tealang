@@ -10,7 +10,7 @@ name = "ezjs"
 path = "src/lib.rs"
 
 [[bin]]
-name = "repl"
-path = "src/repl.rs"
+name = "test"
+path = "src/test.rs"
 
 [dependencies]
