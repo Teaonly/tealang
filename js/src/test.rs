@@ -8,17 +8,10 @@ use ast::*;
 
 fn test_ast() {
     let script = r#"
-        var number = parseInt(prompt("Enter a positive number: "));
-        var isPrime = true;
-
-        if ( number >= 1.342E3+45.01 ) {
-            console.log("number is too bigger");
-        }
-
-        var afunc =  function bubbleSort(arr){
+        var afunc = function (arr) {
             //start the endIndex at the last index of the array
-            let endIndex = arr.length - 1;
-            return attr;
+            var endIndex = arr.length - 1;
+            return endIndex;
         }
     "#;
 

@@ -318,9 +318,9 @@ fn ast_arguments(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
 fn ast_formula_funexp(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let a = ast_identifier_opt(tkr)?;
-    tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
-    let b = ast_parameters(tkr)?;
     tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;
+    let b = ast_parameters(tkr)?;
+    tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
     let c = ast_funbody(tkr)?;
     let node = AstNode::new_a_b_c(AstType::EXP_FUN, tkr.line(), a, b, c);
     return Ok(node);
@@ -924,15 +924,18 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         return Ok(stm);
 
     } else if tk_accept(tkr, TokenType::TK_RETURN)? {
-        let ntk = tkr.next()?;
-        if ntk.tk_type != TokenType::TK_SEMICOLON && ntk.tk_type != TokenType::TK_BRACE_RIGHT {
+
+        let ntk = tkr.forward()?;
+        if ntk.tk_type != TokenType::TK_SEMICOLON && ntk.tk_type != TokenType::TK_BRACE_RIGHT {            
             let a = ast_expression(tkr)?;
             let stm = AstNode::new_a(AstType::STM_RETURN, tkr.line(), a);
             return Ok(stm);
         }
+
         ast_semicolon(tkr)?;
         let a = AstNode::new(AstType::AST_NULL, tkr.line());
         let stm = AstNode::new_a(AstType::STM_RETURN, tkr.line(), a);
+
         return Ok(stm);
         
     } else if tk_accept(tkr, TokenType::TK_SWITCH)? {
@@ -1028,7 +1031,6 @@ fn ast_funbody(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         tail = tail.b.as_mut().unwrap();
     }
 
-    tk_expect(tkr, TokenType::TK_BRACE_RIGHT)?;
     return Ok(head);
 }
 
