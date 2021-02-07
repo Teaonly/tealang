@@ -684,7 +684,7 @@ mod tests {
             // program to check if a number is prime or not
             // take input from the user
             const number = parseInt(prompt("Enter a positive number: "));
-            let isPrime = true;
+            var isPrime = true;
 
             if ( number >= 1.342E+3+45.01 ) {
                 console.log("number is too bigger");
@@ -699,7 +699,7 @@ mod tests {
             else if (number > 1) {
 
                 // looping through 2 to number-1
-                for (let i = 2; i < number; i++) {
+                for (var i = 2; i < number; i++) {
                     if (number % i == 0) {
                         isPrime = false;
                         break;
