@@ -14,6 +14,12 @@ fn test_ast() {
         if ( number >= 1.342E3+45.01 ) {
             console.log("number is too bigger");
         }
+
+        var afunc =  function bubbleSort(arr){
+            //start the endIndex at the last index of the array
+            let endIndex = arr.length - 1;
+            return attr;
+        }
     "#;
 
     let result = build_ast_from_script(script);
