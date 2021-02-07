@@ -308,7 +308,7 @@ fn next_general_token (script: &str, cursor: usize) -> Result<(GeneralToken, usi
                         }
                         if value == "/*" {
                             tkbuf.clear();
-                            ps = ps::PS_COMMENT_LINE;
+                            ps = ps::PS_COMMENT_BLOCK;
                             continue;
                         }
                         if check_punct(&value) == true {

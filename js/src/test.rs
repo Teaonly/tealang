@@ -33,6 +33,8 @@ fn test_token() {
             endIndex--;
         }
         */ 
+
+        "hello";
     "#;
 
     let mut tokens = Tokenlizer::new(script);
