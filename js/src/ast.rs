@@ -390,7 +390,7 @@ fn ast_formula_callexp(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
 fn ast_formula_postfix(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let a = ast_formula_callexp(tkr)?;
-    if tkr.new_line() == false {
+    if tkr.new_line()? == false {
         if tk_accept(tkr, TokenType::TK_INC)? {
             let node = AstNode::new_a(AstType::EXP_POSTINC, tkr.line(), a);
             return Ok(node);
@@ -746,7 +746,7 @@ fn ast_caseclause(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 }
 
 fn ast_semicolon(tkr: &mut Tokenlizer) -> Result<(), String> {
-    if tkr.new_line() {
+    if tkr.new_line()? {
         return Ok(());
     }
 
@@ -755,6 +755,7 @@ fn ast_semicolon(tkr: &mut Tokenlizer) -> Result<(), String> {
         tkr.next()?;
         return Ok(());
     }
+
     if lookahead.tk_type == TokenType::TK_BRACE_RIGHT {
         return Ok(());
     }

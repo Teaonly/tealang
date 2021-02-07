@@ -565,7 +565,7 @@ pub struct Tokenlizer<'a> {
     script : &'a str,
     cursor : usize,
     line : u32,
-    forward_: LinkedList<Token>,
+    forward_: LinkedList<(Token, bool)>,
 }
 
 impl<'a> Tokenlizer<'a> {
@@ -580,72 +580,74 @@ impl<'a> Tokenlizer<'a> {
 
     pub fn next(&mut self) -> Result<Token, String> {
         if self.forward_.len() > 0 {
-            let n = self.forward_.pop_front().unwrap();
+            let n = self.forward_.pop_front().unwrap().0;
             return Ok(n);
         }
 
         self.fetch_next()?;
 
-        let n = self.forward_.pop_front().unwrap();
+        let n = self.forward_.pop_front().unwrap().0;
         return Ok(n);
     }
 
     pub fn forward(&mut self) -> Result<Token, String> {
         if self.forward_.len() > 0 {
-            let n = self.forward_.front().unwrap().clone();
+            let n = self.forward_.front().unwrap().0.clone();
             return Ok(n);
         }
 
         self.fetch_next()?;
 
-        let n = self.forward_.front().unwrap().clone();
+        let n = self.forward_.front().unwrap().0.clone();
         return Ok(n);
     }
 
-    pub fn new_line(&self) -> bool {
-        let result = get_next_token(self.script, self.cursor, self.line);
-        if result.is_ok() {
-            let (token, _) = result.unwrap();
-            if token.tk_type == TokenType::TK_NEWLN {
-                return true;
-            }
+    pub fn new_line(&mut self) -> Result<bool, String> {
+        if self.forward_.len() > 0 {
+            let n = self.forward_.front().unwrap().1;
+            return Ok(n);
         }
-        return false;
+
+        self.fetch_next()?;
+
+        let n = self.forward_.front().unwrap().1;
+        return Ok(n);
     }
 
     pub fn line(&self) -> u32 {
         return self.line;
     }
 
-    fn split_identifier(&mut self, token: Token) {
+    fn split_identifier(&mut self, token: Token, new_line: bool) {
         assert!(token.tk_type == TokenType::TK_IDENTIFIER);
 
         let src_line = token.src_line;
         let ident = token.tk_value.unwrap();
 
         let ids : Vec<String> = ident.replace(".", " . ").split_whitespace().map(|x| x.to_string()).collect();
-        for id in ids {
+        for i in 0..ids.len() {
+            let id = &ids[i];
             if id != "." {
                 let tk = Token {
                     tk_type: TokenType::TK_IDENTIFIER,
-                    tk_value: Some(id),
+                    tk_value: Some(id.to_string()),
                     src_line: src_line,
                 };
-                self.forward_.push_back(tk);
+                self.forward_.push_back((tk, new_line && i == 0));
             } else {
                 let tk = Token {
                     tk_type: TokenType::TK_POINT,
                     tk_value: None,
                     src_line: src_line,
                 };
-                self.forward_.push_back(tk);
+                self.forward_.push_back((tk, new_line && i == 0));
             }
         }
     }
 
     fn fetch_next(&mut self) -> Result<(), String> {
-        loop {
-
+        let mut new_line = false;
+        loop {            
             let result = get_next_token(self.script, self.cursor, self.line);
             if result.is_ok() {
                 let (token, (cursor, line)) = result.unwrap();
@@ -654,16 +656,17 @@ impl<'a> Tokenlizer<'a> {
                     self.line = line;
                 }
 
-                // skiped new line 
+                // skiped new line                
                 if token.tk_type == TokenType::TK_NEWLN {
+                    new_line = true;
                     continue;
                 }
 
                 if token.tk_type != TokenType::TK_IDENTIFIER {
-                    self.forward_.push_back(token);
+                    self.forward_.push_back((token, new_line));
                     return Ok(());
                 }
-                self.split_identifier(token);
+                self.split_identifier(token, new_line);
 
                 return Ok(());
             }

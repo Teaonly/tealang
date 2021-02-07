@@ -10,6 +10,7 @@ use std::rc::Rc;
 #[allow(non_camel_case_types)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum TokenType {
+	TK_NEWLN = -2,
 	TK_EOF = -1,
 
 	/* immedial primitive */
@@ -56,7 +57,6 @@ pub enum TokenType {
     TK_BRACKET_LEFT,	// []
     TK_BRACKET_RIGHT,
 
-    TK_NEWLN,
     TK_SEMICOLON,
     TK_COMMA,
 	TK_POINT,
