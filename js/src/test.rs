@@ -8,8 +8,12 @@ use ast::*;
 
 fn test_ast() {
     let script = r#"
-        ;
+        var number = parseInt(prompt("Enter a positive number: "));
         var isPrime = true;
+
+        if ( number >= 1.342E3+45.01 ) {
+            console.log("number is too bigger");
+        }
     "#;
 
     let result = build_ast_from_script(script);
