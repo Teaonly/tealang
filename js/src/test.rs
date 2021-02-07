@@ -27,15 +27,12 @@ fn test_ast() {
 fn test_token() {
     let script = r#"
         var a = b
-        var afunc = function (arr) {
-            //start the endIndex at the last index of the array
-            var endIndex = arr.length - 1;
-            return endIndex;
-        }
 
+        /*
         while(endIndex > 0){            
             endIndex--;
-        } 
+        }
+        */ 
     "#;
 
     let mut tokens = Tokenlizer::new(script);
@@ -55,6 +52,7 @@ fn test_token() {
 }
 
 pub fn main() {
-    //test_token();
-    test_ast();
+    // TODO for commnets
+    test_token();
+    //test_ast();
 }
