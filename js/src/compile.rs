@@ -175,7 +175,7 @@ impl VMFunction {
 
     fn emitlocal(&mut self, oploc: OpcodeType, opvar: OpcodeType, var: &str) {
         let (found, i) =  self.findlocal(var);
-        if found {
+        if !found {
             self.emitstring(opvar, var);
         } else {
             self.emitop(oploc);
@@ -1386,3 +1386,19 @@ pub fn build_function_from_code(script: &str) -> Result<VMFunction, String> {
     return Ok(func);
 }
 
+pub fn dump_function(f: &VMFunction) {
+    println!("-------------------------------");
+    println!("script: {}", f.script);
+    println!("---num----");
+    for n in &f.num_tab {
+        println!("{}", n);
+    }
+    println!("---str----");
+    for n in &f.str_tab {
+        println!("{}", n);
+    }
+    println!("---var----");
+    for n in &f.var_tab {
+        println!("{}", n);
+    }
+}
