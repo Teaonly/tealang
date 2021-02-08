@@ -25,7 +25,7 @@ impl<'a> Iterator for AstListIterator<'a> {
         }
 
         let node = self.cursor.take().unwrap();
-        if node.b.is_none() {
+        if !node.b.is_none() {
             self.cursor = Some( node.b.as_ref().unwrap() );
         }
         return Some(node.a.as_ref().unwrap());
@@ -339,7 +339,7 @@ impl VMFunction {
         }
 
         if node.ast_type == AstType::EXP_VAR {
-            self.addlocal(node);
+            self.addlocal(node.a());
         }
 
         if node.a.is_some() {

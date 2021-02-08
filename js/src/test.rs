@@ -1,10 +1,32 @@
 mod common;
 mod token;
 mod ast;
+mod compile;
 
 use common::*;
 use token::*;
 use ast::*;
+use compile::*;
+
+fn test_compile() {
+    let script = r#"
+        var a = b
+        var afunc = function (arr) {
+            //start the endIndex at the last index of the array
+            var endIndex = arr.length - 1;
+            return endIndex;
+        }
+
+        while(endIndex > 0) {            
+            endIndex--;
+        } 
+    "#;
+
+    if let Ok(vm) = build_function_from_code(script) {
+        println!("Hello World!");
+    }
+    
+}
 
 fn test_ast() {
     let script = r#"
@@ -15,7 +37,7 @@ fn test_ast() {
             return endIndex;
         }
 
-        while(endIndex > 0){            
+        while(endIndex > 0) {            
             endIndex--;
         } 
     "#;
@@ -27,14 +49,15 @@ fn test_ast() {
 fn test_token() {
     let script = r#"
         var a = b
+        var afunc = function (arr) {
+            //start the endIndex at the last index of the array
+            var endIndex = arr.length - 1;
+            return endIndex;
+        }
 
-        /*
         while(endIndex > 0){            
             endIndex--;
-        }
-        */ 
-
-        "hello";
+        } 
     "#;
 
     let mut tokens = Tokenlizer::new(script);
@@ -54,7 +77,7 @@ fn test_token() {
 }
 
 pub fn main() {
-    // TODO for commnets
-    test_token();
+    //test_token();
     //test_ast();
+    test_compile();
 }
