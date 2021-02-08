@@ -10,7 +10,16 @@ use compile::*;
 
 fn test_compile() {
     let script = r#"
-        var a = b;
+        var a = b
+        var afunc = function (arr) {
+            //start the endIndex at the last index of the array
+            var endIndex = arr.length - 1;
+            return endIndex;
+        }
+
+        while(endIndex > 0) {            
+            endIndex--;
+        } 
     "#;
 
     if let Ok(vm) = build_function_from_code(script) {

@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::rc::Rc;
 use crate::common::*;
 use crate::ast::*;
@@ -1400,5 +1401,14 @@ pub fn dump_function(f: &VMFunction) {
     println!("---var----");
     for n in &f.var_tab {
         println!("{}", n);
+    }
+    println!("---code----");
+    
+    for i in &f.code {
+        if let Ok(op) = OpcodeType::try_from(*i) {
+			println!("OP: {:?} V: {}", op, i);
+		} else {
+            println!("V: {}", i);
+        }
     }
 }
