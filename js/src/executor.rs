@@ -1,88 +1,51 @@
-use std::convert::TryFrom;
 use std::rc::Rc;
 use std::cmp;
 
 use crate::common::*;
+use crate::value::*;
 
+impl JsEnvironment {
+	fn init_var(&mut self, name: &str, jv: SharedValue) {
+		let prop = JsProperty {
+			value: jv,
+			attr: JsPropertyAttr::DONTENUM_DONTCONF,
+			getter: None,
+			setter: None,
+		};
+		if self.variables.put_property(name) {
+			self.variables.set_property(name, prop);
+		}
+	}
+	fn new_from(outer: SharedScope) -> SharedScope {
+		let env = JsEnvironment {
+			variables: JsObject::new(),
+			outer: Some(outer),
+		};
+		SharedScope_new(env)
+	}
 
+	fn fetch_outer(&self) -> SharedScope {
+		if let Some(scope) = &self.outer {
+			return scope.clone();
+		}
+		panic!("Can't fetch outer from env!")
+	}
+	
+	fn query_variable(&self, name: &str) -> bool {
+		if let Some((_rprop, own)) = self.variables.query_property(name) {
+			if own {
+				return true;
+			}
+		}
+		return false;
+	}
 
-impl VMFunction {
-	pub fn opcode(&self, pc:&mut usize) -> OpcodeType {
-		if *pc >= self.code.len() {
-			panic!("fetch opcode out of code");
-		}
-		if let Ok(op) = OpcodeType::try_from(self.code[*pc]) {
-			*pc = *pc + 1;
-			return op;
-		}
-		panic!("fetch opcode error!");
-	}
-	pub fn int(&self, pc:&mut usize) -> f64 {
-		if *pc >= self.code.len() {
-			panic!("fetch raw out of code");
-		}
-		let value = self.code[*pc] as f64;
-		*pc = *pc + 1;
-		return value;
-	}
-	pub fn number(&self, pc:&mut usize) -> f64 {
-		if *pc >= self.code.len() {
-			panic!("fetch raw out of code");
-		}
-		let id = self.code[*pc] as usize;
-		if id > self.num_tab.len() {
-			panic!("number out of vm");
-		}
-		let value = self.num_tab[id];
-
-		*pc = *pc + 1;
-		return value;
-	}
-	pub fn var(&self, pc:&mut usize) -> &str {
-		if *pc >= self.code.len() {
-			panic!("fetch raw out of code");
-		}
-		let id = self.code[*pc] as usize;
-		if id > self.var_tab.len() {
-			panic!("var out of vm");
-		}
-
-		*pc = *pc + 1;
-		return &self.var_tab[id];
-	}
-	pub fn string(&self, pc:&mut usize) -> &str {
-		if *pc >= self.code.len() {
-			panic!("fetch raw out of code");
-		}
-		let id = self.code[*pc] as usize;
-		if id > self.str_tab.len() {
-			panic!("string out of vm");
-		}
-
-		*pc = *pc + 1;
-		return &self.str_tab[id];
-	}
-	pub fn function(&self, pc:&mut usize) -> SharedFunction {
-		if *pc >= self.code.len() {
-			panic!("fetch function out of code");			
-		}
-		let id = self.code[*pc] as usize;
-		if id > self.func_tab.len() {
-			panic!("function out of vm");
-		}
-		*pc = *pc + 1;
-		return self.func_tab[id].clone();
-	}
-	pub fn address(&self, pc:&mut usize) -> usize {
-		let addr = self.code[*pc] as usize + (self.code[*pc+1] as usize) << 16;
-		*pc = *pc + 2;
-		return addr;
-	}
 }
+
 
 impl JsRuntime {
 	/* environment's variables */
-	pub fn delvariable(&mut self, name: &str) -> bool {
+	fn delvariable(&mut self, name: &str) -> bool {
 		let mut env: SharedScope = self.cenv.clone();
 		loop {			
 			let r = env.borrow().query_variable(name);
@@ -103,7 +66,7 @@ impl JsRuntime {
 		}
 	}
 	
-	pub fn getvariable(&mut self, name: &str) -> Result<bool, JsException> {
+	fn getvariable(&mut self, name: &str) -> Result<bool, JsException> {
 		let mut env: SharedScope = self.cenv.clone();
 		loop {			
 			let r = env.borrow().query_variable(name);
@@ -126,7 +89,7 @@ impl JsRuntime {
 		}
 	}
 
-	pub fn setvariable(&mut self, name: &str) -> Result<(), JsException> {
+	fn setvariable(&mut self, name: &str) -> Result<(), JsException> {
 		let mut env: SharedScope = self.cenv.clone();
 		loop {
 			let r = env.borrow().query_variable(name);
@@ -163,7 +126,7 @@ impl JsRuntime {
 
 	/* properties operation */
     // make a new  or replace proptery o for object
-    pub fn defproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue,
+    fn defproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue,
 		attr:JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) {
 
 		let mut target = target_.borrow_mut();
@@ -207,7 +170,7 @@ impl JsRuntime {
 	}
 
 	// change value of the proptery for object
-	pub fn setproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue) -> Result<(), JsException> {		
+	fn setproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue) -> Result<(), JsException> {		
 		let target = target_.borrow_mut();
 		let target_ = target_.clone();
 
@@ -244,7 +207,7 @@ impl JsRuntime {
 	}	
 
 	// get value from the proptery for object
-	pub fn hasproperty(&mut self, target_: SharedObject, name: &str) -> Result<bool, JsException> {		
+	fn hasproperty(&mut self, target_: SharedObject, name: &str) -> Result<bool, JsException> {		
 		let target = target_.borrow_mut();
 		let target_ = target_.clone();
 
@@ -289,13 +252,13 @@ impl JsRuntime {
 		}
 		return Ok(false);
 	}
-	pub fn getproperty(&mut self, target: SharedObject, name: &str) -> Result<(), JsException> {
+	fn getproperty(&mut self, target: SharedObject, name: &str) -> Result<(), JsException> {
 		if !self.hasproperty(target, name)? {
 			self.push_undefined();
 		}
 		return Ok(());
 	}	
-	pub fn delproperty(&mut self, target_: SharedObject, name: &str) -> bool {		
+	fn delproperty(&mut self, target_: SharedObject, name: &str) -> bool {		
 		let mut target = target_.borrow_mut();
 
 		match target.value {
@@ -319,7 +282,7 @@ impl JsRuntime {
 	}	
 
 	/* item + item */
-	pub fn concat_add(&mut self) {
+	fn concat_add(&mut self) {
 		let x = self.top(-2);
 		let y = self.top(-1);
 		self.pop(2);
@@ -338,7 +301,7 @@ impl JsRuntime {
 	}
 
 	/* item op item */
-	pub fn equal(&mut self) -> bool {
+	fn equal(&mut self) -> bool {
 		let x = self.top(-2);
 		let y = self.top(-1);
 		self.pop(2);
@@ -423,7 +386,7 @@ impl JsRuntime {
 		
 	}
 
-	pub fn strict_equal(&mut self) -> bool {
+	fn strict_equal(&mut self) -> bool {
 		let x = self.top(-2);
 		let y = self.top(-1);
 		self.pop(2);
@@ -484,7 +447,7 @@ impl JsRuntime {
 		return false;
 	}
 
-	pub fn compare_item(&mut self) -> Option<i32> {
+	fn compare_item(&mut self) -> Option<i32> {
 		let x = self.top(-2);
 		let y = self.top(-1);
 		self.pop(2);
@@ -506,7 +469,7 @@ impl JsRuntime {
 		return None;
 	}
 
-	pub fn instanceof(&mut self) -> Result<bool, JsException> {
+	fn instanceof(&mut self) -> Result<bool, JsException> {
 		let x = self.top(-2);
 		let y = self.top(-1);
 		self.pop(2);
@@ -555,7 +518,7 @@ impl JsRuntime {
 	}
 
 	/* convert object to string */
-	pub fn to_string(&mut self, target: SharedValue) -> Result<String, JsException> {
+	fn to_string(&mut self, target: SharedValue) -> Result<String, JsException> {
 		
 		/* try to executing toString() */
 		self.getproperty(target.get_object(), "toString")?;
@@ -577,7 +540,7 @@ impl JsRuntime {
 	}
 
 	/* create new object */
-	pub fn new_call(&mut self, argc: usize) -> Result<(), JsException> {
+	fn new_call(&mut self, argc: usize) -> Result<(), JsException> {
 		let obj = self.top(-1 - argc as isize).get_object();
 		let fobj = obj.borrow();
 		let obj = obj.clone();
@@ -623,7 +586,7 @@ impl JsRuntime {
 		return Ok(());
 	}
 
-	pub fn new_closure(&mut self, f: SharedFunction) {
+	fn new_closure(&mut self, f: SharedFunction) {
 		let fobj = SharedObject_new(JsObject::new_function(f.clone(), self.cenv.clone()));	
 		fobj.borrow_mut().prototype = Some(self.prototypes.function_prototype.clone());
 
@@ -634,7 +597,7 @@ impl JsRuntime {
 	/* Exceptions */
 
 	/* stack operations */
-	pub fn top(&self, offset: isize) -> SharedValue {
+	fn top(&self, offset: isize) -> SharedValue {
 		if offset < 0 {
 			let offset: usize = (-1 * offset) as usize;
 			let pos = self.stack.len() + offset;
@@ -642,36 +605,36 @@ impl JsRuntime {
 		}
 		panic!("top access only support negtive offset!")
 	}
-	pub fn push(&mut self, jv: SharedValue) {
+	fn push(&mut self, jv: SharedValue) {
 		self.stack.push(jv);
 	}
-	pub fn push_undefined(&mut self) {
+	fn push_undefined(&mut self) {
 		let jv = SharedValue::new_undefined();
 		self.stack.push(jv);
 	}
-	pub fn push_null(&mut self) {
+	fn push_null(&mut self) {
 		let jv = SharedValue::new_null();
 		self.stack.push(jv);
 	}
-	pub fn push_boolean(&mut self, v: bool) {
+	fn push_boolean(&mut self, v: bool) {
 		let jv = SharedValue::new_boolean(v);
 		self.stack.push(jv);
 	}
-	pub fn push_number(&mut self, v:f64) {
+	fn push_number(&mut self, v:f64) {
 		let jv = SharedValue::new_number(v);
 		self.stack.push(jv);
 	}
-	pub fn push_string(&mut self, v:String) {
+	fn push_string(&mut self, v:String) {
 		let jclass = JsClass::string(v);
 		let jobj = JsObject::new_with_class(self.prototypes.string_prototype.clone(), jclass);
 		let jv = SharedValue::new_object(jobj);
 		self.stack.push(jv);
 	}
-	pub fn push_object(&mut self, target: SharedObject) {		
+	fn push_object(&mut self, target: SharedObject) {		
 		let jv = SharedValue::new_sobject(target);
 		self.stack.push(jv);
 	}
-	pub fn push_from(&mut self, from: usize) {
+	fn push_from(&mut self, from: usize) {
 		if from >= self.stack.len() {
 			panic!("stack underflow! @ push_from");
 		}
@@ -679,7 +642,7 @@ impl JsRuntime {
 		self.stack.push(jv);
 	}
 	/* opcode helper*/
-	pub fn pop(&mut self, mut n: usize) {
+	fn pop(&mut self, mut n: usize) {
 		if n > self.stack.len() {
 			panic!("stack underflow! @ pop");
 		}
@@ -688,7 +651,7 @@ impl JsRuntime {
 			n = n - 1;
 		}
 	}
-	pub fn dup(&mut self) {
+	fn dup(&mut self) {
 		if let Some(ref v) = self.stack.first() {
 			let nv: SharedValue = SharedValue::clone(v);
 			self.stack.push(nv);
@@ -696,7 +659,7 @@ impl JsRuntime {
 			panic!("stack underflow! @ dup");
 		}
 	}
-	pub fn dup2(&mut self) {
+	fn dup2(&mut self) {
 		if self.stack.len() < 2 {
 			panic!("stack underflow! @ dup2");
 		}
@@ -706,7 +669,7 @@ impl JsRuntime {
 		self.stack.push(nv1);
 		self.stack.push(nv2);
 	}
-	pub fn rot(&mut self, n: usize) {
+	fn rot(&mut self, n: usize) {
 		if self.stack.len() < n {
 			panic!("stack underflow! @ rot");
 		}
@@ -715,7 +678,7 @@ impl JsRuntime {
 			self.stack.swap(top-1-i, top-2-i);
 		}
 	}
-	pub fn rot2(&mut self) {
+	fn rot2(&mut self) {
 		if self.stack.len() < 2 {
 			panic!("stack underflow! @ rot2");
 		}
@@ -723,7 +686,7 @@ impl JsRuntime {
 		let top = self.stack.len();
 		self.stack.swap(top-1, top-2);
 	}
-	pub fn rot3(&mut self) {
+	fn rot3(&mut self) {
 		if self.stack.len() < 3 {
 			panic!("stack underflow! @ rot3");
 		}
@@ -732,7 +695,7 @@ impl JsRuntime {
 		self.stack.swap(top-1, top-2);
 		self.stack.swap(top-2, top-3);
 	}
-	pub fn rot4(&mut self) {
+	fn rot4(&mut self) {
 		if self.stack.len() < 4 {
 			panic!("stack underflow! @ rot4");
 		}
@@ -742,7 +705,7 @@ impl JsRuntime {
 		self.stack.swap(top-2, top-3);
 		self.stack.swap(top-3, top-4);
 	}
-	pub fn rot3pop2(&mut self) {
+	fn rot3pop2(&mut self) {
 		if self.stack.len() < 3 {
 			panic!("stack underflow! @ rot3pop2");
 		}
@@ -751,7 +714,7 @@ impl JsRuntime {
 		self.stack[top-3] = self.stack[top-1].clone(); 
 		self.pop(2);
 	}
-	pub fn rot2pop1(&mut self) {
+	fn rot2pop1(&mut self) {
 		if self.stack.len() < 2 {
 			panic!("stack underflow! @ rot3pop2");
 		}
