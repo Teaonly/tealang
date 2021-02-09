@@ -1114,7 +1114,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             // do nothing
         },
         AstType::STM_VAR => {
-            assert!( stm.a().ast_type == EXP_VAR);
+            assert!( stm.a().ast_type == AstType::EXP_VAR);
             compile_varinit(f, stm.a());
         },
         AstType::STM_IF => {

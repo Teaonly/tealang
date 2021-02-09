@@ -134,7 +134,7 @@ fn tk_accept(tkr: &mut Tokenlizer, tkt: TokenType) -> Result<bool, String> {
 fn tk_expect(tkr: &mut Tokenlizer, tkt: TokenType) -> Result<Token, String> {
     let ntk = tkr.next()?;
     if ntk.tk_type != tkt {
-        return Err(format!("AST error: except {:?} but got {:?} @ {}", tkt, ntk.tk_type, ntk.src_line));
+        return Err(format!("AST error: except {:?} but got {:?} @ {}", tkt, ntk.tk_type, tkr.line()));
     }
     return Ok(ntk);
 }
@@ -618,7 +618,7 @@ fn ast_formula(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         let b = ast_assignment(tkr)?;
         tk_expect(tkr, TokenType::TK_COLON)?;
         let c = ast_assignment(tkr)?;
-        a = AstNode::new_a_b_c(AstType::EXP_COND, a.src_line, a, b, c);
+        a = AstNode::new_a_b_c(AstType::EXP_COND, tkr.line(), a, b, c);
     }
     return Ok(a);
 }
@@ -628,51 +628,51 @@ fn ast_assignment(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
     if tk_accept(tkr, TokenType::TK_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS, tkr.line(), a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_MUL_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_MUL, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_MUL, tkr.line(), a, b);
         return Ok(node);
     }  else if tk_accept(tkr, TokenType::TK_DIV_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_DIV, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_DIV, tkr.line(), a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_MOD_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_MOD, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_MOD, tkr.line(), a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_ADD_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_ADD, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_ADD, tkr.line(), a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_SUB_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_SUB, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_SUB, tkr.line(), a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_SHL_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_SHL, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_SHL, tkr.line(), a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_SHR_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_SHR, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_SHR, tkr.line(), a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_USHR_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_USHR, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_USHR, tkr.line(), a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_AND_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_BITAND, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_BITAND, tkr.line(), a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_XOR_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_BITXOR, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_BITXOR, tkr.line(), a, b);
         return Ok(node);
     } else if tk_accept(tkr, TokenType::TK_OR_ASS)? {
         let b = ast_assignment(tkr)?;
-        let node = AstNode::new_a_b(AstType::EXP_ASS_BITOR, a.src_line, a, b);
+        let node = AstNode::new_a_b(AstType::EXP_ASS_BITOR, tkr.line(), a, b);
         return Ok(node);
     }
     return Ok(a);
@@ -691,10 +691,10 @@ fn ast_vardec(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let a = ast_identifier(tkr)?;
     if tk_accept(tkr, TokenType::TK_ASS)? {
         let b = ast_assignment(tkr)?;
-        let exp = AstNode::new_a_b(AstType::EXP_VAR, a.src_line, a, b);
+        let exp = AstNode::new_a_b(AstType::EXP_VAR, tkr.line(), a, b);
         return Ok(exp);
     }
-    let exp = AstNode::new_a(AstType::EXP_VAR, a.src_line, a);
+    let exp = AstNode::new_a(AstType::EXP_VAR, tkr.line(), a);
     return Ok(exp);
 }
 
@@ -712,7 +712,7 @@ fn ast_vardeclist(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 fn ast_parameters(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let n = tkr.forward()?;
     if n.tk_type == TokenType::TK_PAREN_RIGHT {
-        return Ok(AstNode::new(AstType::AST_NULL, n.src_line));
+        return Ok(AstNode::new(AstType::AST_NULL, tkr.line()));
     }
 
     let node = ast_identifier(tkr)?;
@@ -840,7 +840,7 @@ fn ast_caselist(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 fn ast_statement_list(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let tk = tkr.forward()?;
     if tk.tk_type == TokenType::TK_BRACE_RIGHT || tk.tk_type == TokenType::TK_CASE || tk.tk_type == TokenType::TK_DEFAULT {
-        return Ok(AstNode::new(AstType::AST_NULL, tk.src_line));
+        return Ok(AstNode::new(AstType::AST_NULL, tkr.line()));
     }
     let mut head = AstNode::new_list( ast_statement(tkr)?);
 
@@ -861,7 +861,7 @@ fn ast_block(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let leftbrace = tk_expect(tkr, TokenType::TK_BRACE_LEFT)?;
     let a = ast_statement_list(tkr)?;
     tk_expect(tkr, TokenType::TK_BRACE_RIGHT)?;
-    return Ok( AstNode::new_a(AstType::STM_BLOCK, leftbrace.src_line, a) );
+    return Ok( AstNode::new_a(AstType::STM_BLOCK, tkr.line(), a) );
 }
 
 fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
@@ -871,7 +871,7 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     } else if tk_accept(tkr, TokenType::TK_VAR)? {
         let a = ast_vardeclist(tkr)?;
         ast_semicolon(tkr)?;
-        let stm = AstNode::new_a(AstType::STM_VAR, a.src_line, a);
+        let stm = AstNode::new_a(AstType::STM_VAR, tkr.line(), a);
         return Ok(stm);
 
     } else if tk_accept(tkr, TokenType::TK_SEMICOLON)? {
@@ -1042,7 +1042,7 @@ fn ast_fundec(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
     let c = ast_funbody(tkr)?;
 
-    let func = AstNode::new_a_b_c(AstType::AST_FUNDEC, a.src_line, a, b, c);
+    let func = AstNode::new_a_b_c(AstType::AST_FUNDEC, tkr.line(), a, b, c);
     return Ok(func);
 }
 
