@@ -21,6 +21,9 @@ impl JsEnvironment {
 		};
 		SharedScope_new(env)
 	}
+	pub fn target(&self) -> SharedObject {
+		self.variables.clone()
+	}
 
 	fn init_var(&mut self, name: &str, jv: SharedValue) {
 		let prop = JsProperty {
@@ -606,7 +609,7 @@ impl JsRuntime {
 	/* Exceptions */
 
 	/* stack operations */
-	fn top(&self, offset: isize) -> SharedValue {
+	pub fn top(&self, offset: isize) -> SharedValue {
 		if offset < 0 {
 			let offset: usize = (-1 * offset) as usize;
 			let pos = self.stack.len() + offset;
@@ -614,32 +617,32 @@ impl JsRuntime {
 		}
 		panic!("top access only support negtive offset!")
 	}
-	fn push(&mut self, jv: SharedValue) {
+	pub fn push(&mut self, jv: SharedValue) {
 		self.stack.push(jv);
 	}
-	fn push_undefined(&mut self) {
+	pub fn push_undefined(&mut self) {
 		let jv = SharedValue::new_undefined();
 		self.stack.push(jv);
 	}
-	fn push_null(&mut self) {
+	pub fn push_null(&mut self) {
 		let jv = SharedValue::new_null();
 		self.stack.push(jv);
 	}
-	fn push_boolean(&mut self, v: bool) {
+	pub fn push_boolean(&mut self, v: bool) {
 		let jv = SharedValue::new_boolean(v);
 		self.stack.push(jv);
 	}
-	fn push_number(&mut self, v:f64) {
+	pub fn push_number(&mut self, v:f64) {
 		let jv = SharedValue::new_number(v);
 		self.stack.push(jv);
 	}
-	fn push_string(&mut self, v:String) {
+	pub fn push_string(&mut self, v:String) {
 		let jclass = JsClass::string(v);
 		let jobj = JsObject::new_with_class(self.prototypes.string_prototype.clone(), jclass);
 		let jv = SharedValue::new_object(jobj);
 		self.stack.push(jv);
 	}
-	fn push_object(&mut self, target: SharedObject) {		
+	pub fn push_object(&mut self, target: SharedObject) {		
 		let jv = SharedValue::new_sobject(target);
 		self.stack.push(jv);
 	}
