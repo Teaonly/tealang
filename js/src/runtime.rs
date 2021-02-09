@@ -26,7 +26,7 @@ pub fn new_runtime() -> JsRuntime {
 }
 
 pub fn run_script(rt: &mut JsRuntime, vmf: SharedFunction) {
-	assert!( vmf.script == true);	
+	assert!( vmf.script == true);
 	let fobj = SharedObject_new(JsObject::new_function(vmf, rt.genv.clone()));
 	let thiz = rt.genv.borrow().target(); 
 

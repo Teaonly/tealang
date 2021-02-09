@@ -53,6 +53,21 @@ impl JsEnvironment {
 		return false;
 	}
 
+	fn get_variable(&self, name: &str) -> JsProperty {
+		self.variables.borrow().get_property(name)
+	}
+
+	fn put_variable(&self, name: &str) {
+		self.variables.borrow_mut().put_property(name);
+	}
+
+	fn set_variable(&self, name: &str, prop: JsProperty) {
+		self.variables.borrow_mut().set_property(name, prop);
+	}
+
+	fn drop_variable(&self, name: &str) {
+		self.variables.borrow_mut().drop_property(name);
+	}
 }
 
 impl JsRuntime {
@@ -62,11 +77,11 @@ impl JsRuntime {
 		loop {			
 			let r = env.borrow().query_variable(name);
 			if r {
-				let prop = env.borrow_mut().variables.borrow().get_property(name);
+				let prop = env.borrow().get_variable(name);
 				if !prop.configable() {
 					return false;
 				}
-				env.borrow_mut().variables.borrow_mut().drop_property(name);
+				env.borrow().drop_variable(name);
 				return true;
 			}
 
@@ -83,7 +98,7 @@ impl JsRuntime {
 		loop {			
 			let r = env.borrow().query_variable(name);
 			if r {
-				let prop = env.borrow_mut().variables.borrow().get_property(name);
+				let prop = env.borrow().get_variable(name);
 				if prop.getter.is_some() {
 					self.push_object(prop.getter.unwrap().clone());		// function object
 					self.push(prop.value.clone());						// this object
@@ -106,7 +121,7 @@ impl JsRuntime {
 		loop {
 			let r = env.borrow().query_variable(name);
 			if r {
-				let prop = env.borrow_mut().variables.borrow().get_property(name);
+				let prop = env.borrow().get_variable(name);
 				if prop.setter.is_some() {
 					self.push_object(prop.setter.unwrap().clone());		// function object
 					self.push(prop.value.clone());						// this object
@@ -128,10 +143,10 @@ impl JsRuntime {
 		}
 		
 		let value = self.stack.first().unwrap().clone();
-		self.genv.borrow_mut().variables.borrow_mut().put_property(name);
-		let mut prop = self.genv.borrow_mut().variables.borrow().get_property(name);
+		self.genv.borrow().put_variable(name);
+		let mut prop = self.genv.borrow().get_variable(name);
 		prop.value = value;
-		self.genv.borrow_mut().variables.borrow_mut().set_property(name, prop);
+		self.genv.borrow().set_variable(name, prop);
 
 		return Ok(());
 	}
