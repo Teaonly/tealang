@@ -10,11 +10,10 @@ use compile::*;
 
 fn test_compile() {
     let script = r#"
-        var a = b
-
-        while(endIndex > 0) {            
-            endIndex--;
-        } 
+        var s = 0;
+        for (var a = 1; a < 10; a++) {
+            s += a;
+        }
     "#;
 
     if let Ok(vm) = build_function_from_code(script) {

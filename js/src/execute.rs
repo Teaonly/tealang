@@ -4,6 +4,8 @@ use std::cmp;
 use crate::common::*;
 use crate::value::*;
 
+/* implementation for JsEnvironment, partly JsRuntime and jscall */
+
 impl JsEnvironment {
 	fn init_var(&mut self, name: &str, jv: SharedValue) {
 		let prop = JsProperty {

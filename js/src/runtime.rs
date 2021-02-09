@@ -1,7 +1,9 @@
+use crate::common::*;
+use crate::value::*;
+use crate::execute::*;
 
-/*
 impl JsRuntime {
-	pub fn newobj_from_vmf(&mut self, vmf: VMFunction) -> JsObject {
+	fn newobj_from_vmf(&mut self, vmf: VMFunction) -> JsObject {
 		let f = JsFunction {
 			scope:	self.cenv.clone(),
 			vmf:	Rc::new(Box::new(vmf)),
@@ -12,6 +14,7 @@ impl JsRuntime {
 	} 
 }
 
+/*
 pub fn new_runtime<'a>() -> JsRuntime<'a> {
 	let obj = Rc::new(Cell::new(JsObject::new()));
 	let boolean = Rc::new(Cell::new(JsObject::new_with_class(obj.clone(), JsClass::boolean(false))));
@@ -44,15 +47,6 @@ pub fn new_runtime<'a>() -> JsRuntime<'a> {
 
 	return runtime;
 }
-
-pub fn execute_global(rt: &mut JsRuntime, vmf: VMFunction) {
-	// variable to the enviroment
-	rt.cenv = rt.genv.clone();	
-	let jv = SharedValue::new_object(rt.newobj_from_vmf(vmf));
-	rt.push(jv);			// function object
-	rt.push_undefined();	// this, undefined for global in strict mode
-
-	jscall(rt, 0);
-}
 */
+
 
