@@ -575,7 +575,7 @@ pub struct JsProperty {
 
 #[allow(non_camel_case_types)]
 pub struct JsEnvironment {
-	pub variables: JsObject,		// variables stored in properties 
+	pub variables: SharedObject,		// variables stored in properties 
 	pub outer: Option<SharedScope>,
 }
 

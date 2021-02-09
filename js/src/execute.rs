@@ -7,6 +7,21 @@ use crate::value::*;
 /* implementation for JsEnvironment, partly JsRuntime and jscall */
 
 impl JsEnvironment {
+	pub fn new()  -> SharedScope {
+		let env = JsEnvironment {
+			variables: SharedObject_new(JsObject::new()),
+			outer: None,
+		};
+		SharedScope_new(env)
+	}
+	pub fn new_from(outer: SharedScope) -> SharedScope {
+		let env = JsEnvironment {
+			variables: SharedObject_new(JsObject::new()),
+			outer: Some(outer),
+		};
+		SharedScope_new(env)
+	}
+
 	fn init_var(&mut self, name: &str, jv: SharedValue) {
 		let prop = JsProperty {
 			value: jv,
@@ -14,16 +29,9 @@ impl JsEnvironment {
 			getter: None,
 			setter: None,
 		};
-		if self.variables.put_property(name) {
-			self.variables.set_property(name, prop);
+		if self.variables.borrow_mut().put_property(name) {
+			self.variables.borrow_mut().set_property(name, prop);
 		}
-	}
-	fn new_from(outer: SharedScope) -> SharedScope {
-		let env = JsEnvironment {
-			variables: JsObject::new(),
-			outer: Some(outer),
-		};
-		SharedScope_new(env)
 	}
 
 	fn fetch_outer(&self) -> SharedScope {
@@ -34,7 +42,7 @@ impl JsEnvironment {
 	}
 	
 	fn query_variable(&self, name: &str) -> bool {
-		if let Some((_rprop, own)) = self.variables.query_property(name) {
+		if let Some((_rprop, own)) = self.variables.borrow().query_property(name) {
 			if own {
 				return true;
 			}
@@ -44,7 +52,6 @@ impl JsEnvironment {
 
 }
 
-
 impl JsRuntime {
 	/* environment's variables */
 	fn delvariable(&mut self, name: &str) -> bool {
@@ -52,11 +59,11 @@ impl JsRuntime {
 		loop {			
 			let r = env.borrow().query_variable(name);
 			if r {
-				let prop = env.borrow_mut().variables.get_property(name);
+				let prop = env.borrow_mut().variables.borrow().get_property(name);
 				if !prop.configable() {
 					return false;
 				}
-				env.borrow_mut().variables.drop_property(name);
+				env.borrow_mut().variables.borrow_mut().drop_property(name);
 				return true;
 			}
 
@@ -73,7 +80,7 @@ impl JsRuntime {
 		loop {			
 			let r = env.borrow().query_variable(name);
 			if r {
-				let prop = env.borrow_mut().variables.get_property(name);
+				let prop = env.borrow_mut().variables.borrow().get_property(name);
 				if prop.getter.is_some() {
 					self.push_object(prop.getter.unwrap().clone());		// function object
 					self.push(prop.value.clone());						// this object
@@ -96,7 +103,7 @@ impl JsRuntime {
 		loop {
 			let r = env.borrow().query_variable(name);
 			if r {
-				let prop = env.borrow_mut().variables.get_property(name);
+				let prop = env.borrow_mut().variables.borrow().get_property(name);
 				if prop.setter.is_some() {
 					self.push_object(prop.setter.unwrap().clone());		// function object
 					self.push(prop.value.clone());						// this object
@@ -118,10 +125,10 @@ impl JsRuntime {
 		}
 		
 		let value = self.stack.first().unwrap().clone();
-		self.genv.borrow_mut().variables.put_property(name);
-		let mut prop = self.genv.borrow_mut().variables.get_property(name);
+		self.genv.borrow_mut().variables.borrow_mut().put_property(name);
+		let mut prop = self.genv.borrow_mut().variables.borrow().get_property(name);
 		prop.value = value;
-		self.genv.borrow_mut().variables.set_property(name, prop);
+		self.genv.borrow_mut().variables.borrow_mut().set_property(name, prop);
 
 		return Ok(());
 	}

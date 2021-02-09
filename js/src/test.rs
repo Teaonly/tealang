@@ -2,11 +2,28 @@ mod common;
 mod token;
 mod ast;
 mod compile;
+mod value;
+mod execute;
+mod runtime;
 
 use common::*;
 use token::*;
 use ast::*;
 use compile::*;
+use runtime::*;
+
+fn test_runtime() {
+    let script = r#"
+        var s = 0;
+        for (var a = 1; a < 10; a++) {
+            s += a;
+        }
+    "#;
+
+    if let Ok(vm) = build_function_from_code(script) {
+        
+    }    
+}
 
 fn test_compile() {
     let script = r#"
@@ -18,8 +35,7 @@ fn test_compile() {
 
     if let Ok(vm) = build_function_from_code(script) {
         dump_function(&vm);
-    }
-    
+    }    
 }
 
 fn test_ast() {
