@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 mod common;
 mod token;
 mod ast;
@@ -21,8 +23,10 @@ fn test_runtime() {
     "#;
     
     let mut rt = new_runtime();    
-    let vmf = SharedFunction_new(build_function_from_code(script).unwrap());   
-    run_script(&mut rt, vmf);
+    let vmf = SharedFunction_new(build_function_from_code(script).unwrap());
+    dump_function(&vmf);
+
+    run_script(&mut rt, vmf.clone());
 }
 
 fn test_compile() {

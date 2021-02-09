@@ -87,7 +87,7 @@ impl JsRuntime {
 				if prop.getter.is_some() {
 					self.push_object(prop.getter.unwrap().clone());		// function object
 					self.push(prop.value.clone());						// this object
-					jscall(self, 0)?;					
+					jscall(self, 0)?;
 				} else {
 					self.push(prop.value.clone());
 				}
@@ -611,9 +611,8 @@ impl JsRuntime {
 	/* stack operations */
 	pub fn top(&self, offset: isize) -> SharedValue {
 		if offset < 0 {
-			let offset: usize = (-1 * offset) as usize;
-			let pos = self.stack.len() + offset;
-			return self.stack[pos].clone();
+			let offset: usize = (self.stack.len() as isize + offset) as usize;			
+			return self.stack[offset].clone();
 		}
 		panic!("top access only support negtive offset!")
 	}

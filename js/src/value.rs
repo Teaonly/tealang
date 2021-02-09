@@ -74,8 +74,8 @@ impl VMFunction {
 		*pc = *pc + 1;
 		return self.func_tab[id].clone();
 	}
-	pub fn address(&self, pc:&mut usize) -> usize {
-		let addr = self.code[*pc] as usize + (self.code[*pc+1] as usize) << 16;
+	pub fn address(&self, pc:&mut usize) -> usize {		
+		let addr = self.code[*pc] as usize + (self.code[*pc+1] as usize) * 65536;
 		*pc = *pc + 2;
 		return addr;
 	}
