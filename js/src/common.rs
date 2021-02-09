@@ -486,6 +486,9 @@ pub fn SharedObject_new(obj: JsObject) -> SharedObject {
 pub fn SharedScope_new(scope: JsEnvironment) -> SharedScope {
 	Rc::new(RefCell::new(scope))
 }
+pub fn SharedFunction_new(vmf: VMFunction) -> SharedFunction {
+	Rc::new(Box::new(vmf))
+}
 
 // JsValue for access fast and memory effective 
 // to simpilify implementation remvoed prototype for boolean/number

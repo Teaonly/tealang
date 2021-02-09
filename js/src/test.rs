@@ -12,17 +12,17 @@ use ast::*;
 use compile::*;
 use runtime::*;
 
-fn test_runtime() {
+fn test_runtime() {    
     let script = r#"
         var s = 0;
         for (var a = 1; a < 10; a++) {
             s += a;
         }
     "#;
-
-    if let Ok(vm) = build_function_from_code(script) {
-        
-    }    
+    
+    let mut rt = new_runtime();    
+    let vmf = SharedFunction_new(build_function_from_code(script).unwrap());   
+    run_script(&mut rt, vmf);
 }
 
 fn test_compile() {
@@ -89,5 +89,6 @@ fn test_token() {
 pub fn main() {
     //test_token();
     //test_ast();
-    test_compile();
+    //test_compile();
+    test_runtime();
 }
