@@ -826,7 +826,13 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExce
 			},
 
 			OpcodeType::OP_THIS => {
-				rt.push_from(bot);
+				let thiz = rt.stack[bot].clone();
+				if thiz.is_object() {
+					rt.push_from(bot);
+				} else {
+					let global = rt.genv.borrow().target();
+					rt.push_object(global);
+				}
 			},
 			OpcodeType::OP_CURRENT => {
 				rt.push_from(bot - 1);
