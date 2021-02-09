@@ -3,7 +3,7 @@ mod token;
 mod ast;
 mod compile;
 mod value;
-mod executor;
+mod execute;
 
 // public interface
 
