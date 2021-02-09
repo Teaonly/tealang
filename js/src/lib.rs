@@ -4,15 +4,4 @@ mod ast;
 mod compile;
 mod value;
 mod execute;
-
-// public interface
-
-pub fn dummy() {
-    let script = r#"
-    "use strict";
-    for (;;) {
-    }
-    "#;
-
-    compile::build_function_from_code(script).unwrap();
-}
+pub mod runtime;
