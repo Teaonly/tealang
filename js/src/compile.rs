@@ -1404,11 +1404,13 @@ pub fn dump_function(f: &VMFunction) {
     }
     println!("---code----");
     
+    let mut addr = 0;
     for i in &f.code {
         if let Ok(op) = OpcodeType::try_from(*i) {
-			println!("OP: {:?} V: {}", op, i);
+			println!("{}\t\tOP: {:?} V: {}", addr, op, i);
 		} else {
-            println!("V: {}", i);
+            println!("{}\t\tV: {}", addr, i);
         }
+        addr = addr + 1;
     }
 }

@@ -11,11 +11,6 @@ use compile::*;
 fn test_compile() {
     let script = r#"
         var a = b
-        var afunc = function (arr) {
-            //start the endIndex at the last index of the array
-            var endIndex = arr.length - 1;
-            return endIndex;
-        }
 
         while(endIndex > 0) {            
             endIndex--;
