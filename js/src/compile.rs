@@ -1357,6 +1357,7 @@ fn compile_func(name: &AstNode, params: &AstNode, body: &AstNode, script: bool) 
 
         let name_str = name.str_value.as_ref().unwrap();
 
+        /* for recurrent call function self, set a local variable into this */
         let (found, _) = f.findlocal( name_str );
         if !found {
             f.emitop(OpcodeType::OP_CURRENT);
