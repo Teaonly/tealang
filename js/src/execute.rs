@@ -127,10 +127,10 @@ impl JsRuntime {
 					self.push(prop.value.clone());						// this object
 					self.push_from( self.stack.len() - 3);				// value
 					jscall(self, 1)?;
-					self.pop(1);				
+					self.pop(1);
 				} else {
 					if !prop.readonly() {
-						prop.value.swap( self.stack.first().unwrap().clone() );
+						prop.value.swap( self.top(-1) );
 					}
 				}	
 				return Ok(());
@@ -142,7 +142,7 @@ impl JsRuntime {
 			env = r; 
 		}
 		
-		let value = self.stack.first().unwrap().clone();
+		let value = self.top(-1);
 		self.genv.borrow().put_variable(name);
 		let mut prop = self.genv.borrow().get_variable(name);
 		prop.value = value;
@@ -678,12 +678,11 @@ impl JsRuntime {
 		}
 	}
 	fn dup(&mut self) {
-		if let Some(ref v) = self.stack.first() {
-			let nv: SharedValue = SharedValue::clone(v);
-			self.stack.push(nv);
-		} else {
+		if self.stack.len() < 1 {
 			panic!("stack underflow! @ dup");
 		}
+		let nv = self.top(-1);
+		self.stack.push(nv);
 	}
 	fn dup2(&mut self) {
 		if self.stack.len() < 2 {
