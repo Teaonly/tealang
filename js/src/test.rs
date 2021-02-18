@@ -15,8 +15,8 @@ use ast::*;
 use compile::*;
 use runtime::*;
 
-static script: &str = r#"        
-    assert(true, "XXXX");
+static script: &str = r#"    
+    assert(true == true, "XXXX");
 "#;
 
 fn test_runtime() {
