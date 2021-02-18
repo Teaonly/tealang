@@ -20,7 +20,8 @@ static script: &str = r#"
     a += 1
     assert(a == 11, "XXXX");
     a += 2;
-    assert(a == 13, "YYYY");    
+    assert(a == 13, "YYYY");
+    print(a);
 "#;
 
 fn debug_runtime() {

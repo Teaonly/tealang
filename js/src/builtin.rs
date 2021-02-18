@@ -11,7 +11,13 @@ fn assert(rt: &mut JsRuntime) {
     rt.push_undefined();
 }
 
+fn print(rt: &mut JsRuntime) {
+    let info = rt.top(-1).to_string();
+    println!("{}", info);
+}
+
 pub fn builtin_init(rt: &mut JsRuntime) {
-    let fvalue = SharedValue::new_object( JsObject::new_builtin(assert, 2) );
-    rt.genv.borrow_mut().init_var("assert", fvalue);    
+    rt.genv.borrow_mut().init_var("assert", SharedValue::new_object(JsObject::new_builtin(assert, 2)) );
+    rt.genv.borrow_mut().init_var("print", SharedValue::new_object(JsObject::new_builtin(print, 1)) );
+    rt.push_undefined();
 }
