@@ -367,6 +367,19 @@ impl JsObject {
 		}
 	}
 
+	pub fn new_builtin(f: fn(&mut JsRuntime), argc: usize) -> JsObject {
+		let bvalue = JsClass::builtin(JsBuiltinFunction {
+			f: f,
+			argc: argc,
+		});
+		JsObject {
+			extensible:	false,
+			prototype: None,
+			properties: HashMap::new(),
+			value: bvalue,
+		}
+	}
+
 	pub fn type_string(&self) -> String {
 		match &self.value {
 			JsClass::string(_) => {

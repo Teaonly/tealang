@@ -25,7 +25,7 @@ impl JsEnvironment {
 		self.variables.clone()
 	}
 
-	fn init_var(&mut self, name: &str, jv: SharedValue) {
+	pub fn init_var(&mut self, name: &str, jv: SharedValue) {
 		let prop = JsProperty {
 			value: jv,
 			attr: JsPropertyAttr::DONTENUM_DONTCONF,

@@ -6,6 +6,7 @@ mod ast;
 mod compile;
 mod value;
 mod execute;
+mod builtin;
 mod runtime;
 
 use common::*;
@@ -15,12 +16,8 @@ use compile::*;
 use runtime::*;
 
 fn test_runtime() {
-    let script = r#"
-        var s = 0;
-        for (var a = 1; a < 10; a++) {
-            s += a;
-        }
-        s = s + 1;
+    let script = r#"        
+        assert(true, "XXXX");
     "#;
 
     let mut rt = new_runtime();

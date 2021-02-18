@@ -509,7 +509,7 @@ pub struct JsFunction {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct JsBuiltinFunction {
 	pub f:		fn(&mut JsRuntime),
 	pub argc:	usize,

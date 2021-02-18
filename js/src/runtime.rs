@@ -1,6 +1,7 @@
 use crate::common::*;
 use crate::value::*;
 use crate::execute::*;
+use crate::builtin::*;
 
 pub fn new_runtime() -> JsRuntime {
 	let obj = SharedObject_new(JsObject::new());
@@ -15,12 +16,14 @@ pub fn new_runtime() -> JsRuntime {
 	let genv = JsEnvironment::new();
 	let cenv = genv.clone();
 
-	let runtime = JsRuntime {
+	let mut runtime = JsRuntime {
 		prototypes:	prototypes,
 		genv:		genv,
 		cenv:		cenv,
 		stack:		Vec::new(),
 	};
+
+	builtin_init(&mut runtime);
 
 	return runtime;
 }
