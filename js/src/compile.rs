@@ -1319,10 +1319,6 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             }
         },
 
-        AstType::STM_DEBUGGER => {
-            f.emitop(OpcodeType::OP_DEBUGGER);
-        },
-
         _ => {
             compile_exp(f, stm);
             f.emitop(OpcodeType::OP_POP);

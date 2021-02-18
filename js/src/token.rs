@@ -366,7 +366,7 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
     }
 
     /*
-	"'break'", "'case'", "'catch'", "'continue'", "'debugger'",
+	"'break'", "'case'", "'catch'", "'continue'", 
 	"'default'", "'delete'", "'do'", "'else'", "'false'", "'finally'", "'for'",
 	"'function'", "'if'", "'in'", "'instanceof'", "'new'", "'null'", "'return'",
 	"'switch'", "'this'", "'throw'", "'true'", "'try'", "'typeof'", "'var'",

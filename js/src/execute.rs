@@ -1330,7 +1330,6 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExce
 			},
 
 			/* do nothing */
-			OpcodeType::OP_DEBUGGER => {},			
 			OpcodeType::OP_EVAL => {},
 			OpcodeType::OP_NOP => {},
 			OpcodeType::OP_LAST => {},

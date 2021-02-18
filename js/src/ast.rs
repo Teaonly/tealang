@@ -983,11 +983,6 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         }
         return Err(format!("unexpected token in try: {:?} (expected 'catch' or 'finally')", tkr.forward()? ));
 
-    } else if tk_accept(tkr, TokenType::TK_DEBUGGER)? {
-        ast_semicolon(tkr)?;
-        let stm = AstNode::new(AstType::STM_DEBUGGER, tkr.line());
-        return Ok(stm);
-
     } else if tk_accept(tkr, TokenType::TK_FUNCTION)? {
         let a = ast_identifier(tkr)?;
         tk_expect(tkr, TokenType::TK_PAREN_LEFT)?;

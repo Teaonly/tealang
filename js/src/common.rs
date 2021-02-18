@@ -24,7 +24,6 @@ pub enum TokenType {
 	TK_CASE,
 	TK_CATCH,
 	TK_CONTINUE,
-	TK_DEBUGGER,
 	TK_DEFAULT,
 	TK_DELETE,
 	TK_DO,
@@ -48,7 +47,6 @@ pub enum TokenType {
 	TK_VAR,
 	TK_VOID,
 	TK_WHILE,
-	TK_WITH,
 
 	/* single-character punctuators */
     TK_BRACE_LEFT,		// {}
@@ -219,7 +217,6 @@ pub enum AstType {
 	STM_SWITCH,
 	STM_THROW,
 	STM_TRY,
-	STM_DEBUGGER,
 
 	STM_LABEL,
 	STM_CASE,
@@ -336,7 +333,6 @@ pub enum OpcodeType {
 	OP_CATCH,	/* push scope chain with exception variable */
 	OP_ENDCATCH,
 
-	OP_DEBUGGER,
 	OP_JUMP,
 	OP_JTRUE,
 	OP_JFALSE,
@@ -425,7 +421,6 @@ impl TryFrom<u16> for OpcodeType {
 			x if x == OpcodeType::OP_ENDTRY as u16 => Ok(OpcodeType::OP_ENDTRY),
 			x if x == OpcodeType::OP_CATCH as u16 => Ok(OpcodeType::OP_CATCH),
 			x if x == OpcodeType::OP_ENDCATCH as u16 => Ok(OpcodeType::OP_ENDCATCH),
-			x if x == OpcodeType::OP_DEBUGGER as u16 => Ok(OpcodeType::OP_DEBUGGER),
 			x if x == OpcodeType::OP_JUMP as u16 => Ok(OpcodeType::OP_JUMP),
 			x if x == OpcodeType::OP_JTRUE as u16 => Ok(OpcodeType::OP_JTRUE),
 			x if x == OpcodeType::OP_JFALSE as u16 => Ok(OpcodeType::OP_JFALSE),

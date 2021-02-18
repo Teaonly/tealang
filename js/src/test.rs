@@ -14,15 +14,16 @@ use ast::*;
 use compile::*;
 use runtime::*;
 
-fn test_runtime() {    
+fn test_runtime() {
     let script = r#"
         var s = 0;
         for (var a = 1; a < 10; a++) {
             s += a;
         }
+        s = s + 1;
     "#;
-    
-    let mut rt = new_runtime();    
+
+    let mut rt = new_runtime();
     let vmf = SharedFunction_new(build_function_from_code(script).unwrap());
     dump_function(&vmf);
 
@@ -39,7 +40,7 @@ fn test_compile() {
 
     if let Ok(vm) = build_function_from_code(script) {
         dump_function(&vm);
-    }    
+    }
 }
 
 fn test_ast() {
@@ -51,9 +52,9 @@ fn test_ast() {
             return endIndex;
         }
 
-        while(endIndex > 0) {            
+        while(endIndex > 0) {
             endIndex--;
-        } 
+        }
     "#;
 
     let result = build_ast_from_script(script);
@@ -69,9 +70,9 @@ fn test_token() {
             return endIndex;
         }
 
-        while(endIndex > 0){            
+        while(endIndex > 0){
             endIndex--;
-        } 
+        }
     "#;
 
     let mut tokens = Tokenlizer::new(script);
