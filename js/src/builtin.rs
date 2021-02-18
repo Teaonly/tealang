@@ -8,6 +8,7 @@ fn assert(rt: &mut JsRuntime) {
         let info = rt.top(-1).to_string();
         panic!("ASSERT: {}", info);
     }
+    rt.push_undefined();
 }
 
 pub fn builtin_init(rt: &mut JsRuntime) {

@@ -629,7 +629,7 @@ fn compile_call(f: &mut VMFunction, exp: &AstNode) {
         },
         _ => {
             compile_exp(f, fun);
-            f.emitop(OpcodeType::OP_UNDEF);
+            f.emitop(OpcodeType::OP_UNDEF);     // this object is UNDEFINED
         }
     }
 
