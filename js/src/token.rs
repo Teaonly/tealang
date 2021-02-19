@@ -72,7 +72,7 @@ fn next_general_token (script: &str, cursor: usize) -> Result<(GeneralToken, usi
         if ch == '\n' {
             return ct::CT_NEWLN;
         }
-        if ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '%' || ch == '=' || ch == ';' || ch == '\\'
+        if ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '%' || ch == '=' || ch == ';' || ch == '\\' || ch == ':'
             || ch == '&' || ch == '!' || ch == '|' || ch == '^' || ch == ',' || ch == '\'' || ch == '"' || ch == '~'
             || ch == '<' || ch == '>' || ch == '(' || ch == ')' || ch == '[' || ch == ']' || ch == '{' || ch == '}' {
             return ct::CT_PUNCT;

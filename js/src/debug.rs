@@ -17,10 +17,15 @@ use runtime::*;
 
 static script: &str = r#"
     var a = 10;
-    a += 1
-    assert(a == 11, "XXXX");
-    a += 2;
-    assert(a == 13, "YYYY");
+    switch(a) {
+        case 0: 
+            print("0");
+        case 2: 
+            print("2");
+        case 10:
+        case 12:
+            print("12");
+    } 
     print(a);
 "#;
 
@@ -60,7 +65,7 @@ fn debug_token() {
 
 pub fn main() {
     //debug_token();
-    //debug_ast();
+    debug_ast();
     //debug_compile();
-    debug_runtime();
+    //debug_runtime();
 }
