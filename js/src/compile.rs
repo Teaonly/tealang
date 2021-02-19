@@ -1023,8 +1023,7 @@ fn compile_switch(f: &mut VMFunction, stm: &AstNode) {
 
     if stm.has_b() {
         let it = stm.b().iter();
-        for n in it {
-            let clause = n.a();
+        for clause in it {            
             if clause.ast_type == AstType::STM_CASE {
                 compile_exp(f, clause.a());
                 let addr = f.emitjump(OpcodeType::OP_JCASE);
@@ -1033,9 +1032,10 @@ fn compile_switch(f: &mut VMFunction, stm: &AstNode) {
                 if !def.is_none() {
                     panic!("more than one default label in switch");
                 }
-                def = Some(n);
+                def = Some(clause);
             } else {
                 panic!("Case list only support STM_CASE and STM_DEFAULT!");
+
             }
         }
     }
@@ -1047,8 +1047,7 @@ fn compile_switch(f: &mut VMFunction, stm: &AstNode) {
         let mut i:usize = 0;
 
         let it = stm.b().iter();
-        for n in it {
-            let clause = n.a();
+        for clause in it {           
             if clause.ast_type == AstType::STM_CASE {
                 let addr = case_jumps[i];
                 f.label_current_to(addr);

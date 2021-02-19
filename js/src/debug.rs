@@ -15,18 +15,11 @@ use ast::*;
 use compile::*;
 use runtime::*;
 
-static script: &str = r#"
-    var a = 10;
+static script: &str = r#"    
     switch(a) {
         case 0: 
             print("0");
-        case 2: 
-            print("2");
-        case 10:
-        case 12:
-            print("12");
     } 
-    print(a);
 "#;
 
 fn debug_runtime() {
