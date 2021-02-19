@@ -65,7 +65,7 @@ fn debug_token() {
 
 pub fn main() {
     //debug_token();
-    debug_ast();
-    //debug_compile();
+    //debug_ast();
+    debug_compile();
     //debug_runtime();
 }
