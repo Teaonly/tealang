@@ -18,9 +18,14 @@ use runtime::*;
 static script: &str = r#"    
     var a = 3;
     switch(a) {
-        case 0:
-        case 3:
+        case 0: {
+            a = a + 2;
+        }
+        case 1:
+        case 2:
             a++;
+        default:
+            a = 0;
     }
     print(a);
 "#;

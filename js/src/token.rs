@@ -379,7 +379,7 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
             "case" => Some(TokenType::TK_CASE),
             "catch" => Some(TokenType::TK_CATCH),
             "continue" => Some(TokenType::TK_CONTINUE),
-            "defalut" => Some(TokenType::TK_DEFAULT),
+            "default" => Some(TokenType::TK_DEFAULT),
             "delete" => Some(TokenType::TK_DELETE),
             "do" => Some(TokenType::TK_DO),
             "else" => Some(TokenType::TK_ELSE),
