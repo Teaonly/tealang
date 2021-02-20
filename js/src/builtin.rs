@@ -14,6 +14,7 @@ fn assert(rt: &mut JsRuntime) {
 fn print(rt: &mut JsRuntime) {
     let info = rt.top(-1).to_string();
     println!("{}", info);
+    rt.push_undefined();
 }
 
 pub fn builtin_init(rt: &mut JsRuntime) {

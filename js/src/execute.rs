@@ -1328,6 +1328,11 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExce
 				break;
 			},
 
+			OpcodeType::OP_DEBUG => {
+				//debugger();
+				panic!("Exiting with debug");
+			},
+
 			/* do nothing */
 			OpcodeType::OP_EVAL => {},
 			OpcodeType::OP_NOP => {},

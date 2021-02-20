@@ -998,6 +998,11 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         let stm = AstNode::new_a(AstType::STM_VAR, tkr.line(), lst);
         return Ok(stm);
 
+    } else if tk_accept(tkr, TokenType::TK_DEBUG)? {
+        let a = AstNode::new(AstType::STM_DEBUG, tkr.line());
+        ast_semicolon(tkr)?;
+        return Ok(a);
+                
     } else if tk_lookahead(tkr, TokenType::TK_IDENTIFIER)? {
         let mut a = ast_expression(tkr)?;
         if a.ast_type == AstType::EXP_IDENTIFIER {
@@ -1009,7 +1014,7 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
             }
         }
         ast_semicolon(tkr)?;
-        return Ok(a);        
+        return Ok(a);     
     }
 
     let stm = ast_expression(tkr)?;

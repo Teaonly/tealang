@@ -47,6 +47,7 @@ pub enum TokenType {
 	TK_VAR,
 	TK_VOID,
 	TK_WHILE,
+	TK_DEBUG,
 
 	/* single-character punctuators */
     TK_BRACE_LEFT,		// {}
@@ -221,6 +222,8 @@ pub enum AstType {
 	STM_LABEL,
 	STM_CASE,
 	STM_DEFAULT,
+
+	STM_DEBUG,
 }
 
 #[derive(Debug, Clone)]
@@ -338,6 +341,7 @@ pub enum OpcodeType {
 	OP_JFALSE,
 	OP_RETURN,
 
+	OP_DEBUG,
 	OP_LAST,
 }
 
@@ -425,6 +429,7 @@ impl TryFrom<u16> for OpcodeType {
 			x if x == OpcodeType::OP_JTRUE as u16 => Ok(OpcodeType::OP_JTRUE),
 			x if x == OpcodeType::OP_JFALSE as u16 => Ok(OpcodeType::OP_JFALSE),
 			x if x == OpcodeType::OP_RETURN as u16 => Ok(OpcodeType::OP_RETURN),
+			x if x == OpcodeType::OP_DEBUG as u16 => Ok(OpcodeType::OP_DEBUG),
 			_ => Err(()),
         }
     }
