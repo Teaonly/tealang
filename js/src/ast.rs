@@ -439,6 +439,16 @@ fn ast_formula_unary(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         let stm = AstNode::new_a(AstType::EXP_LOGNOT, tkr.line(), a);
         return Ok(stm);
     }
+    if tk_accept(tkr, TokenType::TK_SUB)? {
+        let a = ast_formula_unary(tkr)?;
+        let stm = AstNode::new_a(AstType::EXP_NEG, tkr.line(), a);
+        return Ok(stm);
+    }
+    if tk_accept(tkr, TokenType::TK_ADD)? {
+        let a = ast_formula_unary(tkr)?;
+        let stm = AstNode::new_a(AstType::EXP_POS, tkr.line(), a);
+        return Ok(stm);
+    }
     return ast_formula_postfix(tkr);
 }
 
