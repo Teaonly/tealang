@@ -15,18 +15,14 @@ use ast::*;
 use compile::*;
 use runtime::*;
 
-static script: &str = r#"
+static script: &str = r#"    
     var a = 9;
-    switch(a) {       
-        case 9:
-            print("9 or 0");
-            debug;
-    } 
+    var b = 10;        
 "#;
 
 fn debug_runtime() {
-    let mut rt = new_runtime();
     let vmf = SharedFunction_new(build_function_from_code(script).unwrap());
+    let mut rt = new_runtime();    
     run_script(&mut rt, vmf.clone());
 }
 
@@ -62,5 +58,5 @@ pub fn main() {
     //debug_token();
     //debug_ast();
     debug_compile();
-    //debug_runtime();
+    debug_runtime();
 }

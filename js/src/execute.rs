@@ -748,10 +748,16 @@ impl JsRuntime {
 		self.stack[top-2] = self.stack[top-1].clone(); 
 		self.pop(1);
 	}
+
+	fn debugger(&mut self) {
+		// runtime virtual machine debugger
+		println!("=======>{}", self.stack.len());
+	}
+	
 }
 
 
-fn jsrun (rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsException> {
+fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsException> {
 	assert!(rt.stack.len() > 0);
 	let mut pc:usize = pc;
 	let bot:usize = rt.stack.len() - 1;
@@ -1329,7 +1335,7 @@ fn jsrun (rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExce
 			},
 
 			OpcodeType::OP_DEBUG => {
-				//debugger();
+				rt.debugger();
 				panic!("Exiting with debug");
 			},
 
