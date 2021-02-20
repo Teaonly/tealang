@@ -1047,7 +1047,7 @@ fn compile_switch(f: &mut VMFunction, stm: &AstNode) {
         let mut i:usize = 0;
 
         let it = stm.b().iter();
-        for clause in it {           
+        for clause in it {
             if clause.ast_type == AstType::STM_CASE {
                 let addr = case_jumps[i];
                 f.label_current_to(addr);
@@ -1326,6 +1326,9 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
 }
 
 fn compile_stmlist(f: &mut VMFunction, lst: &AstNode) {
+    if lst.is_null() {
+        return;
+    }
     for stm in lst.iter() {
         compile_stm(f, stm);
     }

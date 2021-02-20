@@ -16,9 +16,10 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"    
-    switch(a) {
-        case 0: 
-            print("0");
+    var a = 9;
+    switch(a) {       
+        case 9:
+            print("9 or 0");
     } 
 "#;
 
@@ -60,5 +61,5 @@ pub fn main() {
     //debug_token();
     //debug_ast();
     debug_compile();
-    //debug_runtime();
+    debug_runtime();
 }
