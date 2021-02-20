@@ -1025,7 +1025,7 @@ fn compile_switch(f: &mut VMFunction, stm: &AstNode) {
         let it = stm.b().iter();
         for clause in it {            
             if clause.ast_type == AstType::STM_CASE {
-                compile_exp(f, clause.a());
+                compile_exp(f, clause.a());                
                 let addr = f.emitjump(OpcodeType::OP_JCASE);
                 case_jumps.push(addr);
             } else if clause.ast_type == AstType::STM_DEFAULT {
@@ -1039,7 +1039,7 @@ fn compile_switch(f: &mut VMFunction, stm: &AstNode) {
             }
         }
     }
-
+    
     f.emitop(OpcodeType::OP_POP);
     let last_jump = f.emitjump(OpcodeType::OP_JUMP);
 

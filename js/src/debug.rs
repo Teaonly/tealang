@@ -16,12 +16,17 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"    
-    var a = 9;
-    var b = 10;        
+    var a = 3;
+    switch(a) {
+        case 0:
+        case 3:
+            a++;
+    }
+    print(a);
 "#;
 
 fn debug_runtime() {
-    let vmf = SharedFunction_new(build_function_from_code(script).unwrap());
+    let vmf = SharedFunction_new(build_function_from_code(script).unwrap());    
     let mut rt = new_runtime();    
     run_script(&mut rt, vmf.clone());
 }
@@ -57,6 +62,6 @@ fn debug_token() {
 pub fn main() {
     //debug_token();
     //debug_ast();
-    debug_compile();
+    //debug_compile();
     debug_runtime();
 }

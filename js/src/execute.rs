@@ -415,8 +415,7 @@ impl JsRuntime {
 
 	fn strict_equal(&mut self) -> bool {
 		let x = self.top(-2);
-		let y = self.top(-1);
-		self.pop(2);
+		let y = self.top(-1);		
 		
 		// string with others
 		if x.is_string() {
@@ -1242,10 +1241,12 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 			},
 			OpcodeType::OP_STRICTEQ => {
 				let b = rt.strict_equal();
+				rt.pop(2);
 				rt.push_boolean(b);
 			},
 			OpcodeType::OP_STRICTNE => {
 				let b = rt.strict_equal();
+				rt.pop(2);
 				rt.push_boolean(!b);
 			},
 
