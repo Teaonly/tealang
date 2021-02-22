@@ -491,7 +491,18 @@ impl JsRuntime {
 			} else  {
 				return Some(-1);
 			}
-		}		
+		}
+		if x.is_string() {
+			let x = x.to_string();
+			let y = y.to_string();
+			if x > y {
+				return Some(1);
+			} else if x == y {
+				return Some(0);
+			} else  {
+				return Some(-1);
+			}
+		}
 		return None;
 	}
 
