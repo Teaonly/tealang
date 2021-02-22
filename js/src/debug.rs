@@ -16,70 +16,23 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-    var r, a;
-    r = 1 + 2;
-    assert(r == 3, "1 + 2 === 3");
+    assert((NaN | 0) === 0);
+    assert((Infinity | 0) === 0);
+    assert(((-Infinity) | 0) === 0);
 
-    r = 1 - 2;
-    assert(r == -1, "1 - 2 === -1");
+    assert(("12345" | 0) === 12345);    
+    assert(("0x12345" | 0) === 0x12345);
 
-    r = -1;
-    assert(r == -1, "-1 === -1");
+    assert(("12345" >>> 0) === 12345);
+    assert(("0x12345" >>> 0) === 0x12345);
 
-    r = +2;
-    assert(r == 2, "+2 === 2");
+    assert((NaN >>> 0) === 0);
+    assert((Infinity >>> 0) === 0);
+    assert(((-Infinity) >>> 0) === 0);
 
-    r = 2 * 3;
-    assert(r == 6, "2 * 3 === 6");
-
-    r = 4 / 2;
-    assert(r == 2, "4 / 2 === 2");
-
-    r = 4 % 3;
-    assert(r == 1, "4 % 3 === 3");
-
-    r = 4 << 2;
-    assert(r == 16, "4 << 2 === 16");
-
-    r = 1 << 0;
-    assert(r == 1, "1 << 0 === 1");
-
-    r = 1 << 31;
-    assert(r == -2147483648, "1 << 31 === -2147483648");
-    
-    r = 1 << 32;
-    assert(r == 1, "1 << 32 === 1");
-    
-    r = (1 << 31) < 0;
-    assert(r == true, "(1 << 31) < 0 === true");
-
-    r = -4 >> 1;
-    assert(r == -2, "-4 >> 1 === -2");
-
-    // FIXME 
-    //r = -4 >>> 1;
-    //assert(r == 0x7ffffffe, "-4 >>> 1 === 0x7ffffffe");
-
-    r = 1 & 1;
-    assert(r == 1, "1 & 1 === 1");
-
-    r = 0 | 1;
-    assert(r == 1, "0 | 1 === 1");
-
-    r = 1 ^ 1;
-    assert(r == 0, "1 ^ 1 === 0");
-
-    r = ~1;
-    assert(r == -2, "~1 === -2");
-
-    r = !1;
-    assert(r == false, "!1 === false");
-
-    assert((1 < 2) == true, "(1 < 2) === true");
-
-    assert((2 > 1) == true, "(2 > 1) === true");
-
-    assert(('b' > 'a') == true, "('b' > 'a') === true");
+    // FIXME
+    // assert(((4294967296 * 3 - 4) | 0) === -4);
+    // assert(((4294967296 * 3 - 4) >>> 0) === (4294967296 - 4));
 
     print("-------- END TESTING -----------");
 "#;

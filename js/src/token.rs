@@ -342,24 +342,34 @@ impl Token {
         }
     }
 
-    pub fn to_number(&self) -> f64 {
-        let symbol: &str = &self.tk_value.as_ref().unwrap();
+    pub fn str_to_number(symbol: &str) -> Option<f64> {
         if let Ok(v) = symbol.parse::<f64>() {
-            return v;
+            return Some(v);
         }
         if symbol.starts_with("0x") {
             let symbol:&str = &symbol[2..];
             if let Ok(v) = u64::from_str_radix(&symbol, 16) {
-                return v as f64;
+                return Some(v as f64);
             }
         }
         if symbol.starts_with("bx") {
             let symbol:&str = &symbol[2..];
             if let Ok(v) = u64::from_str_radix(&symbol, 2) {
-                return v as f64;
+                return Some(v as f64);
             }
         }
-        panic!("Can't parse {} to number!", symbol);
+        if symbol == "NaN" {
+            return Some(f64::NAN);
+        }
+        if symbol == "Infinity" {
+            return Some(f64::INFINITY);
+        }
+        return None;
+    }
+
+    pub fn to_number(&self) -> f64 {
+        let symbol: &str = &self.tk_value.as_ref().unwrap();
+        return Token::str_to_number(symbol).unwrap();
     }
 }
 
@@ -498,7 +508,6 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
         if symbol.parse::<f64>().is_ok() {
             return 1;
         }
-
         if symbol.starts_with("0x") {
             let symbol: &str = &symbol[2..];
             if u64::from_str_radix(&symbol, 16).is_ok() {
@@ -511,7 +520,12 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
                 return 1;
             }
         }
-
+        if symbol == "NaN" {
+            return 1;
+        }
+        if symbol == "Infinity" {
+            return 1;
+        }
         return -1;
     }
 

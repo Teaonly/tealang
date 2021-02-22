@@ -1182,22 +1182,52 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 
 			/* Shift operators */
 			OpcodeType::OP_SHL => {
-				let x = rt.top(-2).to_number() as i32;
-				let y = rt.top(-1).to_number() as u32;
+				let x = rt.top(-2).to_number();
+				let y = rt.top(-1).to_number();				
 				rt.pop(2);
-				rt.push_number( (x << (y&0x1F)) as f64);	
+				if x == f64::NAN || y == f64::NAN {
+					rt.push_number(0.0);					
+				} else if x == f64::INFINITY || y == f64::INFINITY {
+					rt.push_number(0.0);
+				} else if x == f64::NEG_INFINITY || y == f64::NEG_INFINITY {
+					rt.push_number(0.0);
+				} else {
+					let x = x as i64;
+					let y = y as u64;
+					rt.push_number( (x << (y&0x1F)) as f64);
+				}
 			},
 			OpcodeType::OP_SHR => {
-				let x = rt.top(-2).to_number() as i32;
-				let y = rt.top(-1).to_number() as u32;
+				let x = rt.top(-2).to_number();
+				let y = rt.top(-1).to_number();				
 				rt.pop(2);
-				rt.push_number( (x >> (y&0x1F)) as f64);	
+				if x == f64::NAN || y == f64::NAN {
+					rt.push_number(0.0);					
+				} else if x == f64::INFINITY || y == f64::INFINITY {
+					rt.push_number(0.0);
+				} else if x == f64::NEG_INFINITY || y == f64::NEG_INFINITY {
+					rt.push_number(0.0);
+				} else {
+					let x = x as i64;
+					let y = y as u64;
+					rt.push_number( (x >> (y&0x1F)) as f64);	
+				}
 			},
 			OpcodeType::OP_USHR => {
-				let x = rt.top(-2).to_number() as u32;
-				let y = rt.top(-1).to_number() as u32;
+				let x = rt.top(-2).to_number();
+				let y = rt.top(-1).to_number();				
 				rt.pop(2);
-				rt.push_number( (x >> (y&0x1F)) as f64);	
+				if x == f64::NAN || y == f64::NAN {
+					rt.push_number(0.0);					
+				} else if x == f64::INFINITY || y == f64::INFINITY {
+					rt.push_number(0.0);
+				} else if x == f64::NEG_INFINITY || y == f64::NEG_INFINITY {
+					rt.push_number(0.0);
+				} else {
+					let x = x as u64;
+					let y = y as u64;					
+					rt.push_number( (x >> (y&0x1F)) as f64);	
+				}
 			},
 
 			/* Relational operators */
@@ -1263,22 +1293,46 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 
 			/* Binary bitwise operators */
 			OpcodeType::OP_BITAND => {
-				let x = rt.top(-1).to_number() as i32;
-				let y = rt.top(-1).to_number() as i32;
+				let x = rt.top(-2).to_number();
+				let y = rt.top(-1).to_number();				
 				rt.pop(2);
-				rt.push_number( (x & y) as f64);	
+				if x == f64::NAN || y == f64::NAN {
+					rt.push_number(0.0);
+				} else if x == f64::INFINITY || y == f64::INFINITY {
+					rt.push_number(0.0);
+				} else if x == f64::NEG_INFINITY || y == f64::NEG_INFINITY {
+					rt.push_number(0.0);
+				} else {
+					rt.push_number( (x as i64 & y as i64) as f64);	
+				}
 			},
 			OpcodeType::OP_BITXOR => {
-				let x = rt.top(-1).to_number() as i32;
-				let y = rt.top(-1).to_number() as i32;
+				let x = rt.top(-2).to_number();
+				let y = rt.top(-1).to_number();
 				rt.pop(2);
-				rt.push_number( (x ^ y) as f64);	
+				if x == f64::NAN || y == f64::NAN {
+					rt.push_number(0.0);
+				} else if x == f64::INFINITY || y == f64::INFINITY {
+					rt.push_number(0.0);
+				} else if x == f64::NEG_INFINITY || y == f64::NEG_INFINITY {
+					rt.push_number(0.0);
+				} else {
+					rt.push_number( (x as i64 ^ y as i64) as f64);	
+				}
 			},
 			OpcodeType::OP_BITOR => {
-				let x = rt.top(-1).to_number() as i32;
-				let y = rt.top(-1).to_number() as i32;
+				let x = rt.top(-2).to_number();
+				let y = rt.top(-1).to_number();
 				rt.pop(2);
-				rt.push_number( (x | y) as f64);	
+				if x == f64::NAN || y == f64::NAN {
+					rt.push_number(0.0);
+				} else if x == f64::INFINITY || y == f64::INFINITY {
+					rt.push_number(0.0);
+				} else if x == f64::NEG_INFINITY || y == f64::NEG_INFINITY {
+					rt.push_number(0.0);
+				} else {
+					rt.push_number( (x as i64 | y as i64) as f64);
+				}
 			},
 
 			/* Try and Catch */	

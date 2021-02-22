@@ -196,6 +196,12 @@ impl SharedValue {
 		if let JsValue::JSNumber(ref v) = *v {
 			return *v;
 		}
+		if self.is_string() {
+			let s = self.to_string();
+			if let Some(v) = Token::str_to_number(&s) {
+				return v;
+			}			
+		}
 		return std::f64::NAN;
 	}
 	pub fn is_exception(&self) -> bool {
