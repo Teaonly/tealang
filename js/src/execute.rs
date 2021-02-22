@@ -1171,19 +1171,19 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 
 			/* Shift operators */
 			OpcodeType::OP_SHL => {
-				let x = rt.top(-1).to_number() as i32;
+				let x = rt.top(-2).to_number() as i32;
 				let y = rt.top(-1).to_number() as u32;
 				rt.pop(2);
 				rt.push_number( (x << (y&0x1F)) as f64);	
 			},
 			OpcodeType::OP_SHR => {
-				let x = rt.top(-1).to_number() as i32;
+				let x = rt.top(-2).to_number() as i32;
 				let y = rt.top(-1).to_number() as u32;
 				rt.pop(2);
 				rt.push_number( (x >> (y&0x1F)) as f64);	
 			},
 			OpcodeType::OP_USHR => {
-				let x = rt.top(-1).to_number() as u32;
+				let x = rt.top(-2).to_number() as u32;
 				let y = rt.top(-1).to_number() as u32;
 				rt.pop(2);
 				rt.push_number( (x >> (y&0x1F)) as f64);	
