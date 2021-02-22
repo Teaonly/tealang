@@ -1113,7 +1113,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 			OpcodeType::OP_LOGNOT => {
 				let n = rt.top(-1).to_boolean();
 				rt.pop(1);
-				rt.push_boolean(n);
+				rt.push_boolean(!n);
 			},
 			OpcodeType::OP_INC => {
 				let n = rt.top(-1).to_number();

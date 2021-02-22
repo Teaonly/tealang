@@ -175,6 +175,13 @@ impl SharedValue {
 		if self.is_undefined() {
 			return false;
 		}
+		if self.is_number() {
+			let v = self.to_number();
+			if v != 0.0 {
+				return true;
+			}
+			return false;
+		}
 		return true;
 	}
 	pub fn is_number(&self) -> bool {
