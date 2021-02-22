@@ -579,7 +579,7 @@ fn ast_formula_eq(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
 fn ast_formula_bitand(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let mut a = ast_formula_eq(tkr)?;
-    while tk_accept(tkr, TokenType::TK_OR)? {
+    while tk_accept(tkr, TokenType::TK_AND)? {
         let b = ast_formula_eq(tkr)?;
         a = AstNode::new_a_b(AstType::EXP_BITAND, tkr.line(), a, b);
     }
@@ -588,7 +588,7 @@ fn ast_formula_bitand(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
 fn ast_formula_bitxor(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let mut a = ast_formula_bitand(tkr)?;
-    while tk_accept(tkr, TokenType::TK_OR)? {
+    while tk_accept(tkr, TokenType::TK_XOR)? {
         let b = ast_formula_bitand(tkr)?;
         a = AstNode::new_a_b(AstType::EXP_BITXOR, tkr.line(), a, b);
     }
