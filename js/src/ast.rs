@@ -167,7 +167,7 @@ fn ast_identifier_opt(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 fn ast_propname(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let lookahead = tkr.forward()?;
     if tk_accept(tkr, TokenType::TK_NUMBER)? {
-        let value = lookahead.tk_value.unwrap().parse::<f64>().unwrap();
+        let value = lookahead.to_number();
         let a = AstNode::new_number(AstType::EXP_NUMBER, tkr.line(), value);
         return Ok(a);
     }
@@ -259,7 +259,7 @@ fn ast_primary(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         return Ok(a);
     }
     if tk_accept(tkr, TokenType::TK_NUMBER)? {
-        let value = lookahead.tk_value.unwrap().parse::<f64>().unwrap();
+        let value = lookahead.to_number();
         let a = AstNode::new_number(AstType::EXP_NUMBER, tkr.line(), value);
         return Ok(a);
     }
