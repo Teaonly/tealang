@@ -37,5 +37,7 @@ pub fn run_script(rt: &mut JsRuntime, vmf: SharedFunction) {
 	rt.push_object(thiz);	// this
 
 	jscall(rt, 0);
+
+	assert!( rt.stack.len() == 1);
 }
 

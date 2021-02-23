@@ -502,6 +502,9 @@ fn compile_assignop(f: &mut VMFunction, var: &AstNode, op: OpcodeType, is_post: 
                 f.emitop(OpcodeType::OP_ROT2);
             }
             f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, id_str);
+            if is_post {
+                f.emitop(OpcodeType::OP_POP);
+            }
         },
         AstType::EXP_INDEX => {
             compile_exp(f, var.a());
