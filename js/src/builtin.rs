@@ -11,7 +11,7 @@ fn assert(rt: &mut JsRuntime) {
     rt.push_undefined();
 }
 
-fn print(rt: &mut JsRuntime) {
+fn println(rt: &mut JsRuntime) {
     let info = rt.top(-1).to_string();
     println!("{}", info);
     rt.push_undefined();
@@ -19,5 +19,5 @@ fn print(rt: &mut JsRuntime) {
 
 pub fn builtin_init(rt: &mut JsRuntime) {
     rt.genv.borrow_mut().init_var("assert", SharedValue::new_object(JsObject::new_builtin(assert, 2)) );
-    rt.genv.borrow_mut().init_var("print", SharedValue::new_object(JsObject::new_builtin(print, 1)) );    
+    rt.genv.borrow_mut().init_var("println", SharedValue::new_object(JsObject::new_builtin(println, 1)) );
 }

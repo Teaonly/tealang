@@ -121,7 +121,7 @@ impl JsRuntime {
 		loop {
 			let r = env.borrow().query_variable(name);
 			if r {
-				let prop = env.borrow().get_variable(name);
+				let mut prop = env.borrow().get_variable(name);
 				if prop.setter.is_some() {
 					self.push_object(prop.setter.unwrap().clone());		// function object
 					self.push(prop.value.clone());						// this object
@@ -130,7 +130,7 @@ impl JsRuntime {
 					self.pop(1);
 				} else {
 					if !prop.readonly() {
-						prop.value.swap( self.top(-1) );
+						prop.value.replace( self.top(-1) );
 					}
 				}	
 				return Ok(());
@@ -210,7 +210,7 @@ impl JsRuntime {
 		}
 
 		let prop_r = target.query_property(name);
-		if let Some((prop, _own)) = prop_r {
+		if let Some((mut prop, _own)) = prop_r {
 			if let Some(setter) = prop.setter {
 				self.push_object(setter.clone());
 				self.push_object(target_);
@@ -223,7 +223,7 @@ impl JsRuntime {
 				println!("Cant write property for specia object!");
 				return Err( JsException::new());
 			} else {				
-				prop.value.swap( value );
+				prop.value.replace( value );
 				return Ok(());
 			}
 		}

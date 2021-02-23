@@ -16,31 +16,53 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"    
-    assert((NaN | 0) === 0);
-    assert((Infinity | 0) === 0);
-    assert(((-Infinity) | 0) === 0);
+    var a, r;
+            
+    a = 1;
+    r = a++;
+    assert(r === 1 && a === 2, "++1");
 
-    assert(("12345" | 0) === 12345);    
-    assert(("0x12345" | 0) === 0x12345);
+    a = 1;
+    r = ++a;
+    assert(r === 2 && a === 2, "++2");
 
-    assert(("12345" >>> 0) === 12345);
-    assert(("0x12345" >>> 0) === 0x12345);
+    a = 1;
+    r = a--;
+    assert(r === 1 && a === 0, "--1");
 
-    assert((NaN >>> 0) === 0);
-    assert((Infinity >>> 0) === 0);
-    assert(((-Infinity) >>> 0) === 0);
+    a = 1;
+    r = --a;
+    assert(r === 0 && a === 0, "--2");
 
-    assert(null == undefined);
-    assert(undefined == null);
+    a = {x:true};
+    a.x++;
+    assert(a.x == 2, "++3");
 
-    assert("123" == 123);
-    assert("122" != 123);
+    a = {x:true};
+    a.x--;
+    assert(a.x == 0, "--3");
 
-    // FIXME
-    // assert(((4294967296 * 3 - 4) | 0) === -4);
-    // assert(((4294967296 * 3 - 4) >>> 0) === (4294967296 - 4));
+    a = [true];
+    a[0]++;
+    assert(a[0] == 2, "++4");
 
-    print("-------- END TESTING -----------");  
+    a = {x:true};
+    r = a.x++;
+    assert(r === 1 && a.x === 2, "++5");
+
+    a = {x:true};
+    r = a.x--;
+    assert(r === 1 && a.x === 0, "--4");
+
+    a = [true];
+    r = a[0]++;
+    assert(r === 1 && a[0] === 2, "++6");
+
+    a = [true];
+    r = a[0]--;
+    assert(r === 1 && a[0] === 0, "--5");
+
+    println("-------- END TESTING -----------");
 "#;
 
 fn debug_runtime() {
@@ -80,6 +102,6 @@ fn debug_token() {
 pub fn main() {
     //debug_token();
     //debug_ast();
-    //debug_compile();
+    debug_compile();
     debug_runtime();
 }

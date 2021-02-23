@@ -81,9 +81,27 @@ impl VMFunction {
 	}
 }
 
+impl Clone for JsValue {
+	fn clone(&self) -> JsValue {
+        match(self) {
+			JsValue::JSUndefined => JsValue::JSUndefined,
+			JsValue::JSNULL => JsValue::JSNULL,
+			JsValue::JSBoolean(b) => JsValue::JSBoolean(*b),
+			JsValue::JSNumber(n) => JsValue::JSNumber(*n),
+			JsValue::JSObject(obj) => JsValue::JSObject(obj.clone()) 
+		}
+    }
+}
+
+impl JsValue {
+	pub fn copy(&mut self, other: &Self) {
+		*self = other.clone();
+	}
+}
+
 impl SharedValue {
-	pub fn swap(&self, other: SharedValue) {
-		self.v.swap(&other.v);
+	pub fn replace(&mut self, other: SharedValue) {
+		self.v.borrow_mut().copy( &other.v.borrow());
 	}
 	pub fn new_null() -> Self {
 		let v = JsValue::JSNULL;		

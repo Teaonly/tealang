@@ -65,7 +65,7 @@ function test_op1()
 
     assert(('b' > 'a') == true, "('b' > 'a') === true");
 
-    print("-------- END TESTING -----------");
+    println("-------- END TESTING -----------");
 }
 
 function test_cvt()
@@ -94,56 +94,58 @@ function test_cvt()
     // assert(((4294967296 * 3 - 4) | 0) === -4);
     // assert(((4294967296 * 3 - 4) >>> 0) === (4294967296 - 4));
 
-    print("-------- END TESTING -----------");
+    println("-------- END TESTING -----------");
 }
 
 function test_inc_dec()
 {
     var a, r;
-    
+        
     a = 1;
     r = a++;
-    assert(r === 1 && a === 2, true, "++");
+    assert(r === 1 && a === 2, "++1");
 
     a = 1;
     r = ++a;
-    assert(r === 2 && a === 2, true, "++");
+    assert(r === 2 && a === 2, "++2");
 
     a = 1;
     r = a--;
-    assert(r === 1 && a === 0, true, "--");
+    assert(r === 1 && a === 0, "--1");
 
     a = 1;
     r = --a;
-    assert(r === 0 && a === 0, true, "--");
+    assert(r === 0 && a === 0, "--2");
 
     a = {x:true};
     a.x++;
-    assert(a.x, 2, "++");
+    assert(a.x == 2, "++3");
 
     a = {x:true};
     a.x--;
-    assert(a.x, 0, "--");
+    assert(a.x == 0, "--3");
 
     a = [true];
     a[0]++;
-    assert(a[0], 2, "++");
-    
+    assert(a[0] == 2, "++4");
+
     a = {x:true};
     r = a.x++;
-    assert(r === 1 && a.x === 2, true, "++");
-    
+    assert(r === 1 && a.x === 2, "++5");
+
     a = {x:true};
     r = a.x--;
-    assert(r === 1 && a.x === 0, true, "--");
-    
+    assert(r === 1 && a.x === 0, "--4");
+
     a = [true];
     r = a[0]++;
-    assert(r === 1 && a[0] === 2, true, "++");
-    
+    assert(r === 1 && a[0] === 2, "++6");
+
     a = [true];
     r = a[0]--;
-    assert(r === 1 && a[0] === 0, true, "--");
+    assert(r === 1 && a[0] === 0, "--5");
+
+    println("-------- END TESTING -----------");
 }
 
 function F(x)
