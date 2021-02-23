@@ -894,7 +894,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 						if br == true {
 							continue;
 						} else {
-							// println!("'{}' is not defined", s);
+							println!("'{}' is not defined", s);
 							JsException::new()
 						}
 					},
