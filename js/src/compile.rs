@@ -35,6 +35,10 @@ impl<'a> Iterator for AstListIterator<'a> {
 
 #[allow(dead_code)] 
 impl AstNode {
+    fn str(&self) -> &str {
+        self.str_value.as_ref().unwrap()
+    }
+
     fn a(&self) -> &AstNode {
         return self.a.as_ref().unwrap();
     }
@@ -121,10 +125,10 @@ impl VMFunction {
         VMFunction {
             script: script,
             numparams: 0,
+            numvars: 0,
             code:       Vec::new(),
             num_tab:    Vec::new(),
-            str_tab:    Vec::new(),
-            var_tab:    Vec::new(),
+            str_tab:    Vec::new(),           
             func_tab:   Vec::new(),
 
             jumps:      Vec::new(),
@@ -174,25 +178,6 @@ impl VMFunction {
         self.emit(id);
     }
 
-    fn emitlocal(&mut self, oploc: OpcodeType, opvar: OpcodeType, var: &str) {
-        let (found, i) =  self.findlocal(var);
-        if !found {
-            self.emitstring(opvar, var);
-        } else {
-            self.emitop(oploc);
-            self.emit(i);
-        }
-    }
-
-    fn findlocal(&self, var: &str) -> (bool, u16) {
-        for i in 0..self.var_tab.len() {
-            if self.var_tab[i].eq(var) {
-                return (true, i as u16);
-            }
-        }
-        return (false, 0);
-    }
-
     fn addnumber(&mut self, value: f64) -> u16 {
         for i in 0..self.num_tab.len() {
             if self.num_tab[i] == value {
@@ -204,6 +189,14 @@ impl VMFunction {
 
         return r as u16;
     }
+    fn findstring(&mut self, var: &str) -> (bool, u16) {
+        for i in 0..self.str_tab.len() {
+            if self.str_tab[i].eq(var) {
+                return (true, i as u16);
+            }
+        }
+        return (false, 0);
+    }    
     fn addstring(&mut self, var: &str) -> u16 {
         for i in 0..self.str_tab.len() {
             if self.str_tab[i].eq(var) {
@@ -215,7 +208,7 @@ impl VMFunction {
         self.str_tab.push( var.to_string() );
 
         return r as u16;
-    }
+    }    
 
     fn current(& self) -> usize {
         return self.code.len();
@@ -311,15 +304,6 @@ impl VMFunction {
         self.jumps.pop();
     }
 
-    fn addlocal(&mut self, node: &AstNode) -> u16 {
-        let name = node.str_value.as_ref().unwrap();
-
-        self.var_tab.push(name.clone());
-
-        let id = self.var_tab.len() as u16;
-        return id;
-    }
-
     fn addfunc(&mut self, func: VMFunction) -> u16 {
         let r = self.func_tab.len();
         self.func_tab.push(Rc::new(Box::new(func)));
@@ -340,7 +324,8 @@ impl VMFunction {
         }
 
         if node.ast_type == AstType::EXP_VAR {
-            self.addlocal(node.a());
+            let var_name = node.a().str();
+            self.addstring(var_name);
         }
 
         if node.a.is_some() {
@@ -369,8 +354,9 @@ impl VMFunction {
                     self.emitop(OpcodeType::OP_CLOSURE);
                     self.emit(fid);
 
-                    let vid = self.addlocal( n.a() );
-                    self.emitop(OpcodeType::OP_SETLOCAL);
+                    let name = n.a().str();
+                    let vid = self.addstring( &name );
+                    self.emitop(OpcodeType::OP_SETVAR);
                     self.emit(vid);
                     self.emitop(OpcodeType::OP_POP);
                 }
@@ -391,7 +377,7 @@ fn compile_object(f: &mut VMFunction, lst: &AstNode) {
         let prop = kv.a();
         match prop.ast_type {
             AstType::AST_IDENTIFIER | AstType::EXP_STRING => {
-                let prop_str = prop.str_value.as_ref().unwrap();
+                let prop_str = prop.str();
                 f.emitstring(OpcodeType::OP_STRING, prop_str);
             },
             AstType::EXP_NUMBER => {
@@ -459,7 +445,7 @@ fn compile_delete(f: &mut VMFunction, exp: &AstNode) {
         },
         AstType::EXP_MEMBER => {
             compile_exp(f, arg.a());
-            let member_str = arg.b().str_value.as_ref().unwrap();
+            let member_str = arg.b().str();
             f.emitstring(OpcodeType::OP_DELPROP_S, member_str);
         },
         AstType::EXP_IDENTIFIER => {
@@ -473,8 +459,8 @@ fn compile_delete(f: &mut VMFunction, exp: &AstNode) {
 
 fn compile_typeof(f: &mut VMFunction, exp: &AstNode) {
     if exp.a().ast_type == AstType::EXP_IDENTIFIER {
-        let var_str = exp.a().str_value.as_ref().unwrap();
-        f.emitlocal(OpcodeType::OP_GETLOCAL, OpcodeType::OP_HASVAR, var_str);
+        let var_str = exp.a().str();
+        f.emitstring(OpcodeType::OP_HASVAR, var_str);
     } else {
         compile_exp(f, exp.a());
     }
@@ -495,13 +481,13 @@ fn compile_binary(f: &mut VMFunction, exp: &AstNode, op: OpcodeType) {
 fn compile_assignop(f: &mut VMFunction, var: &AstNode, op: OpcodeType, is_post: bool) {
     match var.ast_type {
         AstType::EXP_IDENTIFIER => {
-            let id_str = var.str_value.as_ref().unwrap();
-            f.emitlocal(OpcodeType::OP_GETLOCAL, OpcodeType::OP_GETVAR, id_str);
+            let id_str = var.str();
+            f.emitstring(OpcodeType::OP_GETVAR, id_str);
             f.emitop(op);
             if is_post {
                 f.emitop(OpcodeType::OP_ROT2);
             }
-            f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, id_str);
+            f.emitstring(OpcodeType::OP_SETVAR, id_str);
             if is_post {
                 f.emitop(OpcodeType::OP_POP);
             }
@@ -520,7 +506,7 @@ fn compile_assignop(f: &mut VMFunction, var: &AstNode, op: OpcodeType, is_post: 
         AstType::EXP_MEMBER => {
             compile_exp(f, var.a());
             f.emitop(OpcodeType::OP_DUP);
-            let member_str = var.b().str_value.as_ref().unwrap();
+            let member_str = var.b().str();
             f.emitstring(OpcodeType::OP_GETPROP_S, member_str);
             f.emitop(op);
             if is_post {
@@ -540,11 +526,11 @@ fn compile_assignwith(f: &mut VMFunction, exp: &AstNode, op: OpcodeType) {
 
     match var.ast_type {
         AstType::EXP_IDENTIFIER => {
-            let id_str = var.str_value.as_ref().unwrap();
-            f.emitlocal(OpcodeType::OP_GETLOCAL, OpcodeType::OP_GETVAR, id_str);
+            let id_str = var.str();
+            f.emitstring(OpcodeType::OP_GETVAR, id_str);
             compile_exp(f, rhs);
             f.emitop(op);
-            f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, id_str);
+            f.emitstring(OpcodeType::OP_SETVAR, id_str);
         },
         AstType::EXP_INDEX => {
             compile_exp(f, var.a());
@@ -558,7 +544,7 @@ fn compile_assignwith(f: &mut VMFunction, exp: &AstNode, op: OpcodeType) {
         AstType::EXP_MEMBER => {
             compile_exp(f, var.a());
             f.emitop(OpcodeType::OP_DUP);
-            let member_str = var.b().str_value.as_ref().unwrap();
+            let member_str = var.b().str();
             f.emitstring(OpcodeType::OP_GETPROP_S, member_str);
             compile_exp(f, rhs);
             f.emitop(op);
@@ -576,9 +562,9 @@ fn compile_assign(f: &mut VMFunction, exp: &AstNode) {
 
     match var.ast_type {
         AstType::EXP_IDENTIFIER => {
-            let id_str = var.str_value.as_ref().unwrap();
+            let id_str = var.str();
             compile_exp(f, rhs);
-            f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, id_str);
+            f.emitstring(OpcodeType::OP_SETVAR, id_str);
         },
         AstType::EXP_INDEX => {
             compile_exp(f, var.a());
@@ -587,7 +573,7 @@ fn compile_assign(f: &mut VMFunction, exp: &AstNode) {
             f.emitop(OpcodeType::OP_SETPROP);
         },
         AstType::EXP_MEMBER => {            
-            let member_str = var.b().str_value.as_ref().unwrap();
+            let member_str = var.b().str();
             compile_exp(f, var.a());
             compile_exp(f, rhs);
             f.emitstring(OpcodeType::OP_SETPROP_S, member_str);
@@ -626,7 +612,7 @@ fn compile_call(f: &mut VMFunction, exp: &AstNode) {
         AstType::EXP_MEMBER => {
             compile_exp(f, fun.a());
             f.emitop(OpcodeType::OP_DUP);
-            let member = fun.b().str_value.as_ref().unwrap();
+            let member = fun.b().str();
             f.emitstring(OpcodeType::OP_GETPROP_S, member);
             f.emitop(OpcodeType::OP_ROT2);
         },
@@ -645,7 +631,7 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
     match exp.ast_type {
         /* immediately value*/ 
         AstType::EXP_STRING => {
-            let value = exp.str_value.as_ref().unwrap();
+            let value = exp.str();
             f.emitstring(OpcodeType::OP_STRING, value);
         },
         AstType::EXP_NUMBER => {
@@ -691,8 +677,8 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
         }
 
         AstType::EXP_IDENTIFIER => {
-            let var_string = exp.str_value.as_ref().unwrap();
-            f.emitlocal(OpcodeType::OP_GETLOCAL, OpcodeType::OP_GETVAR, var_string);
+            let var_string = exp.str();
+            f.emitstring(OpcodeType::OP_GETVAR, var_string);
         },
 
         AstType::EXP_INDEX => {
@@ -703,7 +689,7 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
 
         AstType::EXP_MEMBER => {
             compile_exp(f, exp.a());
-            let prop_str = exp.b().str_value.as_ref().unwrap();
+            let prop_str = exp.b().str();
             f.emitstring(OpcodeType::OP_GETPROP_S, prop_str);
         },
 
@@ -950,7 +936,7 @@ fn compile_trycatchfinally(f: &mut VMFunction, try_block: &AstNode, catch_var: &
         }
         f.label_current_to(l2);
 
-        let catchvar = catch_var.str_value.as_ref().unwrap();
+        let catchvar = catch_var.str();
         f.new_scope(VMJumpScope::CatchScope);
         {
             f.emitstring(OpcodeType::OP_CATCH, catchvar);
@@ -979,7 +965,7 @@ fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
     l1 = f.emitjump(OpcodeType::OP_TRY);
     {
         /* if we get here, we have caught an exception in the try block */
-        let catchvar = b.str_value.as_ref().unwrap();
+        let catchvar = b.str();
         f.new_scope(VMJumpScope::CatchScope);
         {
             f.emitstring(OpcodeType::OP_CATCH, catchvar);
@@ -1074,8 +1060,8 @@ fn compile_varinit(f: &mut VMFunction, lst: &AstNode) {
     for n in it {
         if n.has_b() {
             compile_exp(f, n.b());
-            let var_str = n.a().str_value.as_ref().unwrap();
-            f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, var_str); 
+            let var_str = n.a().str();
+            f.emitstring(OpcodeType::OP_SETVAR, var_str); 
             f.emitop(OpcodeType::OP_POP);
         }
     }
@@ -1090,8 +1076,8 @@ fn compile_assignforin(f: &mut VMFunction, stm: &AstNode) {
         if lhs.has_b() {
             panic!("more than one loop variable in for-in statement");
         }
-        let var = lhs.a().str_value.as_ref().unwrap();
-        f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, var);
+        let var = lhs.a().str();
+        f.emitstring(OpcodeType::OP_SETVAR, var);
         f.emitop(OpcodeType::OP_POP);
         return;
     }
@@ -1100,8 +1086,8 @@ fn compile_assignforin(f: &mut VMFunction, stm: &AstNode) {
         panic!("invalid l-value in for-in loop assignment");
     }
 
-    let var = lhs.str_value.as_ref().unwrap();
-    f.emitlocal(OpcodeType::OP_SETLOCAL, OpcodeType::OP_SETVAR, var);
+    let var = lhs.str();
+    f.emitstring(OpcodeType::OP_SETVAR, var);
     f.emitop(OpcodeType::OP_POP);
     return;
 }
@@ -1231,7 +1217,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
 
         AstType::STM_LABEL => {
             let a = stm.a.as_ref().unwrap();
-            f.new_scope(VMJumpScope::LabelSection(a.str_value.as_ref().unwrap().to_string()));
+            f.new_scope(VMJumpScope::LabelSection(a.str().to_string()));
            
             compile_stm(f, stm.b.as_ref().unwrap());
             /* skip consecutive labels */
@@ -1253,7 +1239,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             let break_scope: usize;
 
             if !a.is_null() {
-                let break_target = a.str_value.as_ref().unwrap();
+                let break_target = a.str();
                 break_scope = f.target_scope_by_name(break_target);
             } else {
                 break_scope = f.target_break_scope();
@@ -1273,7 +1259,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             let continue_scope: usize;
 
             if !a.is_null() {
-                let continue_target = a.str_value.as_ref().unwrap();
+                let continue_target = a.str();
                 continue_scope = f.target_scope_by_name(continue_target);
             } else {
                 continue_scope = f.target_continue_scope();
@@ -1349,25 +1335,26 @@ fn compile_func(name: &AstNode, params: &AstNode, body: &AstNode, script: bool) 
         f.numparams = params.len();
         let it = params.iter();
         for node in it {
-            f.addlocal(node);
+            let name = node.str();
+            f.addstring(name);
         }
     }
 
     if !body.is_null() {
 		f.parsing_vardec(body);
+        f.numvars = f.str_tab.len() - f.numparams;
 		f.parsing_fundec(body);
     }
 
     if !name.is_null() {
-
-        let name_str = name.str_value.as_ref().unwrap();
+        let name_str = name.str();
 
         /* for recurrent call function self, set a local variable into this */
-        let (found, _) = f.findlocal( name_str );
+        let (found, _) = f.findstring( name_str );
         if !found {
             f.emitop(OpcodeType::OP_CURRENT);
-            f.emitop(OpcodeType::OP_SETLOCAL);
-            let id = f.addlocal(name);
+            f.emitop(OpcodeType::OP_SETVAR);
+            let id = f.addstring(name_str);
             f.emit(id);
             f.emitop(OpcodeType::OP_POP);
         }
@@ -1403,10 +1390,6 @@ pub fn dump_function(f: &VMFunction) {
     }
     println!("---str----");
     for n in &f.str_tab {
-        println!("{}", n);
-    }
-    println!("---var----");
-    for n in &f.var_tab {
         println!("{}", n);
     }
     println!("---code----");

@@ -39,18 +39,6 @@ impl VMFunction {
 		*pc = *pc + 1;
 		return value;
 	}
-	pub fn var(&self, pc:&mut usize) -> &str {
-		if *pc >= self.code.len() {
-			panic!("fetch raw out of code");
-		}
-		let id = self.code[*pc] as usize;
-		if id > self.var_tab.len() {
-			panic!("var out of vm");
-		}
-
-		*pc = *pc + 1;
-		return &self.var_tab[id];
-	}
 	pub fn string(&self, pc:&mut usize) -> &str {
 		if *pc >= self.code.len() {
 			panic!("fetch raw out of code");

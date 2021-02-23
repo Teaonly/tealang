@@ -268,15 +268,10 @@ pub enum OpcodeType {
 	OP_THIS,
 	OP_CURRENT,	/* currently executing function object */
 
-	OP_GETLOCAL,	/* -K- <value> */
-	OP_SETLOCAL,	/* <value> -K- <value> */
-	OP_DELLOCAL,	/* -K- false */
-
 	OP_HASVAR,	/* -S- ( <value> | undefined ) */
 	OP_GETVAR,	/* -S- <value> */
 	OP_SETVAR,	/* <value> -S- <value> */
 	OP_DELVAR,	/* -S- <success> */
-
 
 	OP_INITPROP,	/* <obj> <key> <val> -- <obj> */
 	OP_INITGETTER,	/* <obj> <key> <closure> -- <obj> */
@@ -370,9 +365,6 @@ impl TryFrom<u16> for OpcodeType {
 			x if x == OpcodeType::OP_FALSE as u16 => Ok(OpcodeType::OP_FALSE),
 			x if x == OpcodeType::OP_THIS as u16 => Ok(OpcodeType::OP_THIS),
 			x if x == OpcodeType::OP_CURRENT as u16 => Ok(OpcodeType::OP_CURRENT),
-			x if x == OpcodeType::OP_GETLOCAL as u16 => Ok(OpcodeType::OP_GETLOCAL),
-			x if x == OpcodeType::OP_SETLOCAL as u16 => Ok(OpcodeType::OP_SETLOCAL),
-			x if x == OpcodeType::OP_DELLOCAL as u16 => Ok(OpcodeType::OP_DELLOCAL),
 			x if x == OpcodeType::OP_HASVAR as u16 => Ok(OpcodeType::OP_HASVAR),
 			x if x == OpcodeType::OP_GETVAR as u16 => Ok(OpcodeType::OP_GETVAR),
 			x if x == OpcodeType::OP_SETVAR as u16 => Ok(OpcodeType::OP_SETVAR),
@@ -466,11 +458,11 @@ pub struct VMJumpTable {
 pub struct VMFunction {	
 	pub script:		bool,
 	pub numparams:	usize,
+	pub numvars:	usize,
 	pub code:		Vec<u16>,
 
 	pub num_tab:	Vec<f64>,
 	pub str_tab:	Vec<String>,
-	pub var_tab:	Vec<String>,
 	pub func_tab:	Vec<Rc<Box<VMFunction>>>,
 
 	pub jumps:		Vec<VMJumpTable>,

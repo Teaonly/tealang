@@ -832,39 +832,6 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				rt.push_from(bot - 1);
 			},
 			
-			OpcodeType::OP_GETLOCAL => {
-				let v = func.var(&mut pc);
-				let result = rt.getvariable(&v);
-				let excp = match result {
-					Ok(br) => {
-						if br == true {
-							continue;
-						} else {
-							// println!("'{}' is not defined", s);
-							JsException::new()
-						}
-					},
-					Err(e) => {
-						e
-					},
-				};
-				with_exception = Some(excp);
-				break;
-			},
-			OpcodeType::OP_SETLOCAL => {
-				let v = func.var(&mut pc);
-				let result = rt.setvariable(v);
-				if let Err(e) = result {
-					with_exception = Some(e);
-					break;
-				}
-			},
-			OpcodeType::OP_DELLOCAL => {
-				let v = func.var(&mut pc);
-				let r = rt.delvariable(v);
-				rt.push_boolean(r);
-			},
-
 			OpcodeType::OP_GETVAR => {
 				let s = func.string(&mut pc);
 				let result = rt.getvariable(&s);
@@ -1414,8 +1381,9 @@ fn jscall_script(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 	let vmf = &rfobj.get_func().vmf;
 
 	/* init var in current env*/
-	for var in &vmf.var_tab {
+	for i in (0..vmf.numvars) {
 		let jv = SharedValue::new_undefined();
+		let var = &vmf.str_tab[i];
 		rt.cenv.borrow_mut().init_var(var, jv);
 	}
 
@@ -1464,14 +1432,14 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 	let min_argc = cmp::min(argc, vmf.numparams);
 	for i in 0..min_argc {
 		let argv = rt.stack[i + 1 + bot].clone();
-		rt.cenv.borrow_mut().init_var(&vmf.var_tab[i], argv);
+		rt.cenv.borrow_mut().init_var(&vmf.str_tab[i], argv);
 	}
 	rt.pop(argc);
 
 	/* init var in current env*/
-	for i in min_argc..vmf.var_tab.len() {
+	for i in min_argc..(vmf.numvars + vmf.numparams) {
 		let jv = SharedValue::new_undefined();
-		rt.cenv.borrow_mut().init_var(&vmf.var_tab[i], jv);
+		rt.cenv.borrow_mut().init_var(&vmf.str_tab[i], jv);
 	}
 
 	jsrun(rt, vmf, 0)?;
