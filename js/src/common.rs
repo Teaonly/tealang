@@ -38,6 +38,7 @@ pub enum TokenType {
 	TK_NEW,
 	TK_NULL,
 	TK_RETURN,
+	TK_UNDEF,
 	TK_SWITCH,
 	TK_THIS,
 	TK_THROW,

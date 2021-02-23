@@ -99,11 +99,13 @@ function test_eq()
     assert(0 == false);
     assert("" == 0);
     assert("123" == 123);
-    assert("122" != 123);
-    assert((new Number(1)) == 1);
-    assert(2 == (new Number(2)));
-    assert((new String("abc")) == "abc");
+    assert("122" != 123);    
+    //assert((new Number(1)) == 1);
+    //assert(2 == (new Number(2)));
+    //assert((new String("abc")) == "abc");    
     assert({} != "abc");
+
+    print("-------- END TESTING -----------");    
 }
 
 function test_inc_dec()
@@ -237,87 +239,6 @@ function test_arguments()
     f2(1, 3);
 }
 
-function test_class()
-{
-    var o;
-    class C {
-        constructor() {
-            this.x = 10;
-        }
-        f() {
-            return 1;
-        }
-        static F() {
-            return -1;
-        }
-        get y() {
-            return 12;
-        }
-    };
-    class D extends C {
-        constructor() {
-            super();
-            this.z = 20;
-        }
-        g() {
-            return 2;
-        }
-        static G() {
-            return -2;
-        }
-        h() {
-            return super.f();
-        }
-        static H() {
-            return super["F"]();
-        }
-    }
-
-    assert(C.F() === -1);
-    assert(Object.getOwnPropertyDescriptor(C.prototype, "y").get.name === "get y");
-
-    o = new C();
-    assert(o.f() === 1);
-    assert(o.x === 10);
-    
-    assert(D.F() === -1);
-    assert(D.G() === -2);
-    assert(D.H() === -1);
-
-    o = new D();
-    assert(o.f() === 1);
-    assert(o.g() === 2);
-    assert(o.x === 10);
-    assert(o.z === 20);
-    assert(o.h() === 1);
-
-    /* test class name scope */
-    var E1 = class E { static F() { return E; } };
-    assert(E1 === E1.F());
-};
-
-function test_template()
-{
-    var a, b;
-    b = 123;
-    a = `abc${b}d`;
-    assert(a, "abc123d");
-
-    a = String.raw `abc${b}d`;
-    assert(a, "abc123d");
-
-    a = "aaa";
-    b = "bbb";
-    assert(`aaa${a, b}ccc`, "aaabbbccc");
-}
-
-function test_template_skip()
-{
-    var a = "Bar";
-    var { b = `${a + `a${a}` }baz` } = {};
-    assert(b, "BaraBarbaz");
-}
-
 function test_object_literal()
 {
     var x = 0, get = 1, set = 2; async = 3;
@@ -326,16 +247,6 @@ function test_object_literal()
 
     a = { x, get, set, async };
     assert(JSON.stringify(a), '{"x":0,"get":1,"set":2,"async":3}');
-}
-
-function test_regexp_skip()
-{
-    var a, b;
-    [a, b = /abc\(/] = [1];
-    assert(a === 1);
-    
-    [a, b =/abc\(/] = [2];
-    assert(a === 2);
 }
 
 function test_labels()
@@ -364,14 +275,6 @@ function test_spread()
 
     x = [ ...[ , ] ];
     assert(Object.getOwnPropertyNames(x).toString(), "0,length");
-}
-
-function test_function_length()
-{
-    assert( ((a, b = 1, c) => {}).length, 1);
-    assert( (([a,b]) => {}).length, 1);
-    assert( (({a,b}) => {}).length, 1);
-    assert( ((c, [a,b] = 1, d) => {}).length, 1);
 }
 
 function test_argument_scope()

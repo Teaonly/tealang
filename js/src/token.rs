@@ -423,6 +423,7 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
             "new" => Some(TokenType::TK_NEW),
 
             "null" => Some(TokenType::TK_NULL),
+            "undefined" => Some(TokenType::TK_UNDEF),
             "return" => Some(TokenType::TK_RETURN),
             "switch" => Some(TokenType::TK_SWITCH),
             "this" => Some(TokenType::TK_THIS),

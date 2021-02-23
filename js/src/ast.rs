@@ -271,6 +271,10 @@ fn ast_primary(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         let a = AstNode::new(AstType::EXP_NULL, tkr.line());
         return Ok(a);
     }
+    if tk_accept(tkr, TokenType::TK_UNDEF)? {
+        let a = AstNode::new(AstType::EXP_UNDEF, tkr.line());
+        return Ok(a);
+    }
     if tk_accept(tkr, TokenType::TK_TRUE)? {
         let a = AstNode::new(AstType::EXP_TRUE, tkr.line());
         return Ok(a);

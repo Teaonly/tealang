@@ -16,23 +16,17 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-    assert((NaN | 0) === 0);
-    assert((Infinity | 0) === 0);
-    assert(((-Infinity) | 0) === 0);
-
-    assert(("12345" | 0) === 12345);    
-    assert(("0x12345" | 0) === 0x12345);
-
-    assert(("12345" >>> 0) === 12345);
-    assert(("0x12345" >>> 0) === 0x12345);
-
-    assert((NaN >>> 0) === 0);
-    assert((Infinity >>> 0) === 0);
-    assert(((-Infinity) >>> 0) === 0);
-
-    // FIXME
-    // assert(((4294967296 * 3 - 4) | 0) === -4);
-    // assert(((4294967296 * 3 - 4) >>> 0) === (4294967296 - 4));
+    assert(null == undefined);
+    //assert(undefined == null);
+    //assert(true == 1);
+    //assert(0 == false);
+    //assert("" == 0);
+    //assert("123" == 123);
+    //assert("122" != 123);    
+    //assert((new Number(1)) == 1);
+    //assert(2 == (new Number(2)));
+    //assert((new String("abc")) == "abc");    
+    //assert({} != "abc");
 
     print("-------- END TESTING -----------");
 "#;
