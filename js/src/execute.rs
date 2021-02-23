@@ -77,10 +77,6 @@ impl JsRuntime {
 		loop {			
 			let r = env.borrow().query_variable(name);
 			if r {
-				let prop = env.borrow().get_variable(name);
-				if !prop.configable() {
-					return false;
-				}
 				env.borrow().drop_variable(name);
 				return true;
 			}
@@ -98,21 +94,15 @@ impl JsRuntime {
 		loop {			
 			let r = env.borrow().query_variable(name);
 			if r {
-				let prop = env.borrow().get_variable(name);
-				if prop.getter.is_some() {
-					self.push_object(prop.getter.unwrap().clone());		// function object
-					self.push(prop.value.clone());						// this object
-					jscall(self, 0)?;
-				} else {
-					self.push(prop.value.clone());
-				}
+				let prop = env.borrow().get_variable(name);				
+				self.push(prop.value.clone());				
 				return Ok(true);
 			}
 			if env.borrow().outer.is_none() {
 				return Ok(false);
 			} 
 			let r = env.borrow().fetch_outer();
-			env = r; 
+			env = r;
 		}
 	}
 
@@ -121,32 +111,22 @@ impl JsRuntime {
 		loop {
 			let r = env.borrow().query_variable(name);
 			if r {
-				let mut prop = env.borrow().get_variable(name);
-				if prop.setter.is_some() {
-					self.push_object(prop.setter.unwrap().clone());		// function object
-					self.push(prop.value.clone());						// this object
-					self.push_from( self.stack.len() - 3);				// value
-					jscall(self, 1)?;
-					self.pop(1);
-				} else {
-					if !prop.readonly() {
-						prop.value.replace( self.top(-1) );
-					}
-				}	
+				let mut prop = env.borrow().get_variable(name);				
+				prop.value.replace( self.top(-1) );
 				return Ok(());
-			} 
+			}
 			if env.borrow().outer.is_none() {
 				break;
-			} 
+			}
 			let r = env.borrow().fetch_outer();
-			env = r; 
+			env = r;
 		}
 		
 		let value = self.top(-1);
-		self.genv.borrow().put_variable(name);
+		self.cenv.borrow().put_variable(name);
 		let mut prop = self.genv.borrow().get_variable(name);
 		prop.value = value;
-		self.genv.borrow().set_variable(name, prop);
+		self.cenv.borrow().set_variable(name, prop);
 
 		return Ok(());
 	}
@@ -572,8 +552,7 @@ impl JsRuntime {
 			}
 		}
 
-		return Ok(target.to_string());
-		
+		return Ok(target.to_string());	
 	}
 
 	/* create new object */
@@ -971,7 +950,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 			},
 			OpcodeType::OP_INITSETTER => {
 				let target = rt.top(-3).get_object();
-				let name =match rt.to_string( rt.top(-2)) {
+				let name = match rt.to_string( rt.top(-2)) {
 					Ok(s) => s,
 					Err(e) => {
 						with_exception = Some(e);
