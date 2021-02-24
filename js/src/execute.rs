@@ -95,7 +95,7 @@ impl JsRuntime {
 			let r = env.borrow().query_variable(name);
 			if r {
 				let prop = env.borrow().get_variable(name);				
-				self.push(prop.value.clone());				
+				self.push(prop.value.clone());
 				return Ok(true);
 			}
 			if env.borrow().outer.is_none() {
@@ -1399,7 +1399,7 @@ fn jscall_script(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 	return Ok(())
 }
 
-fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
+fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {	
 	let bot = rt.stack.len() - 1 - argc;
 
 	let fobj = rt.stack[bot-1].get_object();
@@ -1467,7 +1467,7 @@ fn jscall_builtin(rt: &mut JsRuntime, argc: usize) {
 	(builtin.f)(rt);
 
 	let jv = rt.stack.pop().unwrap();
-	rt.pop(argc + 2);
+	rt.pop(builtin.argc + 2);
 	rt.push(jv);
 }
 

@@ -38,6 +38,8 @@ pub fn run_script(rt: &mut JsRuntime, vmf: SharedFunction) {
 
 	jscall(rt, 0);
 
-	assert!( rt.stack.len() == 1);
+	if rt.stack.len() != 1 {
+		println!("stack len should be 1 but get {}", rt.stack.len());
+	}
 }
 
