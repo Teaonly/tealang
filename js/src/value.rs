@@ -76,20 +76,27 @@ impl Clone for JsValue {
 			JsValue::JSNULL => JsValue::JSNULL,
 			JsValue::JSBoolean(b) => JsValue::JSBoolean(*b),
 			JsValue::JSNumber(n) => JsValue::JSNumber(*n),
-			JsValue::JSObject(obj) => JsValue::JSObject(obj.clone()) 
+			JsValue::JSObject(obj) => {
+				// only string is primitive
+				if obj.borrow().is_string() {					
+					JsValue::JSObject(SharedObject_new(obj.borrow().clone_string()))
+				} else {
+					JsValue::JSObject(obj.clone())
+				}				
+			} 
 		}
     }
 }
 
 impl JsValue {
-	pub fn copy(&mut self, other: &Self) {
+	pub fn copyfrom(&mut self, other: &Self) {
 		*self = other.clone();
 	}
 }
 
 impl SharedValue {
 	pub fn replace(&mut self, other: SharedValue) {
-		self.v.borrow_mut().copy( &other.v.borrow());
+		self.v.borrow_mut().copyfrom( &other.v.borrow());
 	}
 	pub fn new_null() -> Self {
 		let v = JsValue::JSNULL;		
@@ -397,6 +404,15 @@ impl JsObject {
 			properties: HashMap::new(),
 			value: bvalue,
 		}
+	}
+
+	pub fn clone_string(&self) -> JsObject {
+		assert!( self.is_string() );
+
+		let str = self.get_string();
+		let new_cls = JsClass::string(str);
+		let proto = self.prototype.as_ref().unwrap().clone();
+		JsObject::new_with_class(proto, new_cls)
 	}
 
 	pub fn type_string(&self) -> String {
