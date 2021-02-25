@@ -546,28 +546,67 @@ pub struct JsObject {
 	pub value:	JsClass,
 }
 
-/* Property attribute flags */
-#[allow(non_camel_case_types)]
-#[derive(Copy, Clone, PartialEq)]
-pub enum JsPropertyAttr {
-	NONE,
-	READONLY,
-	DONTENUM,
-	DONTCONF,
-	READONLY_DONTENUM,
-	READONLY_DONTCONF,
-	DONTENUM_DONTCONF,
-	READONLY_DONTENUM_DONTCONF,
-}
-
 #[allow(non_camel_case_types)]
 #[derive(Clone)]
 pub struct JsProperty {
-	pub value:	SharedValue,
-	pub attr:	JsPropertyAttr,
+	pub value:			SharedValue,
 	pub getter:	Option<SharedObject>,
 	pub setter:	Option<SharedObject>,
+
+	// attribute flags
+	attr_writable:		bool,
+	attr_enumerable: 	bool,
+	attr_configurable:	bool,
 }
+pub type JsPropertyAttr = (bool, bool, bool);	//writeable, enumerable, configurable 
+pub const JsDefaultAttr: JsPropertyAttr = (true, false, true);
+pub const JsReadonlyAttr: JsPropertyAttr = (false, false, false);
+
+impl JsProperty {
+	pub fn new() -> Self {
+		JsProperty {
+			value: SharedValue::new_undefined(),
+			attr_writable: true,
+			attr_configurable: true,
+			attr_enumerable: false,
+			getter: None,
+			setter: None,
+		}
+	}	
+	pub fn attr(&self) -> JsPropertyAttr {
+		(self.attr_writable, self.attr_enumerable, self.attr_configurable)
+	}
+	pub fn writeable(&self) -> bool {
+		if self.setter.is_none() {
+			return self.attr_writable;
+		}
+		return true;
+	}
+	pub fn enumerable(&self) -> bool {
+		return self.attr_enumerable;
+	}
+	pub fn configable(&self) -> bool {
+		return self.attr_configurable;
+	}	
+	pub fn fill_attr(&mut self, attr: JsPropertyAttr) {
+		if self.attr_configurable {
+			self.attr_writable = attr.0;
+			self.attr_enumerable = attr.1;
+			self.attr_configurable = attr.2;
+		}
+	}	
+	pub fn fill(&mut self, jv: SharedValue, attr: JsPropertyAttr, getter:Option<SharedObject>, setter: Option<SharedObject>) {		
+		if self.writeable() {
+			self.value = jv;
+		}		
+		if self.configable() {
+			self.getter = getter;
+			self.setter = setter;
+		}
+		self.fill_attr(attr);
+	}
+}
+
 
 #[allow(non_camel_case_types)]
 pub struct JsEnvironment {

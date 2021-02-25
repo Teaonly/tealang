@@ -281,40 +281,6 @@ impl SharedValue {
 	}
 }
 
-impl JsProperty {
-	pub fn new() -> Self {
-		JsProperty {
-			value: SharedValue::new_undefined(),
-			attr: JsPropertyAttr::NONE,
-			getter: None,
-			setter: None,
-		}
-	}
-
-	pub fn readonly(&self) -> bool {
-		if self.attr == JsPropertyAttr::READONLY || self.attr == JsPropertyAttr::READONLY_DONTENUM 
-			|| self.attr == JsPropertyAttr::READONLY_DONTCONF || self.attr == JsPropertyAttr::READONLY_DONTENUM_DONTCONF {
-			return true;
-		}
-		return false;
-	} 
-	
-	pub fn configable(&self) -> bool {
-		if self.attr == JsPropertyAttr::DONTCONF || self.attr == JsPropertyAttr::READONLY_DONTCONF 
-			|| self.attr == JsPropertyAttr::DONTENUM_DONTCONF || self.attr == JsPropertyAttr::READONLY_DONTENUM_DONTCONF {
-			return false;
-		}
-		return true;
-	}
-
-	pub fn fill(&mut self, jv: SharedValue, attr: JsPropertyAttr, getter:Option<SharedObject>, setter: Option<SharedObject>) {
-		self.value = jv;
-		self.attr = attr;
-		self.getter = getter;
-		self.setter = setter;
-	}
-}
-
 impl JsException {
 	pub fn new() -> JsException {
 		JsException{}
