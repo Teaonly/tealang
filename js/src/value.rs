@@ -281,6 +281,52 @@ impl SharedValue {
 	}
 }
 
+
+impl JsProperty {
+	pub fn new() -> Self {
+		JsProperty {
+			value: SharedValue::new_undefined(),
+			attr_writable: true,
+			attr_configurable: true,
+			attr_enumerable: false,
+			getter: None,
+			setter: None,
+		}
+	}	
+	pub fn attr(&self) -> JsPropertyAttr {
+		(self.attr_writable, self.attr_enumerable, self.attr_configurable)
+	}
+	pub fn writeable(&self) -> bool {
+		if self.setter.is_none() {
+			return self.attr_writable;
+		}
+		return true;
+	}
+	pub fn enumerable(&self) -> bool {
+		return self.attr_enumerable;
+	}
+	pub fn configable(&self) -> bool {
+		return self.attr_configurable;
+	}	
+	pub fn fill_attr(&mut self, attr: JsPropertyAttr) {
+		if self.attr_configurable {
+			self.attr_writable = attr.0;
+			self.attr_enumerable = attr.1;
+			self.attr_configurable = attr.2;
+		}
+	}	
+	pub fn fill(&mut self, jv: SharedValue, attr: JsPropertyAttr, getter:Option<SharedObject>, setter: Option<SharedObject>) {		
+		if self.writeable() {
+			self.value = jv;
+		}		
+		if self.configable() {
+			self.getter = getter;
+			self.setter = setter;
+		}
+		self.fill_attr(attr);
+	}
+}
+
 impl JsException {
 	pub fn new() -> JsException {
 		JsException{}
@@ -311,7 +357,7 @@ impl JsObject {
     pub fn new() -> JsObject {
         JsObject {
 			extensible:	true,
-            prototype: None,
+            __proto__: None,
             properties: HashMap::new(),
             value: JsClass::object,
         }
@@ -319,7 +365,7 @@ impl JsObject {
 	pub fn new_with(prototype: SharedObject, value: JsClass) -> JsObject {
         JsObject {
 			extensible:	true,
-            prototype: Some(prototype),
+            __proto__: Some(prototype),
             properties: HashMap::new(),
             value: value
         }
@@ -328,7 +374,7 @@ impl JsObject {
 	pub fn new_exception(e: JsException) -> JsObject {		
 		JsObject {
 			extensible:	false,
-			prototype: None,
+			__proto__: None,
 			properties: HashMap::new(),
 			value: JsClass::exception(e),
 
@@ -339,7 +385,7 @@ impl JsObject {
 		let it = JsIterator::new(target_);
 		JsObject {
 			extensible:	false,
-			prototype: None,
+			__proto__: None,
 			properties: HashMap::new(),
 			value: JsClass::iterator(it),
 
@@ -353,7 +399,7 @@ impl JsObject {
 		});
 		JsObject {
 			extensible:	false,
-			prototype: None,
+			__proto__: None,
 			properties: HashMap::new(),
 			value: fvalue,
 		}
@@ -366,7 +412,7 @@ impl JsObject {
 		});
 		JsObject {
 			extensible:	false,
-			prototype: None,
+			__proto__: None,
 			properties: HashMap::new(),
 			value: bvalue,
 		}
@@ -377,7 +423,7 @@ impl JsObject {
 
 		let str = self.get_string();
 		let new_cls = JsClass::string(str);
-		let proto = self.prototype.as_ref().unwrap().clone();
+		let proto = self.__proto__.as_ref().unwrap().clone();
 		JsObject::new_with(proto, new_cls)
 	}
 
@@ -478,8 +524,8 @@ impl JsObject {
 			return Some((r.unwrap().clone(), true));
 		}
 
-		if self.prototype.is_some() {
-			let proto = self.prototype.as_ref().unwrap().borrow();
+		if self.__proto__.is_some() {
+			let proto = self.__proto__.as_ref().unwrap().borrow();
 			return Some((proto.query_property(name).unwrap().0, false));
 		}
 		return None;

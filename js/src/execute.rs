@@ -497,7 +497,7 @@ impl JsRuntime {
 		let o = o.get_object();
 
 		loop {
-			let proto = x.borrow().prototype.clone();
+			let proto = x.borrow().__proto__.clone();
 			if let Some( proto ) = proto {
 				x = proto;
 				if o.as_ptr() == x.as_ptr() {
@@ -563,7 +563,7 @@ impl JsRuntime {
 
 		/* create a new object with above prototype, and shift it into the 'this' slot */
 		let mut nobj = JsObject::new();
-		nobj.prototype = Some(proto);
+		nobj.__proto__ = Some(proto);
 		let nobj = SharedObject_new(nobj);
 		self.push_object(nobj.clone());
 		if argc > 0 {
@@ -583,7 +583,7 @@ impl JsRuntime {
 
 	fn new_closure(&mut self, f: SharedFunction) {
 		let fobj = SharedObject_new(JsObject::new_function(f.clone(), self.cenv.clone()));	
-		fobj.borrow_mut().prototype = Some(self.prototypes.function_prototype.clone());
+		fobj.borrow_mut().__proto__ = Some(self.prototypes.function_prototype.clone());
 
 		let v = SharedValue::new_number(f.numparams as f64);
 		self.defproperty(fobj, "length", v, JsReadonlyAttr, None, None);		
