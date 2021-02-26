@@ -4,13 +4,13 @@ use crate::execute::*;
 use crate::builtin::*;
 
 pub fn new_runtime() -> JsRuntime {
-	let obj = SharedObject_new(JsObject::new());
+	let top_obj = SharedObject_new(JsObject::new());	
 
 	let prototypes = JsPrototype {
-		object_prototype:	obj.clone(),
-		string_prototype:	obj.clone(),
-		array_prototype:	obj.clone(),
-		function_prototype:	obj.clone(),		
+		object_prototype:	top_obj.clone(),
+		string_prototype:	SharedObject_new(JsObject::new_with(top_obj.clone(), JsClass::object)),
+		array_prototype:	SharedObject_new(JsObject::new_with(top_obj.clone(), JsClass::object)),
+		function_prototype:	SharedObject_new(JsObject::new_with(top_obj.clone(), JsClass::object)),
 	};
 
 	let genv = JsEnvironment::new();

@@ -316,7 +316,7 @@ impl JsObject {
             value: JsClass::object,
         }
 	}
-	pub fn new_with_class(prototype: SharedObject, value: JsClass) -> JsObject {
+	pub fn new_with(prototype: SharedObject, value: JsClass) -> JsObject {
         JsObject {
 			extensible:	true,
             prototype: Some(prototype),
@@ -378,7 +378,7 @@ impl JsObject {
 		let str = self.get_string();
 		let new_cls = JsClass::string(str);
 		let proto = self.prototype.as_ref().unwrap().clone();
-		JsObject::new_with_class(proto, new_cls)
+		JsObject::new_with(proto, new_cls)
 	}
 
 	pub fn type_string(&self) -> String {

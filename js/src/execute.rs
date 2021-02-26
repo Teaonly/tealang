@@ -194,22 +194,19 @@ impl JsRuntime {
 			}
 		}
 
-		/* Property not found on this object, so create one */
+		/* Property not found on this object, so create one with default attr*/
 		self.defproperty(target_, name, value, JsDefaultAttr, None, None);
 		return Ok(());	
 	}	
 
-	// get value from the proptery for object
+	// get value from the proptery of object
 	fn hasproperty(&mut self, target_: SharedObject, name: &str) -> Result<bool, JsException> {		
 		let target = target_.borrow_mut();
 		let target_ = target_.clone();
 
+		// get value from index
 		match target.value {
-			JsClass::string(ref s) => {
-				if name == "length" {
-					self.push_number( s.len() as f64);
-					return Ok(true);
-				} 
+			JsClass::string(ref s) => {				
 				if let Ok(idx) = name.parse::<usize>() {
 					if idx < s.len() {
 						self.push_string( s[idx..idx+1].to_string() ); 
@@ -218,10 +215,6 @@ impl JsRuntime {
 				}
 			},
 			JsClass::array(ref v) => {
-				if name == "length" {
-					self.push_number( v.len() as f64);
-					return Ok(true);
-				} 
 				if let Ok(idx) = name.parse::<usize>() {
 					if idx < v.len() {
 						self.push( v[idx].clone() );
@@ -627,7 +620,7 @@ impl JsRuntime {
 	}
 	pub fn push_string(&mut self, v:String) {
 		let jclass = JsClass::string(v);
-		let jobj = JsObject::new_with_class(self.prototypes.string_prototype.clone(), jclass);
+		let jobj = JsObject::new_with(self.prototypes.string_prototype.clone(), jclass);
 		let jv = SharedValue::new_object(jobj);
 		self.stack.push(jv);
 	}
@@ -800,7 +793,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 			},
 			OpcodeType::OP_NEWARRAY => {
 				let a = JsClass::array(Vec::new());
-				let obj = JsObject::new_with_class(rt.prototypes.array_prototype.clone(), a);
+				let obj = JsObject::new_with(rt.prototypes.array_prototype.clone(), a);
 				let jv = SharedValue::new_object(obj);
 				rt.push(jv);
 			},
@@ -1399,7 +1392,7 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 
 	/* create arguments */
 	if vmf.numparams > 0 {
-		let arg_obj = JsObject::new_with_class( rt.prototypes.object_prototype.clone(), JsClass::object);
+		let arg_obj = JsObject::new_with( rt.prototypes.object_prototype.clone(), JsClass::object);
 		let arg_value = SharedValue::new_object(arg_obj);
 
 		let jv = SharedValue::new_number(argc as f64);
