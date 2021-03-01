@@ -59,7 +59,6 @@ fn string_builtins() -> HashMap<String, JsBuiltinFunction> {
     return builtins;
 }
 
-
 // The Array class
 fn array_constructor(rt: &mut JsRuntime) {
     let a = JsClass::array(Vec::new());
@@ -83,7 +82,6 @@ fn array_tostring(rt: &mut JsRuntime) {
             result.push_str(", ");
         }
     }
-
     rt.push_string(result);
 }
 
@@ -91,6 +89,25 @@ fn array_builtins() -> HashMap<String, JsBuiltinFunction> {
     // TODO
     let mut builtins = HashMap::new();
     builtins.insert("toString".to_string(), JsBuiltinFunction::new(array_tostring, 1));    
+    return builtins;
+}
+
+// The Function class
+fn function_constructor(rt: &mut JsRuntime) {
+    let vmf = SharedFunction_new(VMFunction::new_anonymous());
+    let mut fobj = JsObject::new_function(vmf, rt.cenv.clone());
+    fobj.__proto__ = Some(rt.prototypes.function_prototype.clone());
+    rt.push(SharedValue::new_object(fobj));
+}
+
+fn function_tostring(rt: &mut JsRuntime) {
+    rt.push_string("function(...) {...}".to_string());
+}
+
+fn function_builtins() -> HashMap<String, JsBuiltinFunction> {
+    // TODO
+    let mut builtins = HashMap::new();
+    builtins.insert("toString".to_string(), JsBuiltinFunction::new(function_tostring, 1));    
     return builtins;
 }
 
@@ -150,4 +167,7 @@ pub fn prototypes_init(rt: &mut JsRuntime) {
     rt.prototypes.array_prototype = array_classs_object.clone();
 
     // Function
+    let func_classs_object = create_builtin_class( JsBuiltinFunction::new(array_constructor, 0), function_builtins(), Some(top_object.clone()));
+    set_global_class(rt, "Function", func_classs_object.clone());
+    rt.prototypes.function_prototype = func_classs_object.clone();
 }

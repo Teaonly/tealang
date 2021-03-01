@@ -121,7 +121,7 @@ impl AstNode {
 
 /* component stuff */
 impl VMFunction {
-    fn new(script: bool) -> Self {
+    pub fn new(script: bool) -> Self {
         VMFunction {
             script: script,
             numparams: 0,

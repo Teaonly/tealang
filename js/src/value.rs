@@ -4,10 +4,17 @@ use std::convert::TryFrom;
 use std::rc::Rc;
 
 use crate::common::*;
+use crate::compile::*;
 
 /* implementation for VMFunction/JsValue/JsObject */
 
 impl VMFunction {
+	pub fn new_anonymous() -> Self {
+		let mut anonymous = VMFunction::new(false);
+		anonymous.code.push( OpcodeType::OP_UNDEF as u16);
+		anonymous.code.push( OpcodeType::OP_RETURN as u16);
+		return anonymous;
+	}
 	pub fn opcode(&self, pc:&mut usize) -> OpcodeType {
 		if *pc >= self.code.len() {
 			panic!("fetch opcode out of code");
