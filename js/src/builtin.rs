@@ -53,13 +53,45 @@ fn string_tostring(rt: &mut JsRuntime) {
 }
 
 fn string_builtins() -> HashMap<String, JsBuiltinFunction> {
+    // TODO
     let mut builtins = HashMap::new();
     builtins.insert("toString".to_string(), JsBuiltinFunction::new(string_tostring, 1));    
     return builtins;
 }
 
-fn string_properties(rt: &mut JsRuntime, str_class: SharedObject) {
 
+// The Array class
+fn array_constructor(rt: &mut JsRuntime) {
+    let a = JsClass::array(Vec::new());
+    let obj = JsObject::new_with(rt.prototypes.array_prototype.clone(), a);
+    let jv = SharedValue::new_object(obj);
+    rt.push(jv);
+}
+
+fn array_tostring(rt: &mut JsRuntime) {
+    let value = rt.top(-1);
+    assert!(value.is_object());
+    let sobj = value.get_object();
+    let object = sobj.borrow();
+    assert!(object.is_array());
+
+    let mut result = String::new();
+    let v = object.get_array();
+    for i in 0..v.len() {
+        result.push_str( &v[i].to_string() );
+        if i != v.len() - 1 {
+            result.push_str(", ");
+        }
+    }
+
+    rt.push_string(result);
+}
+
+fn array_builtins() -> HashMap<String, JsBuiltinFunction> {
+    // TODO
+    let mut builtins = HashMap::new();
+    builtins.insert("toString".to_string(), JsBuiltinFunction::new(array_tostring, 1));    
+    return builtins;
 }
 
 // build prototypes chian
@@ -103,12 +135,19 @@ pub fn set_global_class(rt: &mut JsRuntime, name: &str, class_obj: SharedObject)
 }
 pub fn prototypes_init(rt: &mut JsRuntime) {
     // Object
-    let top_object = create_builtin_class(JsBuiltinFunction::new(object_constructor, 1), object_builtins(), None);
-    rt.prototypes.object_prototype = top_object.clone();    
+    let top_object = create_builtin_class(JsBuiltinFunction::new(object_constructor, 1), object_builtins(), None);     
     set_global_class(rt, "Object", top_object.clone());
+    rt.prototypes.object_prototype = top_object.clone();   
     
     // String
     let string_classs_object = create_builtin_class( JsBuiltinFunction::new(string_constructor, 1), string_builtins(), Some(top_object.clone()));
-    string_properties(rt, string_classs_object.clone());
-    set_global_class(rt, "String", string_classs_object);    
+    set_global_class(rt, "String", string_classs_object.clone());
+    rt.prototypes.string_prototype = string_classs_object.clone();
+
+    // Array
+    let array_classs_object = create_builtin_class( JsBuiltinFunction::new(array_constructor, 0), array_builtins(), Some(top_object.clone()));
+    set_global_class(rt, "Array", array_classs_object.clone());
+    rt.prototypes.array_prototype = array_classs_object.clone();
+
+    // Function
 }

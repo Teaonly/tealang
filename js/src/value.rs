@@ -523,6 +523,18 @@ impl JsObject {
 		}
 		panic!("Object can't be a func!")
 	}
+	pub fn is_array(&self) -> bool {
+		if let JsClass::array(_) = self.value {
+			return true;
+		}
+		return false;
+	}
+	pub fn get_array(&self) -> &Vec<SharedValue> {
+		if let JsClass::array(ref v) = self.value {
+			return v;
+		}
+		panic!("Object can't be a array!")
+	}
 	pub fn is_string(&self) -> bool {
 		if let JsClass::string(ref _func) = self.value {
 			return true;
