@@ -497,7 +497,7 @@ pub enum JsValue {
 #[allow(non_camel_case_types)]
 #[derive(Clone)]
 pub struct SharedValue {
-	pub v:	Rc<RefCell<JsValue>>,	
+	pub v:	Rc<RefCell<JsValue>>,
 }
 
 #[allow(non_camel_case_types)]

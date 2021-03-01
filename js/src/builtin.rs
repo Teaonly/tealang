@@ -2,24 +2,21 @@ use crate::common::*;
 use crate::value::*;
 use crate::execute::*;
 
-fn assert(rt: &mut JsRuntime) {    
-    let b = rt.top(-2).to_boolean();
-    if !b {
-        let info = rt.top(-1).to_string();
-        panic!("ASSERT: {}", info);
+// The Object class 
+fn object_constructor(rt: &mut JsRuntime) {
+    let value = rt.top(-1);
+    if value.is_something() {        
+        rt.push( value.duplicate() );
     }
-    rt.push_undefined();
+    rt.push( SharedValue::new_vanilla() );
 }
 
-fn println(rt: &mut JsRuntime) {
-    let info = rt.top(-1).to_string();
-    println!("{}", info);
-    rt.push_undefined();
+/*
+fn create_builtin_class(constructor: builtin, properties: HashMap<String, builtin>) -> JsObject {
+    
 }
+*/
 
-// TODO : isFinite() isNaN() parseFloat() parseInt()
+pub fn prototypes_init(rt: &mut JsRuntime) {
 
-pub fn builtin_init(rt: &mut JsRuntime) {
-    rt.genv.borrow_mut().init_var("assert", SharedValue::new_object(JsObject::new_builtin(assert, 2)) );
-    rt.genv.borrow_mut().init_var("println", SharedValue::new_object(JsObject::new_builtin(println, 1)) );
 }

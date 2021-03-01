@@ -98,6 +98,12 @@ impl SharedValue {
 	pub fn replace(&mut self, other: SharedValue) {
 		self.v.borrow_mut().copyfrom( &other.v.borrow());
 	}
+	pub fn duplicate(&self) -> SharedValue {
+		let sv = SharedValue::new_null();
+		sv.v.borrow_mut().copyfrom( &self.v.borrow() );
+		return sv;
+	}
+
 	pub fn new_null() -> Self {
 		let v = JsValue::JSNULL;		
 		SharedValue {
@@ -155,6 +161,16 @@ impl SharedValue {
 			return true;
 		}
 		return false;
+	}
+	pub fn is_something(&self) -> bool {
+		let v = self.v.borrow();
+		if let JsValue::JSUndefined = *v {
+			return false;
+		}
+		if let JsValue::JSNULL = *v {
+			return false;
+		}
+		return true;
 	}
 	pub fn is_object(&self) -> bool {
 		let v = self.v.borrow();

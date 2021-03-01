@@ -3,10 +3,24 @@ use crate::value::*;
 use crate::execute::*;
 use crate::builtin::*;
 
-// The Object class 
-fn object_constructor(rt: &mut JsRuntime) {
-	
+
+// global functions for runtime 
+fn assert(rt: &mut JsRuntime) {    
+    let b = rt.top(-2).to_boolean();
+    if !b {
+        let info = rt.top(-1).to_string();
+        panic!("ASSERT: {}", info);
+    }
+    rt.push_undefined();
 }
+
+fn println(rt: &mut JsRuntime) {
+    let info = rt.top(-1).to_string();
+    println!("{}", info);
+    rt.push_undefined();
+}
+
+// TODO : isFinite() isNaN() parseFloat() parseInt()
 
 pub fn new_runtime() -> JsRuntime {
 	let top_obj = SharedObject_new(JsObject::new());
@@ -28,7 +42,9 @@ pub fn new_runtime() -> JsRuntime {
 		stack:		Vec::new(),
 	};
 
-	builtin_init(&mut runtime);
+	// some basic utilities
+	runtime.genv.borrow_mut().init_var("assert", SharedValue::new_object(JsObject::new_builtin(assert, 2)) );
+    runtime.genv.borrow_mut().init_var("println", SharedValue::new_object(JsObject::new_builtin(println, 1)) );
 
 	return runtime;
 }
