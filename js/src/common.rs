@@ -562,9 +562,6 @@ pub type JsPropertyAttr = (bool, bool, bool);	//writeable, enumerable, configura
 pub const JsDefaultAttr: JsPropertyAttr = (true, false, true);
 pub const JsReadonlyAttr: JsPropertyAttr = (false, false, false);
 
-
-
-
 #[allow(non_camel_case_types)]
 pub struct JsEnvironment {
 	pub variables: SharedObject,		// variables stored in properties 

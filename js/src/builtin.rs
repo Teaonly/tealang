@@ -17,6 +17,8 @@ fn println(rt: &mut JsRuntime) {
     rt.push_undefined();
 }
 
+// TODO : isFinite() isNaN() parseFloat() parseInt()
+
 pub fn builtin_init(rt: &mut JsRuntime) {
     rt.genv.borrow_mut().init_var("assert", SharedValue::new_object(JsObject::new_builtin(assert, 2)) );
     rt.genv.borrow_mut().init_var("println", SharedValue::new_object(JsObject::new_builtin(println, 1)) );

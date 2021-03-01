@@ -3,8 +3,13 @@ use crate::value::*;
 use crate::execute::*;
 use crate::builtin::*;
 
+// The Object class 
+fn object_constructor(rt: &mut JsRuntime) {
+	
+}
+
 pub fn new_runtime() -> JsRuntime {
-	let top_obj = SharedObject_new(JsObject::new());	
+	let top_obj = SharedObject_new(JsObject::new());
 
 	let prototypes = JsPrototype {
 		object_prototype:	top_obj.clone(),
