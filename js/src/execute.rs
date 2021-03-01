@@ -58,7 +58,7 @@ impl JsEnvironment {
 		self.variables.borrow_mut().put_property(name);
 	}
 
-	fn set_variable(&self, name: &str, prop: JsProperty) {
+	pub fn set_variable(&self, name: &str, prop: JsProperty) {
 		self.variables.borrow_mut().set_property(name, prop);
 	}
 

@@ -22,14 +22,12 @@ fn println(rt: &mut JsRuntime) {
 
 // TODO : isFinite() isNaN() parseFloat() parseInt()
 
-pub fn new_runtime() -> JsRuntime {
-	let top_obj = SharedObject_new(JsObject::new());
-
+pub fn new_runtime() -> JsRuntime {	
 	let prototypes = JsPrototype {
-		object_prototype:	top_obj.clone(),
-		string_prototype:	SharedObject_new(JsObject::new_with(top_obj.clone(), JsClass::object)),
-		array_prototype:	SharedObject_new(JsObject::new_with(top_obj.clone(), JsClass::object)),
-		function_prototype:	SharedObject_new(JsObject::new_with(top_obj.clone(), JsClass::object)),
+		object_prototype:	SharedObject_new(JsObject::new()),
+		string_prototype:	SharedObject_new(JsObject::new()),
+		array_prototype:	SharedObject_new(JsObject::new()),
+		function_prototype:	SharedObject_new(JsObject::new()),
 	};
 
 	let genv = JsEnvironment::new();
@@ -41,6 +39,9 @@ pub fn new_runtime() -> JsRuntime {
 		cenv:		cenv,
 		stack:		Vec::new(),
 	};
+
+	// init prototypes
+	prototypes_init(&mut runtime);
 
 	// some basic utilities
 	runtime.genv.borrow_mut().init_var("assert", SharedValue::new_object(JsObject::new_builtin(assert, 2)) );

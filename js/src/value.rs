@@ -343,6 +343,15 @@ impl JsProperty {
 	}
 }
 
+impl JsBuiltinFunction {
+	pub fn new(f: fn(&mut JsRuntime), argc: usize) -> Self {
+		JsBuiltinFunction {
+			f:		f,
+			argc:	argc
+		}
+	}
+}
+
 impl JsException {
 	pub fn new() -> JsException {
 		JsException{}
