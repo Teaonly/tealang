@@ -135,8 +135,8 @@ impl SharedValue {
 			v: Rc::new(RefCell::new(v))
 		}
 	}	
-	pub fn new_vanilla() -> Self {
-		let shared_obj = SharedObject_new(JsObject::new());
+	pub fn new_vanilla(proto: SharedObject) -> Self {
+		let shared_obj = SharedObject_new(JsObject::new_with(proto, JsClass::object));
 		let v = JsValue::JSObject(shared_obj);
 		SharedValue {
 			v: Rc::new(RefCell::new(v))

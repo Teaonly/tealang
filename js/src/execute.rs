@@ -582,11 +582,13 @@ impl JsRuntime {
 	}
 
 	fn new_closure(&mut self, f: SharedFunction) {
+		/*
 		let fobj = SharedObject_new(JsObject::new_function(f.clone(), self.cenv.clone()));	
 		fobj.borrow_mut().__proto__ = Some(self.prototypes.function_prototype.clone());
 
 		let v = SharedValue::new_number(f.numparams as f64);
-		self.defproperty(fobj, "length", v, JsReadonlyAttr, None, None);		
+		self.defproperty(fobj, "length", v, JsReadonlyAttr, None, None);
+		*/		
 	}
 
 	/* Exceptions */
@@ -788,7 +790,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				rt.new_closure(f);
 			},
 			OpcodeType::OP_NEWOBJECT => {
-				let obj = SharedValue::new_vanilla();
+				let obj = SharedValue::new_vanilla(rt.prototypes.object_prototype.clone());
 				rt.push(obj);
 			},
 			OpcodeType::OP_NEWARRAY => {

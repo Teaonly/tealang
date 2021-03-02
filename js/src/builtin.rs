@@ -10,7 +10,7 @@ fn object_constructor(rt: &mut JsRuntime) {
     if value.is_something() {        
         rt.push( value.duplicate() );
     }
-    rt.push( SharedValue::new_vanilla() );
+    rt.push( SharedValue::new_vanilla(rt.prototypes.object_prototype.clone()) );
 }
 
 fn object_preventextensions(rt: &mut JsRuntime) {
@@ -154,7 +154,7 @@ pub fn prototypes_init(rt: &mut JsRuntime) {
     // Object
     let top_object = create_builtin_class(JsBuiltinFunction::new(object_constructor, 1), object_builtins(), None);     
     set_global_class(rt, "Object", top_object.clone());
-    rt.prototypes.object_prototype = top_object.clone();   
+    rt.prototypes.object_prototype = top_object.clone();
     
     // String
     let string_classs_object = create_builtin_class( JsBuiltinFunction::new(string_constructor, 1), string_builtins(), Some(top_object.clone()));
