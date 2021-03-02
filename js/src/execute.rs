@@ -223,8 +223,7 @@ impl JsRuntime {
 				}
 			},
 			_ => {}
-		}
-		
+		}		
 		let prop_r = target.query_property(name);
 		if let Some((prop, _own)) = prop_r {
 			if let Some(getter) = prop.getter {
@@ -235,7 +234,7 @@ impl JsRuntime {
 				self.push(prop.value.clone());
 			}
 			return Ok(true);
-		}
+		}		
 		return Ok(false);
 	}
 	fn getproperty(&mut self, target: SharedObject, name: &str) -> Result<(), JsException> {

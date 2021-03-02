@@ -563,6 +563,7 @@ impl JsObject {
 
 	/* property's help functions */
 	pub fn query_property(&self, name: &str) -> Option<(JsProperty, bool)> {
+		println!(" ******************** {} {}", line!(), name);		
 		let r = self.properties.get(name);
 		if r.is_some() {
 			return Some((r.unwrap().clone(), true));
