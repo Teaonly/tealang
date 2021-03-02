@@ -27,7 +27,7 @@ fn object_tostring(rt: &mut JsRuntime)  {
 
 fn object_builtins() -> HashMap<String, JsBuiltinFunction> {
     let mut builtins = HashMap::new();
-    builtins.insert("toString".to_string(), JsBuiltinFunction::new(object_tostring, 1));
+    builtins.insert("toString".to_string(), JsBuiltinFunction::new(object_tostring, 0));
     builtins.insert("preventExtensions".to_string(), JsBuiltinFunction::new(object_preventextensions, 1));
     return builtins;
 }
@@ -47,7 +47,7 @@ fn string_constructor(rt: &mut JsRuntime) {
 }
 
 fn string_tostring(rt: &mut JsRuntime) {
-    let value = rt.top(-1).duplicate();
+    let value = rt.top(-1).duplicate();     // this object
     assert!(value.is_string());
     rt.push(value);
 }
@@ -55,7 +55,7 @@ fn string_tostring(rt: &mut JsRuntime) {
 fn string_builtins() -> HashMap<String, JsBuiltinFunction> {
     // TODO
     let mut builtins = HashMap::new();
-    builtins.insert("toString".to_string(), JsBuiltinFunction::new(string_tostring, 1));    
+    builtins.insert("toString".to_string(), JsBuiltinFunction::new(string_tostring, 0));    
     return builtins;
 }
 
@@ -88,7 +88,7 @@ fn array_tostring(rt: &mut JsRuntime) {
 fn array_builtins() -> HashMap<String, JsBuiltinFunction> {
     // TODO
     let mut builtins = HashMap::new();
-    builtins.insert("toString".to_string(), JsBuiltinFunction::new(array_tostring, 1));    
+    builtins.insert("toString".to_string(), JsBuiltinFunction::new(array_tostring, 0));    
     return builtins;
 }
 
@@ -107,7 +107,7 @@ fn function_tostring(rt: &mut JsRuntime) {
 fn function_builtins() -> HashMap<String, JsBuiltinFunction> {
     // TODO
     let mut builtins = HashMap::new();
-    builtins.insert("toString".to_string(), JsBuiltinFunction::new(function_tostring, 1));    
+    builtins.insert("toString".to_string(), JsBuiltinFunction::new(function_tostring, 0));    
     return builtins;
 }
 

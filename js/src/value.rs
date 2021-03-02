@@ -563,7 +563,6 @@ impl JsObject {
 
 	/* property's help functions */
 	pub fn query_property(&self, name: &str) -> Option<(JsProperty, bool)> {
-		println!(" ******************** {} {}", line!(), name);		
 		let r = self.properties.get(name);
 		if r.is_some() {
 			return Some((r.unwrap().clone(), true));
@@ -573,7 +572,7 @@ impl JsObject {
 			let proto = self.__proto__.as_ref().unwrap().borrow();
 			let result = proto.query_property(name);
 			if result.is_some() {
-				return Some((proto.query_property(name).unwrap().0, false));
+				return Some((result.unwrap().0, false));
 			}
 			return None;
 		}
