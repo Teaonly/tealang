@@ -581,14 +581,9 @@ impl JsRuntime {
 		return Ok(());
 	}
 
-	fn new_closure(&mut self, f: SharedFunction) {
-		/*
-		let fobj = SharedObject_new(JsObject::new_function(f.clone(), self.cenv.clone()));	
+	pub fn new_closure(&mut self, f: SharedFunction) {
+		let fobj = SharedObject_new(JsObject::new_function(f.clone(), self.cenv.clone()));
 		fobj.borrow_mut().__proto__ = Some(self.prototypes.function_prototype.clone());
-
-		let v = SharedValue::new_number(f.numparams as f64);
-		self.defproperty(fobj, "length", v, JsReadonlyAttr, None, None);
-		*/		
 	}
 
 	/* Exceptions */
