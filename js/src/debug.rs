@@ -17,9 +17,7 @@ use runtime::*;
 
 static script: &str = r#"    
     var a = "Hello World";
-    var b = a;
-    println(a);
-    println(b);
+    var b = a.toString();
 "#;
 
 fn debug_runtime() {

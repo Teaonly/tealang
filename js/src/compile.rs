@@ -613,7 +613,7 @@ fn compile_call(f: &mut VMFunction, exp: &AstNode) {
             compile_exp(f, fun.a());
             f.emitop(OpcodeType::OP_DUP);
             let member = fun.b().str();
-            f.emitstring(OpcodeType::OP_GETPROP_S, member);
+            f.emitstring(OpcodeType::OP_GETPROP_S, member);            
             f.emitop(OpcodeType::OP_ROT2);
         },
         _ => {

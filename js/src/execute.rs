@@ -224,7 +224,7 @@ impl JsRuntime {
 			},
 			_ => {}
 		}
-
+		
 		let prop_r = target.query_property(name);
 		if let Some((prop, _own)) = prop_r {
 			if let Some(getter) = prop.getter {

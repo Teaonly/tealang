@@ -191,7 +191,7 @@ impl SharedValue {
 		if let JsValue::JSObject(ref obj) = *v {
 			return obj.clone();
 		}
-		panic!("JsValue is not an object!");		
+		panic!("JsValue is not an object!");
 	}
 	pub fn is_boolean(&self) -> bool {
 		let v = self.v.borrow();
@@ -570,7 +570,11 @@ impl JsObject {
 
 		if self.__proto__.is_some() {
 			let proto = self.__proto__.as_ref().unwrap().borrow();
-			return Some((proto.query_property(name).unwrap().0, false));
+			let result = proto.query_property(name);
+			if result.is_some() {
+				return Some((proto.query_property(name).unwrap().0, false));
+			}
+			return None;
 		}
 		return None;
 	}
