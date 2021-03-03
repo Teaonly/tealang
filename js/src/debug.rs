@@ -15,11 +15,54 @@ use ast::*;
 use compile::*;
 use runtime::*;
 
-static script: &str = r#"    
-    var a = {
-        name:   'kaka',
-    };
-    println(a.name);
+static script: &str = r#"
+    var a, r;
+            
+    a = 1;
+    r = a++;
+    assert(r === 1 && a === 2, "++1");
+
+    a = 1;
+    r = ++a;
+    assert(r === 2 && a === 2, "++2");
+
+    a = 1;
+    r = a--;
+    assert(r === 1 && a === 0, "--1");
+
+    a = 1;
+    r = --a;
+    assert(r === 0 && a === 0, "--2");
+
+    a = {x:true};    
+    a.x ++;
+    assert(a.x == 2, "true++");
+
+    a = {x:true};
+    a.x--;
+    assert(a.x == 0, "true--");
+
+    a = [true];
+    a[0]++;
+    assert(a[0] == 2, "++4");
+
+    a = {x:true};
+    r = a.x++;
+    assert(r === 1 && a.x === 2, "++5");
+
+    a = {x:true};
+    r = a.x--;
+    assert(r === 1 && a.x === 0, "--4");
+
+    a = [true];
+    r = a[0]++;
+    assert(r === 1 && a[0] === 2, "++6");
+
+    a = [true];
+    r = a[0]--;
+    assert(r === 1 && a[0] === 0, "--5");
+
+    println("-------- END TESTING -----------");
 "#;
 
 fn debug_runtime() {

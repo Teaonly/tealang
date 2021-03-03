@@ -502,6 +502,9 @@ fn compile_assignop(f: &mut VMFunction, var: &AstNode, op: OpcodeType, is_post: 
                 f.emitop(OpcodeType::OP_ROT4);
             }
             f.emitop(OpcodeType::OP_SETPROP);
+            if is_post {
+                f.emitop(OpcodeType::OP_POP);
+            }
         },
         AstType::EXP_MEMBER => {
             compile_exp(f, var.a());
@@ -513,6 +516,9 @@ fn compile_assignop(f: &mut VMFunction, var: &AstNode, op: OpcodeType, is_post: 
                 f.emitop(OpcodeType::OP_ROT3);
             }
             f.emitstring(OpcodeType::OP_SETPROP_S, member_str);
+            if is_post {
+                f.emitop(OpcodeType::OP_POP);
+            }
         },
         _ => {
             panic!("invalid l-value in assignment");
@@ -661,7 +667,7 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
         },
 
         AstType::EXP_ARRAY => {
-            f.emitop(OpcodeType::OP_NEWOBJECT);
+            f.emitop(OpcodeType::OP_NEWARRAY);
             compile_array(f, exp.a());
         },
 

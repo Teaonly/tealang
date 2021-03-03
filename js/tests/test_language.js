@@ -117,13 +117,13 @@ function test_inc_dec()
     r = --a;
     assert(r === 0 && a === 0, "--2");
 
-    a = {x:true};
-    a.x++;
-    assert(a.x == 2, "++3");
+    a = {x:true};    
+    a.x ++;
+    assert(a.x == 2, "true++");
 
     a = {x:true};
     a.x--;
-    assert(a.x == 0, "--3");
+    assert(a.x == 0, "true--");
 
     a = [true];
     a[0]++;

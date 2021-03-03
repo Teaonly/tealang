@@ -238,6 +238,13 @@ impl SharedValue {
 				return v;
 			}			
 		}
+		if self.is_boolean() {
+			if self.to_boolean() {
+				return 1.0;
+			} else {
+				return 0.0;
+			}
+		}
 		return std::f64::NAN;
 	}
 	pub fn is_exception(&self) -> bool {

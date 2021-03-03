@@ -509,17 +509,19 @@ impl JsRuntime {
 	fn to_string(&mut self, target: SharedValue) -> Result<String, JsException> {
 		
 		/* try to executing toString() */
-		self.getproperty(target.get_object(), "toString")?;
-		let object = self.top(-1);
-		self.pop(1);
-		if object.is_object() {
-			if object.get_object().borrow().callable() {
-				self.push(object);	// func
-				self.push(target);	// this
-				jscall(self, 0)?;
-				let str_result = self.top(-1);
-				self.pop(1);
-				return Ok(str_result.to_string());
+		if target.is_object() {
+			self.getproperty(target.get_object(), "toString")?;
+			let object = self.top(-1);
+			self.pop(1);
+			if object.is_object() {
+				if object.get_object().borrow().callable() {
+					self.push(object);	// func
+					self.push(target);	// this
+					jscall(self, 0)?;
+					let str_result = self.top(-1);
+					self.pop(1);
+					return Ok(str_result.to_string());
+				}
 			}
 		}
 
