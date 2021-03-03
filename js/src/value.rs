@@ -476,6 +476,9 @@ impl JsObject {
 		}
 	}
 
+	pub fn is_extensible(&self) -> bool {
+		return self.extensible;
+	}
 	pub fn is_vanilla(&self) -> bool {
 		if let JsClass::object = self.value {
 			return true;
@@ -578,7 +581,6 @@ impl JsObject {
 		}
 		return None;
 	}
-
 	pub fn get_property(&self, name: &str) -> JsProperty {
 		return self.properties.get(name).unwrap().clone();
 	}
@@ -596,7 +598,7 @@ impl JsObject {
 		self.properties.insert(name.to_string(), JsProperty::new());
 		return true;
 	}
-	pub fn drop_property(&mut self, name: &str) {		
+	pub fn drop_property(&mut self, name: &str) {
 		self.properties.remove(name);
 	}
 }

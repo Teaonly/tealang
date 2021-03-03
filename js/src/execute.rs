@@ -129,22 +129,26 @@ impl JsRuntime {
 	}
 
 	/* properties operation */
-    // make a new  or replace proptery o for object
+    // make a new  or replace proptery o for object, following reler of object's attr
     fn defproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue,
-		attr:JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) {
+		attr:JsPropertyAttr, getter: Option<SharedObject>, setter: Option<SharedObject>) -> Result<(), JsException> {
 		let mut target = target_.borrow_mut();
 
-		if !target.is_vanilla() {
-			println!("Cant define property for specia object!");
-			return;
+		// value/setter/getter/attr can't be conflicted
+		if getter.is_some() || setter.is_some() {
+			assert!( value.is_undefined() );
+		}		
+		if attr.0 == false {
+			assert!( setter.is_some() );
 		}
 
 		if target.put_property(name) {
 			let mut prop = target.get_property(name);
-			if value.is_undefined() && prop.writeable() {
+			if prop.writeable() {
 				prop.value = value;
 			}
 			if prop.configable() {
+				prop.fill_attr(attr);
 				if let Some(setter) = setter {
 					if setter.borrow().callable() {
 						prop.setter = Some(setter);
@@ -159,19 +163,16 @@ impl JsRuntime {
 						println!("getter should be callable");
 					}
 				}
-			}			
-			prop.fill_attr(attr);
+			}
 			target.set_property(name, prop);
+			return Ok(());
+		} else {
+			return Err( JsException::new());
 		}
 	}
 
 	// change value of the proptery for object
 	fn setproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue) -> Result<(), JsException> {
-		if !target_.borrow().is_vanilla() {
-			println!("Cant set property for specia object!");
-			return Err( JsException::new());
-		}
-
 		let prop_r = target_.borrow().query_property(name);
 		if let Some((mut prop, _own)) = prop_r {
 			if let Some(setter) = prop.setter {
@@ -189,15 +190,15 @@ impl JsRuntime {
 				println!("Cant write property for specia object!");
 				return Err( JsException::new());
 			}
-		}
+		} 
 
 		/* Property not found on this object, so create one with default attr*/
-		self.defproperty(target_, name, value, JsDefaultAttr, None, None);
+		self.defproperty(target_, name, value, JsDefaultAttr, None, None)?;
 		return Ok(());	
 	}	
 
 	// get value from the proptery of object
-	fn hasproperty(&mut self, target_: SharedObject, name: &str) -> Result<bool, JsException> {		
+	fn getproperty(&mut self, target_: SharedObject, name: &str) -> Result<bool, JsException> {		
 		let target = target_.borrow_mut();
 		let target_ = target_.clone();
 
@@ -231,15 +232,10 @@ impl JsRuntime {
 				self.push(prop.value.clone());
 			}
 			return Ok(true);
-		}		
-		return Ok(false);
-	}
-	fn getproperty(&mut self, target: SharedObject, name: &str) -> Result<(), JsException> {
-		if !self.hasproperty(target, name)? {
-			self.push_undefined();
 		}
-		return Ok(());
-	}	
+		self.push_undefined();
+		return Ok(false);
+	}		
 	fn delproperty(&mut self, target_: SharedObject, name: &str) -> bool {		
 		let mut target = target_.borrow_mut();
 
@@ -881,7 +877,11 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				};
 				let func = rt.top(-1);
 				if func.is_object() {
-					rt.defproperty(target, &name, SharedValue::new_undefined(), JsReadonlyAttr, Some(func.get_object()), None);
+					let result = rt.defproperty(target, &name, SharedValue::new_undefined(), JsDefaultAttr, Some(func.get_object()), None);
+					if let Err(e) = result {
+						with_exception = Some(e);
+						break;
+					}
 				} else {
 					println!("getter should be a object!");
 				}
@@ -898,7 +898,11 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				};
 				let func = rt.top(-1);
 				if func.is_object() {
-					rt.defproperty(target, &name, SharedValue::new_undefined(), JsReadonlyAttr, None, Some(func.get_object()));
+					let result = rt.defproperty(target, &name, SharedValue::new_undefined(), JsDefaultAttr, None, Some(func.get_object()));
+					if let Err(e) = result {
+						with_exception = Some(e);
+						break;
+					}
 				} else {
 					println!("setter should be a object!");
 				}
@@ -1389,12 +1393,12 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 		let arg_value = SharedValue::new_object(arg_obj);
 
 		let jv = SharedValue::new_number(argc as f64);
-		rt.defproperty(arg_value.get_object(), "length", jv,  JsReadonlyAttr, None, None);
+		rt.defproperty(arg_value.get_object(), "length", jv,  JsReadonlyAttr, None, None)?;
 
 		for i in 0..argc {
 			let name = i.to_string();
 			let jv = rt.stack[bot+1+i].clone();
-			rt.defproperty(arg_value.get_object(), &name, jv, JsDefaultAttr, None, None);
+			rt.defproperty(arg_value.get_object(), &name, jv, JsDefaultAttr, None, None)?;
 		}
 
 		rt.cenv.borrow_mut().init_var("arguments", arg_value);

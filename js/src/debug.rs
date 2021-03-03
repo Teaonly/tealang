@@ -19,6 +19,7 @@ static script: &str = r#"
     var a = {
         name:   'kaka',
     };
+    println(a.name);
 "#;
 
 fn debug_runtime() {
