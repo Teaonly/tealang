@@ -59,8 +59,9 @@ static script: &str = r#"
     assert(r === 1 && a[0] === 2, "++6");
 
     a = [true];
-    r = a[0]--;
-    assert(r === 1 && a[0] === 0, "--5");
+    r = --a[0];
+    a[0]--;
+    assert(r === 0 && a[0] === -1, "--5");
 
     println("-------- END TESTING -----------");
 "#;

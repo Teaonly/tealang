@@ -100,7 +100,7 @@ function test_cvt()
 function test_inc_dec()
 {
     var a, r;
-        
+            
     a = 1;
     r = a++;
     assert(r === 1 && a === 2, "++1");
@@ -142,8 +142,9 @@ function test_inc_dec()
     assert(r === 1 && a[0] === 2, "++6");
 
     a = [true];
-    r = a[0]--;
-    assert(r === 1 && a[0] === 0, "--5");
+    r = --a[0];
+    a[0]--;
+    assert(r === 0 && a[0] === -1, "--5");
 
     println("-------- END TESTING -----------");
 }
