@@ -136,7 +136,7 @@ impl JsRuntime {
 
 		if !target.is_vanilla() {
 			println!("Cant define property for specia object!");
-			return;			
+			return;
 		}
 
 		if target.put_property(name) {
@@ -166,20 +166,17 @@ impl JsRuntime {
 	}
 
 	// change value of the proptery for object
-	fn setproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue) -> Result<(), JsException> {		
-		let target = target_.borrow_mut();
-		let target_ = target_.clone();
-
-		if !target.is_vanilla() {
+	fn setproperty(&mut self, target_: SharedObject, name: &str, value: SharedValue) -> Result<(), JsException> {
+		if !target_.borrow().is_vanilla() {
 			println!("Cant set property for specia object!");
 			return Err( JsException::new());
 		}
 
-		let prop_r = target.query_property(name);
+		let prop_r = target_.borrow().query_property(name);
 		if let Some((mut prop, _own)) = prop_r {
 			if let Some(setter) = prop.setter {
 				self.push_object(setter.clone());
-				self.push_object(target_);
+				self.push_object(target_.clone());
 				self.push(value);
 				jscall(self, 1)?;
 				self.pop(1);

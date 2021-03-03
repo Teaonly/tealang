@@ -16,9 +16,9 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"    
-    var a = "Hello World";
-    var b = a.toString();
-    println(b);
+    var a = {
+        name:   'kaka',
+    };
 "#;
 
 fn debug_runtime() {
