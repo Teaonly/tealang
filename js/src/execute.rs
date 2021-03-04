@@ -138,7 +138,7 @@ impl JsRuntime {
 		if getter.is_some() || setter.is_some() {
 			assert!( value.is_undefined() );
 		}		
-		if attr.0 == false {
+		if attr.0 == false && value.is_undefined() {
 			assert!( setter.is_some() );
 		}
 

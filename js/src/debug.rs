@@ -21,7 +21,7 @@ static script: &str = r#"
         println(x);
     }
 
-    println(a);
+    a(3.14);
 "#;
 
 fn debug_runtime() {
