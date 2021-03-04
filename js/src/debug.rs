@@ -17,9 +17,11 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-    function F(x) {
-                
+    var a = function(x) {
+        println(x);
     }
+
+    println(a);
 "#;
 
 fn debug_runtime() {

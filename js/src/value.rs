@@ -304,7 +304,7 @@ impl SharedValue {
 				if obj.borrow().is_string() {
 					return obj.borrow().get_string();
 				} else {
-					return "[object]".to_string();
+					return format!("[object:_{}_]", obj.borrow().type_string());
 				}
 			}
 		}
