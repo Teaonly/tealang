@@ -373,6 +373,51 @@ impl Token {
     }
 }
 
+/*
+"'break'", "'case'", "'catch'", "'continue'", 
+"'default'", "'delete'", "'do'", "'else'", "'false'", "'finally'", "'for'",
+"'function'", "'if'", "'in'", "'instanceof'", "'new'", "'null'", "'return'",
+"'switch'", "'this'", "'throw'", "'true'", "'try'", "'typeof'", "'var'",
+"'void'", "'while'", "'with'",
+*/
+
+fn get_keyword(symbol: &str) -> Option<TokenType> {
+    match symbol {
+        "break" => Some(TokenType::TK_BREAK),
+        "case" => Some(TokenType::TK_CASE),
+        "catch" => Some(TokenType::TK_CATCH),
+        "continue" => Some(TokenType::TK_CONTINUE),
+        "default" => Some(TokenType::TK_DEFAULT),
+        "delete" => Some(TokenType::TK_DELETE),
+        "do" => Some(TokenType::TK_DO),
+        "else" => Some(TokenType::TK_ELSE),
+        "false" => Some(TokenType::TK_FALSE),
+        "finally" => Some(TokenType::TK_FINALLY),
+        "for" => Some(TokenType::TK_FOR),
+        "function" => Some(TokenType::TK_FUNCTION),
+        "if" => Some(TokenType::TK_IF),
+        "in" => Some(TokenType::TK_IN),
+        "instanceof" => Some(TokenType::TK_INSTANCEOF),
+        "new" => Some(TokenType::TK_NEW),
+
+        "null" => Some(TokenType::TK_NULL),
+        "undefined" => Some(TokenType::TK_UNDEF),
+        "return" => Some(TokenType::TK_RETURN),
+        "switch" => Some(TokenType::TK_SWITCH),
+        "this" => Some(TokenType::TK_THIS),
+        "throw" => Some(TokenType::TK_THROW),
+        "true" => Some(TokenType::TK_TRUE),
+
+        "try" => Some(TokenType::TK_TRY),
+        "typeof" => Some(TokenType::TK_TYPEOF),
+        "var" => Some(TokenType::TK_VAR),
+        "void" => Some(TokenType::TK_VOID),
+        "while" => Some(TokenType::TK_WHILE),
+
+        "debug" => Some(TokenType::TK_DEBUG),
+        _ => None,
+    }
+}
 
 ///
 /// Parsing script to tokens
@@ -395,51 +440,7 @@ fn get_next_token(script: &str,  cursor: usize, line: u32) -> Result<(Token, (us
         line_count
     }
 
-    /*
-	"'break'", "'case'", "'catch'", "'continue'", 
-	"'default'", "'delete'", "'do'", "'else'", "'false'", "'finally'", "'for'",
-	"'function'", "'if'", "'in'", "'instanceof'", "'new'", "'null'", "'return'",
-	"'switch'", "'this'", "'throw'", "'true'", "'try'", "'typeof'", "'var'",
-    "'void'", "'while'", "'with'",
-    */
 
-    fn get_keyword(symbol: &str) -> Option<TokenType> {
-        match symbol {
-            "break" => Some(TokenType::TK_BREAK),
-            "case" => Some(TokenType::TK_CASE),
-            "catch" => Some(TokenType::TK_CATCH),
-            "continue" => Some(TokenType::TK_CONTINUE),
-            "default" => Some(TokenType::TK_DEFAULT),
-            "delete" => Some(TokenType::TK_DELETE),
-            "do" => Some(TokenType::TK_DO),
-            "else" => Some(TokenType::TK_ELSE),
-            "false" => Some(TokenType::TK_FALSE),
-            "finally" => Some(TokenType::TK_FINALLY),
-            "for" => Some(TokenType::TK_FOR),
-            "function" => Some(TokenType::TK_FUNCTION),
-            "if" => Some(TokenType::TK_IF),
-            "in" => Some(TokenType::TK_IN),
-            "instanceof" => Some(TokenType::TK_INSTANCEOF),
-            "new" => Some(TokenType::TK_NEW),
-
-            "null" => Some(TokenType::TK_NULL),
-            "undefined" => Some(TokenType::TK_UNDEF),
-            "return" => Some(TokenType::TK_RETURN),
-            "switch" => Some(TokenType::TK_SWITCH),
-            "this" => Some(TokenType::TK_THIS),
-            "throw" => Some(TokenType::TK_THROW),
-            "true" => Some(TokenType::TK_TRUE),
-
-            "try" => Some(TokenType::TK_TRY),
-            "typeof" => Some(TokenType::TK_TYPEOF),
-            "var" => Some(TokenType::TK_VAR),
-            "void" => Some(TokenType::TK_VOID),
-            "while" => Some(TokenType::TK_WHILE),
-
-            "debug" => Some(TokenType::TK_DEBUG),
-            _ => None,
-        }
-    }
 
     fn get_token_type(punct: &str) -> Option<TokenType> {
         match punct {
@@ -679,11 +680,16 @@ impl<'a> Tokenlizer<'a> {
         for i in 0..ids.len() {
             let id = &ids[i];
             if id != "." {
-                let tk = Token {
-                    tk_type: TokenType::TK_IDENTIFIER,
-                    tk_value: Some(id.to_string()),
-                    src_line: src_line,
+                let tk = if let Some(tkt) = get_keyword(id) {
+                    Token::new(tkt, src_line)
+                } else {                        
+                    Token {
+                        tk_type: TokenType::TK_IDENTIFIER,
+                        tk_value: Some(id.to_string()),
+                        src_line: src_line,
+                    }
                 };
+
                 self.forward_.push_back((tk, new_line && i == 0));
             } else {
                 let tk = Token {
