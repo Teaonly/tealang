@@ -578,6 +578,7 @@ impl JsRuntime {
 	pub fn new_closure(&mut self, f: SharedFunction) {
 		let fobj = SharedObject_new(JsObject::new_function(f.clone(), self.cenv.clone()));
 		fobj.borrow_mut().__proto__ = Some(self.prototypes.function_prototype.clone());
+		self.push_object(fobj);
 	}
 
 	/* Exceptions */

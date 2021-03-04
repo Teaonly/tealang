@@ -1038,6 +1038,12 @@ fn ast_statement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
 fn ast_funbody(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     tk_expect(tkr, TokenType::TK_BRACE_LEFT)?;
+    
+    if tk_accept(tkr, TokenType::TK_BRACE_RIGHT)? == true {
+        let empty = AstNode::new( AstType::AST_NULL, 0);
+        return Ok(empty);
+    }
+    
     let mut head = AstNode::new_list( ast_element(tkr)?);
 
     let mut tail: &mut AstNode = &mut head;

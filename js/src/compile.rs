@@ -1317,6 +1317,10 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             f.emitop(OpcodeType::OP_DEBUG);
         },
 
+        AstType::AST_FUNDEC => {
+            // just skip
+        },
+
         _ => {
             compile_exp(f, stm);
             f.emitop(OpcodeType::OP_POP);
