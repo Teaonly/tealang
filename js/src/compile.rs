@@ -1394,6 +1394,7 @@ pub fn build_function_from_code(script: &str) -> Result<VMFunction, String> {
 pub fn dump_function(f: &VMFunction) {
     println!("-------------------------------");
     println!("script: {}", f.script);
+    println!("functions: {}", f.func_tab.len());
     println!("---num----");
     for n in &f.num_tab {
         println!("{}", n);
@@ -1413,4 +1414,10 @@ pub fn dump_function(f: &VMFunction) {
         }
         addr = addr + 1;
     }
+
+    println!("---functions---");
+    for i in &f.func_tab {
+        dump_function( i );
+    }
+    println!("----------END-----------");
 }
