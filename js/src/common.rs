@@ -455,7 +455,8 @@ pub struct VMJumpTable {
 }
 
 #[allow(non_camel_case_types)]
-pub struct VMFunction {	
+pub struct VMFunction {
+	pub name:		Option<String>,
 	pub script:		bool,
 	pub numparams:	usize,
 	pub numvars:	usize,

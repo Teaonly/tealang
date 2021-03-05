@@ -531,11 +531,9 @@ impl JsRuntime {
 	/* create new object */
 	fn new_call(&mut self, argc: usize) -> Result<(), JsException> {
 		let obj = self.top(-1 - argc as isize).get_object();
-		let fobj = obj.borrow();
-		let obj = obj.clone();
 
 		/* built-in constructors create their own objects, give them a 'null' this */
-		if fobj.is_builtin() {
+		if obj.borrow().is_builtin() {
 			self.push_null();
 			if argc > 0 {
 				self.rot(argc+1);				
@@ -1419,6 +1417,11 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 	for i in min_argc..(vmf.numvars + vmf.numparams) {
 		let jv = SharedValue::new_undefined();
 		rt.cenv.borrow_mut().init_var(&vmf.str_tab[i], jv);
+	}
+
+	/* for recurrent call function self, init a local variable into this */
+	if let Some(ref name) = vmf.name {
+		rt.cenv.borrow_mut().init_var(name, rt.stack[bot-1].clone());
 	}
 
 	jsrun(rt, vmf, 0)?;

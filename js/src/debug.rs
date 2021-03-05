@@ -17,17 +17,11 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-    function F(x)
-    {
+    function F(x) {
         this.x = x;
     }
 
-    var a, b;
-    a = new Object();
-    a.x = 1;
-    assert(a.x == 1, "new 1");
-    b = new F(2);
-    assert(b.x == 2, "new 2");
+    var b = new F(2);
 "#;
 
 fn debug_runtime() {

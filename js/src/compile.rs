@@ -123,6 +123,7 @@ impl AstNode {
 impl VMFunction {
     pub fn new(script: bool) -> Self {
         VMFunction {
+            name:   None,
             script: script,
             numparams: 0,
             numvars: 0,
@@ -1357,16 +1358,10 @@ fn compile_func(name: &AstNode, params: &AstNode, body: &AstNode, script: bool) 
     }
 
     if !name.is_null() {
-        let name_str = name.str();
-
-        /* for recurrent call function self, set a local variable into this */
+        let name_str = name.str();        
         let (found, _) = f.findstring( name_str );
         if !found {
-            f.emitop(OpcodeType::OP_CURRENT);
-            f.emitop(OpcodeType::OP_SETVAR);
-            let id = f.addstring(name_str);
-            f.emit(id);
-            f.emitop(OpcodeType::OP_POP);
+            f.name = Some(name_str.to_string());
         }
     }
 
