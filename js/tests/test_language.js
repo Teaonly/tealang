@@ -149,36 +149,34 @@ function test_inc_dec()
     println("-------- END TESTING -----------");
 }
 
-function F(x)
-{
-    this.x = x;
-}
+
 
 function test_op2()
 {
+    function F(x)
+    {
+        this.x = x;
+    }
+
     var a, b;
-    a = new Object;
+    a = new Object();
     a.x = 1;
-    assert(a.x, 1, "new");
+    assert(a.x == 1, "new 1");
     b = new F(2);
-    assert(b.x, 2, "new");
+    assert(b.x == 2, "new 2");
 
     a = {x : 2};
-    assert(("x" in a), true, "in");
-    assert(("y" in a), false, "in");
+    assert(("x" in a) == true, "x in");
+    assert(("y" in a) == false, "y in");
 
     a = {};
-    assert((a instanceof Object), true, "instanceof");
-    assert((a instanceof String), false, "instanceof");
+    assert((a instanceof Object) == true, "instanceof 1");
+    assert((a instanceof String) == false, "instanceof 2");
 
-    assert((typeof 1), "number", "typeof");
-    assert((typeof Object), "function", "typeof");
-    assert((typeof null), "object", "typeof");
-    assert((typeof unknown_var), "undefined", "typeof");
-    
-    a = {x: 1, if: 2, async: 3};
-    assert(a.if === 2);
-    assert(a.async === 3);
+    assert((typeof 1) == "number", "typeof 1");
+    assert((typeof Object) == "function", "typeof 2");
+    assert((typeof null) == "object", "typeof 3");
+    assert((typeof unknown_var) == "undefined", "typeof 4");
 }
 
 function test_delete()

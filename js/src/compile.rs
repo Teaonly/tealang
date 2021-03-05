@@ -620,7 +620,7 @@ fn compile_call(f: &mut VMFunction, exp: &AstNode) {
             f.emitop(OpcodeType::OP_DUP);
             let member = fun.b().str();
             f.emitstring(OpcodeType::OP_GETPROP_S, member);            
-            f.emitop(OpcodeType::OP_ROT2);
+            f.emitop(OpcodeType::OP_ROT2);      // function object | this object
         },
         _ => {
             compile_exp(f, fun);

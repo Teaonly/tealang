@@ -339,9 +339,9 @@ fn ast_formula_memberexp(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
             a = AstNode::new_a_b(AstType::EXP_MEMBER, tkr.line(), a, b);
             continue;
         }
-        if tk_accept(tkr, TokenType::TK_PAREN_LEFT)? {
+        if tk_accept(tkr, TokenType::TK_BRACKET_LEFT)? {
             let b = ast_expression(tkr)?;
-            tk_expect(tkr, TokenType::TK_PAREN_RIGHT)?;
+            tk_expect(tkr, TokenType::TK_BRACKET_RIGHT)?;
             a = AstNode::new_a_b(AstType::EXP_INDEX, tkr.line(), a, b);
             continue;
         }

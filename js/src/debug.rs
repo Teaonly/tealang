@@ -17,8 +17,7 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-    this.x = 3.14;
-    println(x);
+    
 "#;
 
 fn debug_runtime() {
