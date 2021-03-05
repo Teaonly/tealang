@@ -149,8 +149,6 @@ function test_inc_dec()
     println("-------- END TESTING -----------");
 }
 
-
-
 function test_op2()
 {
     function F(x)
