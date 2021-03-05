@@ -17,11 +17,9 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-    function F(x) {
-        this.x = x;
-    }
-
-    var b = new F(2);
+    a = {};
+    assert((a instanceof Object) == true, "instanceof 1");
+    assert((a instanceof String) == false, "instanceof 2");
 "#;
 
 fn debug_runtime() {

@@ -547,6 +547,11 @@ fn ast_formula_relational(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
             a = AstNode::new_a_b(AstType::EXP_GE, tkr.line(), a, b);
             continue;
         }
+        if tk_accept(tkr, TokenType::TK_INSTANCEOF)? {
+            let b = ast_formula_shift(tkr)?;
+            a = AstNode::new_a_b(AstType::EXP_INSTANCEOF, tkr.line(), a, b);
+            continue;
+        }
         break;
     }
     return Ok(a);

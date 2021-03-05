@@ -163,10 +163,6 @@ function test_op2()
     b = new F(2);
     assert(b.x == 2, "new 2");
 
-    a = {x : 2};
-    assert(("x" in a) == true, "x in");
-    assert(("y" in a) == false, "y in");
-
     a = {};
     assert((a instanceof Object) == true, "instanceof 1");
     assert((a instanceof String) == false, "instanceof 2");
@@ -175,6 +171,8 @@ function test_op2()
     assert((typeof Object) == "function", "typeof 2");
     assert((typeof null) == "object", "typeof 3");
     assert((typeof unknown_var) == "undefined", "typeof 4");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_delete()
