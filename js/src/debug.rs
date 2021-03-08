@@ -17,9 +17,12 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-    a = {};
+    var a = {};
+    var b = "Hello";
     assert((a instanceof Object) == true, "instanceof 1");
-    assert((a instanceof String) == false, "instanceof 2");
+    assert((b instanceof Object) == true, "instanceof 2");
+    assert((a instanceof String) == false, "instanceof 3");
+    assert((b instanceof String) == true, "instanceof 4");
 "#;
 
 fn debug_runtime() {

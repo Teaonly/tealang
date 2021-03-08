@@ -457,25 +457,26 @@ impl JsRuntime {
 		return None;
 	}
 
-	fn instanceof(&mut self) -> Result<bool, JsException> {
+	fn instanceof(&mut self) -> Result<(), JsException> {
 		let x = self.top(-2);
 		let y = self.top(-1);
 		self.pop(2);
 		
 		if !x.is_object() {
-			return Ok(false);
+			self.push_boolean(false);
+			return Ok(());
 		}
 		if !y.is_object() {
 			println!("instanceof: invalid operand");
 			self.push_boolean(false);
-			return Ok(false);
+			return Ok(());
 		}
 		let mut x = x.get_object();
 		let y = y.get_object();
 		if !y.borrow().callable() {
 			println!("instanceof: invalid operand");
 			self.push_boolean(false);
-			return Ok(false);
+			return Ok(());
 		}
 
 		self.getproperty(y, "prototype")?;
@@ -484,7 +485,7 @@ impl JsRuntime {
 		if !o.is_object() {			
 			println!("instanceof: 'prototype' property is not an object");
 			self.push_boolean(false);
-			return Ok(false);
+			return Ok(());
 		}
 		let o = o.get_object();
 
@@ -494,7 +495,7 @@ impl JsRuntime {
 				x = proto;
 				if o.as_ptr() == x.as_ptr() {
 					self.push_boolean(true);
-					return Ok(true);
+					return Ok(());
 				}
 			} else {
 				break;
@@ -502,7 +503,7 @@ impl JsRuntime {
 		}
 
 		self.push_boolean(false);
-		return Ok(false);
+		return Ok(());
 	}
 
 	/* convert object to string */

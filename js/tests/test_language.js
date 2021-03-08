@@ -164,8 +164,11 @@ function test_op2()
     assert(b.x == 2, "new 2");
 
     a = {};
+    b = "Hello";
     assert((a instanceof Object) == true, "instanceof 1");
-    assert((a instanceof String) == false, "instanceof 2");
+    assert((b instanceof Object) == true, "instanceof 2");
+    assert((a instanceof String) == false, "instanceof 3");
+    assert((b instanceof String) == true, "instanceof 4");
 
     assert((typeof 1) == "number", "typeof 1");
     assert((typeof Object) == "function", "typeof 2");
