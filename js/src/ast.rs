@@ -552,6 +552,13 @@ fn ast_formula_relational(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
             a = AstNode::new_a_b(AstType::EXP_INSTANCEOF, tkr.line(), a, b);
             continue;
         }
+        if !tkr.notin {
+            if tk_accept(tkr, TokenType::TK_IN)? {
+                let b = ast_formula_shift(tkr)?;
+                a = AstNode::new_a_b(AstType::EXP_IN, tkr.line(), a, b);
+                continue;
+            }
+        } 
         break;
     }
     return Ok(a);
@@ -822,7 +829,11 @@ fn ast_forstatement(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 
     let mut a = AstNode::new(AstType::AST_NULL, tkr.line());
     if tkr.forward()?.tk_type != TokenType::TK_SEMICOLON {
+        // inside this expression, we don't accept in operator.
+        let old = tkr.notin;
+        tkr.notin = true;
         a = ast_expression(tkr)?;
+        tkr.notin = old;
     }
     if tk_accept(tkr, TokenType::TK_SEMICOLON)? {
         let b = ast_forexpression(tkr, TokenType::TK_SEMICOLON)?;

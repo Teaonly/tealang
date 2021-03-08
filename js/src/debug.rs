@@ -17,32 +17,11 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-    function F(x)
-    {
-        this.x = x;
-    }
+    var a;
 
-    var a, b;
-    a = new Object();
-    a.x = 1;
-    assert(a.x == 1, "new 1");
-    b = new F(2);
-    assert(b.x == 2, "new 2");
+    a = {x: 1, y: 1};
 
-    a = {};
-    b = "Hello";
-    assert((a instanceof Object) == true, "instanceof 1");
-    assert((b instanceof Object) == true, "instanceof 2");
-    assert((a instanceof String) == false, "instanceof 3");
-    assert((b instanceof String) == true, "instanceof 4");
-
-
-    assert((typeof 1) == "number", "typeof 1");
-    assert((typeof Object) == "function", "typeof 2");
-    assert((typeof null) == "object", "typeof 3");
-    assert((typeof unknown_var) == "undefined", "typeof 4");
-
-    println("-------- END TESTING -----------");
+    "x" in a;
 "#;
 
 fn debug_runtime() {

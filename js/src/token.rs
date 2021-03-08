@@ -618,6 +618,9 @@ pub struct Tokenlizer<'a> {
     cursor : usize,
     line : u32,
     forward_: LinkedList<(Token, bool)>,
+
+    // help state variable for AST
+    pub notin: bool, 
 }
 
 impl<'a> Tokenlizer<'a> {
@@ -626,7 +629,9 @@ impl<'a> Tokenlizer<'a> {
             script: script,
             cursor: 0,
             line: 1,
-            forward_: LinkedList::new()
+            forward_: LinkedList::new(),
+
+            notin: false,
         }
     }
 

@@ -168,6 +168,7 @@ pub enum AstType {
 	EXP_USHR,
 	EXP_SHR,
 	EXP_SHL,
+	EXP_IN,
 	EXP_INSTANCEOF,
 	EXP_GE,
 	EXP_LE,
@@ -322,6 +323,7 @@ pub enum OpcodeType {
 	OP_BITXOR,
 	OP_BITOR,
 
+	OP_IN,
 	OP_INSTANCEOF,
 
 	OP_THROW,

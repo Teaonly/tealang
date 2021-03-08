@@ -457,6 +457,21 @@ impl JsRuntime {
 		return None;
 	}
 
+	fn in_operator(&mut self) -> Result<(), JsException> {
+		let x = self.top(-2);
+		let y = self.top(-1);
+		self.pop(2);
+		
+		if !y.is_object() {
+			println!("in: invalid operand");
+			self.push_boolean(false);
+			return Ok(());
+		}
+
+		self.push_boolean(false);
+		return Ok(());		
+	}
+
 	fn instanceof(&mut self) -> Result<(), JsException> {
 		let x = self.top(-2);
 		let y = self.top(-1);
@@ -1185,6 +1200,13 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 					rt.push_boolean( b >= 0);
 				} else {
 					rt.push_boolean(false);
+				}
+			},
+
+			OpcodeType::OP_IN => {
+				if let Err(e) = rt.in_operator() {
+					with_exception = Some(e);
+					break;
 				}
 			},
 

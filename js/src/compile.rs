@@ -815,6 +815,9 @@ fn compile_exp(f: &mut VMFunction, exp: &AstNode) {
         AstType::EXP_INSTANCEOF => {
             compile_binary(f, exp,  OpcodeType::OP_INSTANCEOF);
         },
+        AstType::EXP_IN => {
+            compile_binary(f, exp,  OpcodeType::OP_IN);
+        },
         AstType::EXP_SHL => {
             compile_binary(f, exp,  OpcodeType::OP_SHL);
         },
