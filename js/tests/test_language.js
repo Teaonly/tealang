@@ -170,6 +170,7 @@ function test_op2()
     assert((a instanceof String) == false, "instanceof 3");
     assert((b instanceof String) == true, "instanceof 4");
 
+
     assert((typeof 1) == "number", "typeof 1");
     assert((typeof Object) == "function", "typeof 2");
     assert((typeof null) == "object", "typeof 3");

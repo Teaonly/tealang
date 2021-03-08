@@ -261,7 +261,7 @@ impl SharedValue {
 				return "undefined".to_string();
 			},
 			JsValue::JSNULL => {
-				return "null".to_string();
+				return "object".to_string();
 			},
 			JsValue::JSBoolean(_b) => {
 				return "boolean".to_string();
@@ -472,7 +472,7 @@ impl JsObject {
 				"string".to_string()
 			},
 			JsClass::builtin(_) => {
-				"builtin".to_string()
+				"function".to_string()
 			},
 			JsClass::function(_) => {
 				"function".to_string()
