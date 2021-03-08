@@ -250,11 +250,11 @@ impl JsRuntime {
 		let prop_r = target.query_property(name);
 		if let Some((prop, own)) = prop_r {
 			if own {
-				if !prop.configable() {
+				if prop.configable() {
 					target.drop_property(name);
 					return true;
 				}
-			} 
+			}
 		}
 		return false;
 	}	
@@ -468,8 +468,14 @@ impl JsRuntime {
 			return Ok(());
 		}
 
+		let propstr = self.to_string(x)?;
+		if let Some((_prop, _own)) = y.get_object().borrow().query_property(&propstr) {
+			self.push_boolean(true);
+			return Ok(());
+		}
+
 		self.push_boolean(false);
-		return Ok(());		
+		return Ok(());
 	}
 
 	fn instanceof(&mut self) -> Result<(), JsException> {

@@ -184,12 +184,10 @@ function test_delete()
     var a, err;
 
     a = {x: 1, y: 1};
-    assert((delete a.x) == true, "delete");
-    assert(("x" in a) == false, "delete");
+    assert(("x" in a) == true, "in operator 1");
+    assert((delete a.x) == true, "delete 1");
+    assert(("x" in a) == false, "in operator 2");
     
-    /* the following are not tested by test262 */
-    assert(delete "abc"[100], true);
-
     err = false;
     try {
         delete null.a;

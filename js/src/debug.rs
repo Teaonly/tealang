@@ -17,11 +17,12 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-    var a;
+    var a, err;
 
     a = {x: 1, y: 1};
-
-    "x" in a;
+    assert(("x" in a) == true, "in operator 1");
+    assert((delete a.x) == true, "delete 1");
+    assert(("x" in a) == false, "in operator 2");
 "#;
 
 fn debug_runtime() {

@@ -414,6 +414,7 @@ impl TryFrom<u16> for OpcodeType {
 			x if x == OpcodeType::OP_BITAND as u16 => Ok(OpcodeType::OP_BITAND),
 			x if x == OpcodeType::OP_BITXOR as u16 => Ok(OpcodeType::OP_BITXOR),
 			x if x == OpcodeType::OP_BITOR as u16 => Ok(OpcodeType::OP_BITOR),
+			x if x == OpcodeType::OP_IN as u16 => Ok(OpcodeType::OP_IN),			
 			x if x == OpcodeType::OP_INSTANCEOF as u16 => Ok(OpcodeType::OP_INSTANCEOF),
 			x if x == OpcodeType::OP_THROW as u16 => Ok(OpcodeType::OP_THROW),
 			x if x == OpcodeType::OP_TRY as u16 => Ok(OpcodeType::OP_TRY),
