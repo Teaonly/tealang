@@ -3,7 +3,6 @@ use crate::value::*;
 use crate::execute::*;
 use crate::builtin::*;
 
-
 // global functions for runtime 
 fn assert(rt: &mut JsRuntime) {    
     let b = rt.top(-2).to_boolean();
@@ -15,9 +14,15 @@ fn assert(rt: &mut JsRuntime) {
 }
 
 fn println(rt: &mut JsRuntime) {
-    let info = rt.top(-1).to_string();
-    println!("{}", info);
-    rt.push_undefined();
+	let info = rt.to_string( rt.top(-1) );
+	if let Ok(msg) = info {
+    	println!("{}", msg);
+    	rt.push_undefined();
+		return;
+	} 
+	if let Err(e) = info {
+		rt.new_exception(e);
+	}
 }
 
 // TODO : isFinite() isNaN() parseFloat() parseInt()

@@ -525,7 +525,7 @@ pub struct JsIterator {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct JsException {
 	pub msg:	String,
 }

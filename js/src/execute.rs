@@ -527,6 +527,13 @@ impl JsRuntime {
 		return Ok(());
 	}
 
+	/* Exceptions */
+	pub fn new_exception(&mut self, e: JsException) {
+		let obj = JsObject::new_exception(self.prototypes.exception_prototype.clone(), e);
+		let value = SharedValue::new_object(obj);
+		self.push(value);
+	}
+
 	/* convert object to string */
 	pub fn to_string(&mut self, target: SharedValue) -> Result<String, JsException> {
 		
@@ -601,7 +608,7 @@ impl JsRuntime {
 		self.push_object(fobj);
 	}
 
-	/* Exceptions */
+
 
 	/* stack operations */
 	pub fn top(&self, offset: isize) -> SharedValue {
@@ -1377,7 +1384,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 			let dropped = rt.stack.len() - new_top;
 			rt.pop(dropped);
 
-			rt.push( SharedValue::new_object(JsObject::new_exception(rt.prototypes.exception_prototype.clone(), e)));
+			rt.new_exception(e);
 			return jsrun(rt, func, new_pc);
 		}
 		
