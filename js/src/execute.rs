@@ -167,7 +167,7 @@ impl JsRuntime {
 			target.set_property(name, prop);
 			return Ok(());
 		} else {
-			return Err( JsException::new());
+			return Err(JsException::new("TODO".to_string()));
 		}
 	}
 
@@ -188,7 +188,7 @@ impl JsRuntime {
 				return Ok(());
 			} else {								
 				println!("Cant write property for specia object!");
-				return Err( JsException::new());
+				return Err(JsException::new("TODO".to_string()));
 			}
 		} 
 
@@ -528,7 +528,7 @@ impl JsRuntime {
 	}
 
 	/* convert object to string */
-	fn to_string(&mut self, target: SharedValue) -> Result<String, JsException> {
+	pub fn to_string(&mut self, target: SharedValue) -> Result<String, JsException> {
 		
 		/* try to executing toString() */
 		if target.is_object() {
@@ -832,7 +832,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 							continue;
 						} else {
 							println!("'{}' is not defined", s);
-							JsException::new()
+							JsException::new("TODO".to_string())
 						}
 					},
 					Err(e) => {
@@ -1370,7 +1370,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 			let dropped = rt.stack.len() - new_top;
 			rt.pop(dropped);
 
-			rt.push( SharedValue::new_object( JsObject::new_exception(e)));
+			rt.push( SharedValue::new_object(JsObject::new_exception(rt.prototypes.exception_prototype.clone(), e)));
 			return jsrun(rt, func, new_pc);
 		}
 		

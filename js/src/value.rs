@@ -367,8 +367,10 @@ impl JsBuiltinFunction {
 }
 
 impl JsException {
-	pub fn new() -> JsException {
-		JsException{}
+	pub fn new(msg: String) -> JsException {
+		JsException{
+			msg: msg
+		}
 	}
 }
 
@@ -410,13 +412,12 @@ impl JsObject {
         }
 	}
 	
-	pub fn new_exception(e: JsException) -> JsObject {		
+	pub fn new_exception(prototype: SharedObject, e: JsException) -> JsObject {		
 		JsObject {
 			extensible:	false,
-			__proto__: None,
+			__proto__: Some(prototype),
 			properties: HashMap::new(),
 			value: JsClass::exception(e),
-
 		}
 	}
 

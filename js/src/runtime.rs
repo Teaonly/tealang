@@ -24,10 +24,11 @@ fn println(rt: &mut JsRuntime) {
 
 pub fn new_runtime() -> JsRuntime {	
 	let prototypes = JsPrototype {
-		object_prototype:	SharedObject_new(JsObject::new()),
-		string_prototype:	SharedObject_new(JsObject::new()),
-		array_prototype:	SharedObject_new(JsObject::new()),
-		function_prototype:	SharedObject_new(JsObject::new()),
+		object_prototype:		SharedObject_new(JsObject::new()),
+		string_prototype:		SharedObject_new(JsObject::new()),
+		array_prototype:		SharedObject_new(JsObject::new()),
+		function_prototype:		SharedObject_new(JsObject::new()),
+		exception_prototype:	SharedObject_new(JsObject::new()),
 	};
 
 	let genv = JsEnvironment::new();

@@ -111,6 +111,25 @@ fn function_builtins() -> HashMap<String, JsBuiltinFunction> {
     return builtins;
 }
 
+// The Exception class
+fn exception_constructor(rt: &mut JsRuntime) {
+    let exp = JsException::new("".to_string());
+    let value = SharedValue::new_object(JsObject::new_exception(rt.prototypes.exception_prototype.clone(), exp));
+    rt.push(value);
+}
+
+fn exception_tostring(rt: &mut JsRuntime) {
+    // TODO
+    rt.push_string("exception(...) {...}".to_string());
+}
+
+fn exception_builtins() -> HashMap<String, JsBuiltinFunction> {
+    // TODO
+    let mut builtins = HashMap::new();
+    builtins.insert("toString".to_string(), JsBuiltinFunction::new(exception_tostring, 0));
+    return builtins;
+}
+
 // build prototypes chian
 fn create_builtin_class(constructor: JsBuiltinFunction, properties: HashMap<String, JsBuiltinFunction>, top: Option<SharedObject>) -> (SharedObject, SharedObject) {
     let mut class_obj = JsObject::new();
@@ -169,7 +188,12 @@ pub fn prototypes_init(rt: &mut JsRuntime) {
     rt.prototypes.array_prototype = array_prototype;
 
     // Function
-    let (func_classs_object, func_prototype) = create_builtin_class( JsBuiltinFunction::new(array_constructor, 0), function_builtins(), Some(top_prototype.clone()));
+    let (func_classs_object, func_prototype) = create_builtin_class( JsBuiltinFunction::new(function_constructor, 0), function_builtins(), Some(top_prototype.clone()));
     set_global_class(rt, "Function", func_classs_object.clone());
     rt.prototypes.function_prototype = func_prototype;
+    
+    // Exception
+    let (exp_classs_object, exp_prototype) = create_builtin_class( JsBuiltinFunction::new(exception_constructor, 0), exception_builtins(), Some(top_prototype.clone()));
+    set_global_class(rt, "Exception", exp_classs_object.clone());
+    rt.prototypes.exception_prototype = exp_prototype;
 }

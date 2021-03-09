@@ -527,7 +527,7 @@ pub struct JsIterator {
 #[allow(non_camel_case_types)]
 #[derive(Clone)]
 pub struct JsException {
-
+	pub msg:	String,
 }
 
 #[allow(non_camel_case_types)]
@@ -579,6 +579,9 @@ pub struct JsPrototype {
 	pub string_prototype:	SharedObject,
 	pub array_prototype:	SharedObject,
 	pub function_prototype: SharedObject,
+
+	/* prototype for exceptions */
+	pub exception_prototype: SharedObject,
 }
 
 #[allow(non_camel_case_types)]
