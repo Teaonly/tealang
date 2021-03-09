@@ -16,14 +16,12 @@ use ast::*;
 use compile::*;
 use runtime::*;
 
-static script: &str = r#"
-    var err = false;
+static script: &str = r#"   
     try {
         delete null.a;
-    } catch(e) {
-        err = (e instanceof Exception);
-    }
-    assert(err == true, "delete");
+    } catch(e) {      
+        println(e.msg);
+    }    
 "#;
 
 fn debug_runtime() {

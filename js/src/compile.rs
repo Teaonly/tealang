@@ -988,10 +988,8 @@ fn compile_trycatch(f: &mut VMFunction, a: &AstNode, b: &AstNode, c: &AstNode) {
     f.label_current_to(l1);
     compile_stm(f, a);
     f.emitop(OpcodeType::OP_ENDTRY);
-    f.delete_scope();
-
+    f.delete_scope();    
     f.label_current_to(l2);
-    compile_stm(f, b);
 }
 
 fn compile_finally(f: &mut VMFunction, a: &AstNode, b: &AstNode) {

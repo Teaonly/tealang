@@ -990,11 +990,18 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				rt.push_boolean(b);
 			},
 			OpcodeType::OP_DELPROP_S => {
-				let target = rt.top(-1).get_object();
 				let name = func.string(&mut pc);
-				let b = rt.delproperty(target, &name);
-				rt.pop(1);
-				rt.push_boolean(b);
+				let target_value = rt.top(-1);
+				if target_value.is_object() {
+					let target = target_value.get_object();				
+					let b = rt.delproperty(target, &name);
+					rt.pop(1);
+					rt.push_boolean(b);
+				} else {					
+					let exp = JsException::new("Can't delete none object's proptery".to_string());
+					with_exception = Some(exp);
+					break;
+				}
 			},
 
 			OpcodeType::OP_ITERATOR => {
