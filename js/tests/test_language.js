@@ -196,14 +196,7 @@ function test_delete()
     }
     assert(err == true, "delete");
 
-    err = false;
-    try {
-        a = { f() { delete super.a; } };
-        a.f();
-    } catch(e) {
-        err = (e instanceof ReferenceError);
-    }
-    assert(err, true, "delete");
+    println("-------- END TESTING -----------");
 }
 
 function test_prototype()

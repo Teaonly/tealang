@@ -16,14 +16,14 @@ use ast::*;
 use compile::*;
 use runtime::*;
 
-static script: &str = r#"   
+static script: &str = r#"
     var a, err;
 
     a = {x: 1, y: 1};
     assert(("x" in a) == true, "in operator 1");
     assert((delete a.x) == true, "delete 1");
     assert(("x" in a) == false, "in operator 2");
-
+    
     err = false;
     try {
         delete null.a;
@@ -31,6 +31,8 @@ static script: &str = r#"
         err = (e instanceof Exception);
     }
     assert(err == true, "delete");
+
+    println("-------- END TESTING -----------");
 "#;
 
 fn debug_runtime() {
