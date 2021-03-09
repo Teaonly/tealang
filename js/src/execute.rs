@@ -121,7 +121,7 @@ impl JsRuntime {
 		
 		let value = self.top(-1);
 		self.cenv.borrow().put_variable(name);
-		let mut prop = self.genv.borrow().get_variable(name);
+		let mut prop = self.cenv.borrow().get_variable(name);
 		prop.value = value;
 		self.cenv.borrow().set_variable(name, prop);
 
@@ -755,6 +755,8 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 	loop {
 		let opcode = func.opcode(&mut pc);
 
+		//println!(">>>>{} -> {:?}", pc, opcode);
+		
 		match opcode {
 			OpcodeType::OP_POP => {
 				rt.pop(1);

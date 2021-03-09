@@ -17,22 +17,19 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-    var a, err;
-
-    a = {x: 1, y: 1};
-    assert(("x" in a) == true, "in operator 1");
-    assert((delete a.x) == true, "delete 1");
-    assert(("x" in a) == false, "in operator 2");
-    
-    err = false;
-    try {
-        delete null.a;
-    } catch(e) {
-        err = (e instanceof Exception);
+function test_op2()
+{
+    function F(x)
+    {
+        this.x = x;
     }
-    assert(err == true, "delete");
-
+    
+    b = new F(2);
+    assert(b.x == 2, "new 2");   
     println("-------- END TESTING -----------");
+}
+
+test_op2();
 "#;
 
 fn debug_runtime() {

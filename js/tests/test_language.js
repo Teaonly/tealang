@@ -202,12 +202,9 @@ function test_delete()
 function test_prototype()
 {
     var f = function f() { };
-    assert(f.prototype.constructor, f, "prototype");
-
-    var g = function g() { };
-    /* QuickJS bug */
-    Object.defineProperty(g, "prototype", { writable: false });
-    assert(g.prototype.constructor, g, "prototype");
+    assert(f.prototype.constructor === f, "prototype");
+    
+    println("-------- END TESTING -----------");
 }
 
 function test_arguments()
