@@ -378,7 +378,6 @@ function test_function_expr_name()
 
 test_op1();
 test_cvt();
-test_eq();
 test_inc_dec();
 test_op2();
 test_delete();
