@@ -20,7 +20,7 @@ static script: &str = r#"
     try {
         delete null.a;
     } catch(e) {      
-        println(e);
+        println(e.message());
     } 
 "#;
 

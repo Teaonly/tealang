@@ -119,14 +119,20 @@ fn exception_constructor(rt: &mut JsRuntime) {
 }
 
 fn exception_tostring(rt: &mut JsRuntime) {
-    // TODO
     rt.push_string("exception(...) {...}".to_string());
+}
+
+fn exception_message(rt: &mut JsRuntime) {
+    let exp_object = rt.top(-1).get_object();
+    let exp = exp_object.borrow().get_exception();
+    rt.push_string(exp.msg);
 }
 
 fn exception_builtins() -> HashMap<String, JsBuiltinFunction> {
     // TODO
     let mut builtins = HashMap::new();
     builtins.insert("toString".to_string(), JsBuiltinFunction::new(exception_tostring, 0));
+    builtins.insert("message".to_string(), JsBuiltinFunction::new(exception_message, 0));
     return builtins;
 }
 
