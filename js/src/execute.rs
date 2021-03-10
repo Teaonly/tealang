@@ -167,7 +167,7 @@ impl JsRuntime {
 			target.set_property(name, prop);
 			return Ok(());
 		} else {
-			return Err(JsException::new("TODO".to_string()));
+			return Err(JsException::new(format!("TODO: {}", line!())));
 		}
 	}
 
@@ -188,7 +188,7 @@ impl JsRuntime {
 				return Ok(());
 			} else {								
 				println!("Cant write property for specia object!");
-				return Err(JsException::new("TODO".to_string()));
+				return Err(JsException::new(format!("TODO: {}", line!())));
 			}
 		} 
 
@@ -855,7 +855,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 							continue;
 						} else {
 							println!("'{}' is not defined", s);
-							JsException::new("TODO".to_string())
+							JsException::new(format!("TODO: {}", line!()))
 						}
 					},
 					Err(e) => {
@@ -1453,8 +1453,8 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 	rt.cenv = new_env;
 
 	/* create arguments */
-	if vmf.numparams > 0 {
-		let arg_obj = JsObject::new_with( rt.prototypes.object_prototype.clone(), JsClass::object);
+	{
+		let mut arg_obj = JsObject::new_with( rt.prototypes.object_prototype.clone(), JsClass::object);		
 		let arg_value = SharedValue::new_object(arg_obj);
 
 		let jv = SharedValue::new_number(argc as f64);
@@ -1466,6 +1466,7 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 			rt.defproperty(arg_value.get_object(), &name, jv, JsDefaultAttr, None, None)?;
 		}
 
+		arg_value.get_object().borrow_mut().extensible = false;
 		rt.cenv.borrow_mut().init_var("arguments", arg_value);
 	}
 

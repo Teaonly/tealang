@@ -17,16 +17,19 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-function test_prototype()
+function test_arguments()
 {
-    var f = function () { };
+    function f2() {
+        assert(arguments.length == 2, "arguments 1");
+        assert(arguments[0] == 1, "arguments 2");
+        assert(arguments[1] == 3, "arguments 3");
+    }
+    f2(1, 3);
 
-    assert(f.prototype.constructor === f, "prototype");
-    
     println("-------- END TESTING -----------");
 }
 
-test_prototype();
+test_arguments();
 
 "#;
 

@@ -211,11 +211,13 @@ function test_prototype()
 function test_arguments()
 {
     function f2() {
-        assert(arguments.length, 2, "arguments");
-        assert(arguments[0], 1, "arguments");
-        assert(arguments[1], 3, "arguments");
+        assert(arguments.length == 2, "arguments 1");
+        assert(arguments[0] == 1, "arguments 2");
+        assert(arguments[1] == 3, "arguments 3");
     }
     f2(1, 3);
+
+    println("-------- END TESTING -----------");
 }
 
 function test_object_literal()
