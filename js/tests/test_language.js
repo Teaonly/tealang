@@ -199,15 +199,6 @@ function test_delete()
     println("-------- END TESTING -----------");
 }
 
-function test_prototype()
-{
-    var f = function () { };
-
-    assert(f.prototype.constructor === f, "prototype");
-    
-    println("-------- END TESTING -----------");
-}
-
 function test_arguments()
 {
     function f2() {
@@ -217,46 +208,50 @@ function test_arguments()
     }
     f2(1, 3);
 
+    assert(f2.prototype.constructor === f, "prototype");
+
     println("-------- END TESTING -----------");
 }
 
 function test_object_literal()
 {
-    var x = 0, get = 1, set = 2; async = 3;
-    a = { get: 2, set: 3, async: 4 };
-    assert(JSON.stringify(a), '{"get":2,"set":3,"async":4}');
+    var a = {
+        'x':    1234,
+        'y':    4321,
+        'z':    5678,
+    }
+    assert(a.x == 1234, "object literal 1");
+    assert(a.z == 5678, "object literal 2");
 
-    a = { x, get, set, async };
-    assert(JSON.stringify(a), '{"x":0,"get":1,"set":2,"async":3}');
+    var b = {
+        'x':    1234,
+        'y':    {
+            'y':    4321
+        },
+        'z':    5678,
+    }
+    assert(b.x == 1234, "object literal 3");
+    assert(b.z == 5678, "object literal 4");
+    assert(b.y.y == 4321, "object literal 5");
+
+    println("-------- END TESTING -----------");
 }
+
 
 function test_labels()
 {
     do x: { break x; } while(0);
+    
     if (1)
         x: { break x; }
     else
         x: { break x; }
-    with ({}) x: { break x; };
-    while (0) x: { break x; };
+
+    while (0) x: { 
+        break x; 
+    };
 }
 
-function test_destructuring()
-{
-    function * g () { return 0; };
-    var [x] = g();
-    assert(x, void 0);
-}
-
-function test_spread()
-{
-    var x;
-    x = [1, 2, ...[3, 4]];
-    assert(x.toString(), "1,2,3,4");
-
-    x = [ ...[ , ] ];
-    assert(Object.getOwnPropertyNames(x).toString(), "0,length");
-}
 
 function test_argument_scope()
 {
@@ -384,16 +379,10 @@ test_cvt();
 test_inc_dec();
 test_op2();
 test_delete();
-test_prototype();
 test_arguments();
-test_class();
-test_template();
-test_template_skip();
 test_object_literal();
-test_regexp_skip();
+
 test_labels();
-test_destructuring();
-test_spread();
 test_function_length();
 test_argument_scope();
 test_function_expr_name();

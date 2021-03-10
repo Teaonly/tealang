@@ -17,19 +17,32 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-function test_arguments()
+
+function test_object_literal()
 {
-    function f2() {
-        assert(arguments.length == 2, "arguments 1");
-        assert(arguments[0] == 1, "arguments 2");
-        assert(arguments[1] == 3, "arguments 3");
+    var a = {
+        'x':    1234,
+        'y':    4321,
+        'z':    5678,
     }
-    f2(1, 3);
+    assert(a.x == 1234, "object literal 1");
+    assert(a.z == 5678, "object literal 2");
+
+    var b = {
+        'x':    1234,
+        'y':    {
+            'y':    4321
+        },
+        'z':    5678,
+    }
+    assert(b.x == 1234, "object literal 3");
+    assert(b.z == 5678, "object literal 4");
+    assert(b.y.y == 4321, "object literal 5");
 
     println("-------- END TESTING -----------");
 }
 
-test_arguments();
+test_object_literal();
 
 "#;
 
