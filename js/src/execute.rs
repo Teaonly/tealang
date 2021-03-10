@@ -604,11 +604,25 @@ impl JsRuntime {
 
 	pub fn new_closure(&mut self, f: SharedFunction) {
 		let fobj = SharedObject_new(JsObject::new_function(f.clone(), self.cenv.clone()));
-		fobj.borrow_mut().__proto__ = Some(self.prototypes.function_prototype.clone());
-		self.push_object(fobj);
+		fobj.borrow_mut().__proto__ = Some(self.prototypes.function_prototype.clone());		
+		
+		// prototype object self		
+		let mut prop = JsProperty::new();
+		prop.fill_attr(JsReadonlyAttr);
+		prop.value = SharedValue::new_sobject(fobj.clone());
+		let mut prototype_obj = JsObject::new();
+    	prototype_obj.extensible = true;
+		prototype_obj.__proto__ = Some(self.prototypes.object_prototype.clone());
+		prototype_obj.properties.insert("constructor".to_string(), prop );
+		
+		// binding prototype to function object 
+		let prototype_obj = SharedObject_new(prototype_obj);
+		let mut prop = JsProperty::new();
+		prop.value = SharedValue::new_sobject(prototype_obj.clone());
+		fobj.borrow_mut().properties.insert("prototype".to_string(), prop);
+
+		self.push(SharedValue::new_sobject(fobj));
 	}
-
-
 
 	/* stack operations */
 	pub fn top(&self, offset: isize) -> SharedValue {
@@ -957,7 +971,12 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				rt.rot3pop2();
 			},
 			OpcodeType::OP_GETPROP_S => {
-				let target = rt.top(-1).get_object();
+				let target = rt.top(-1);
+				if !target.is_object() {
+					with_exception = Some( JsException::new("Access none objects's property!".to_string()) );
+					break;
+				}
+				let target = target.get_object();
 				let name = func.string(&mut pc);
 				if let Err(e) = rt.getproperty(target, &name) {
 					with_exception = Some(e);

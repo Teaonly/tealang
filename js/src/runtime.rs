@@ -64,7 +64,12 @@ pub fn run_script(rt: &mut JsRuntime, vmf: SharedFunction) {
 	rt.push_object(fobj);	// function object
 	rt.push_object(thiz);	// this
 
-	jscall(rt, 0);
+	let result = jscall(rt, 0);
+	if result.is_err() {
+		println!("Exceptions: {:?}", result.err().unwrap());
+		rt.stack.clear();
+		return;
+	}
 
 	if rt.stack.len() != 1 {
 		println!("stack len should be 1 but get {}", rt.stack.len());

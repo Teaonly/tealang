@@ -201,7 +201,8 @@ function test_delete()
 
 function test_prototype()
 {
-    var f = function f() { };
+    var f = function () { };
+
     assert(f.prototype.constructor === f, "prototype");
     
     println("-------- END TESTING -----------");
