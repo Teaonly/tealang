@@ -156,6 +156,7 @@ fn ast_identifier(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 fn ast_identifier_opt(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
     let ntk = tkr.forward()?;
     if ntk.tk_type == TokenType::TK_IDENTIFIER {
+        tkr.next()?;
         let node = AstNode::new_string(AstType::AST_IDENTIFIER, tkr.line(), &ntk.tk_value.unwrap());
         return Ok(node);
     } else {

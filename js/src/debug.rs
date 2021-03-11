@@ -18,31 +18,21 @@ use runtime::*;
 
 static script: &str = r#"
 
-function test_object_literal()
+function test_labels()
 {
-    var a = {
-        'x':    1234,
-        'y':    4321,
-        'z':    5678,
-    }
-    assert(a.x == 1234, "object literal 1");
-    assert(a.z == 5678, "object literal 2");
+    do x: { break x; } while(0);
+    
+    if (1)
+        x: { break x; }
+    else
+        x: { break x; }
 
-    var b = {
-        'x':    1234,
-        'y':    {
-            'y':    4321
-        },
-        'z':    5678,
-    }
-    assert(b.x == 1234, "object literal 3");
-    assert(b.z == 5678, "object literal 4");
-    assert(b.y.y == 4321, "object literal 5");
-
-    println("-------- END TESTING -----------");
+    while (0) x: { 
+        break x; 
+    };
 }
 
-test_object_literal();
+test_labels();
 
 "#;
 
@@ -84,5 +74,5 @@ pub fn main() {
     //debug_token();
     //debug_ast();
     debug_compile();
-    debug_runtime();
+    //debug_runtime();
 }
