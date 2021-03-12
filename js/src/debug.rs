@@ -17,21 +17,24 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-function test_while_break()
+function test_for()
 {
     var i, c;
-    i = 0;
     c = 0;
-    while (i < 3) {
+    for(i = 0; i < 3; i++) {
         c++;
-        if (i == 1)
-            break;
-        i++;
     }
-    assert(c === 2 && i === 1, "while break 1");
+    assert(c === 3 && i === 3, "for 1");
+
+    c = 0;
+    for(var j = 0; j < 3; j++) {
+        c++;
+    }
+    assert(c === 3 && j === 3, "for 2");
 }
 
-test_while_break();
+
+test_for();
 "#;
 
 fn debug_runtime() {

@@ -33,7 +33,7 @@ function test_do_while()
         c++;
         i++;
     } while (i < 3);
-    assert(c === 3 && i === 3);
+    assert(c === 3 && i === 3, "do while 1");
 }
 
 function test_for()
@@ -43,13 +43,13 @@ function test_for()
     for(i = 0; i < 3; i++) {
         c++;
     }
-    assert(c === 3 && i === 3);
+    assert(c === 3 && i === 3, "for 1");
 
     c = 0;
     for(var j = 0; j < 3; j++) {
         c++;
     }
-    assert(c === 3 && j === 3);
+    assert(c === 3 && j === 3, "for 2");
 }
 
 function test_for_in()
