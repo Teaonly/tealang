@@ -1,25 +1,3 @@
-function assert(actual, expected, message) {
-    if (arguments.length == 1)
-        expected = true;
-
-    if (actual === expected)
-        return;
-
-    if (actual !== null && expected !== null
-    &&  typeof actual == 'object' && typeof expected == 'object'
-    &&  actual.toString() === expected.toString())
-        return;
-
-    throw Error("assertion failed: got |" + actual + "|" +
-                ", expected |" + expected + "|" +
-                (message ? " (" + message + ")" : ""));
-}
-
-// load more elaborate version of assert if available
-try { __loadScript("test_assert.js"); } catch(e) {}
-
-/*----------------*/
-
 function test_while()
 {
     var i, c;
@@ -29,7 +7,7 @@ function test_while()
         c++;
         i++;
     }
-    assert(c === 3);
+    assert(c === 3, "while 1");
 }
 
 function test_while_break()
@@ -43,7 +21,7 @@ function test_while_break()
             break;
         i++;
     }
-    assert(c === 2 && i === 1);
+    assert(c === 2 && i === 1, "while break 1");
 }
 
 function test_do_while()
