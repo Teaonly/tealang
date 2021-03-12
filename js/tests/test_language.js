@@ -208,7 +208,7 @@ function test_arguments()
     }
     f2(1, 3);
 
-    assert(f2.prototype.constructor === f, "prototype");
+    assert(f2.prototype.constructor === f2, "prototype");
 
     println("-------- END TESTING -----------");
 }
@@ -249,126 +249,21 @@ function test_labels()
     println("-------- END TESTING -----------");
 }
 
-
-function test_argument_scope()
-{
-    var f;
-    var c = "global";
-    
-    f = function(a = eval("var arguments")) {};
-    assert_throws(SyntaxError, f);
-
-    f = function(a = eval("1"), b = arguments[0]) { return b; };
-    assert(f(12), 12);
-
-    f = function(a, b = arguments[0]) { return b; };
-    assert(f(12), 12);
-
-    f = function(a, b = () => arguments) { return b; };
-    assert(f(12)()[0], 12);
-
-    f = function(a = eval("1"), b = () => arguments) { return b; };
-    assert(f(12)()[0], 12);
-
-    (function() {
-        "use strict";
-        f = function(a = this) { return a; };
-        assert(f.call(123), 123);
-
-        f = function f(a = f) { return a; };
-        assert(f(), f);
-
-        f = function f(a = eval("f")) { return a; };
-        assert(f(), f);
-    })();
-
-    f = (a = eval("var c = 1"), probe = () => c) => {
-        var c = 2;
-        assert(c, 2);
-        assert(probe(), 1);
-    }
-    f();
-
-    f = (a = eval("var arguments = 1"), probe = () => arguments) => {
-        var arguments = 2;
-        assert(arguments, 2);
-        assert(probe(), 1);
-    }
-    f();
-
-    f = function f(a = eval("var c = 1"), b = c, probe = () => c) {
-        assert(b, 1);
-        assert(c, 1);
-        assert(probe(), 1)
-    }
-    f();
-
-    assert(c, "global");
-    f = function f(a, b = c, probe = () => c) {
-        eval("var c = 1");
-        assert(c, 1);
-        assert(b, "global");
-        assert(probe(), "global")
-    }
-    f();
-    assert(c, "global");
-
-    f = function f(a = eval("var c = 1"), probe = (d = eval("c")) => d) {
-        assert(probe(), 1)
-    }
-    f();
-}
-
 function test_function_expr_name()
 {
     var f;
-
-    /* non strict mode test : assignment to the function name silently
-       fails */
     
     f = function myfunc() {
-        myfunc = 1;
         return myfunc;
     };
-    assert(f(), f);
+    assert(f() == f, "function call 1");
 
-    f = function myfunc() {
-        myfunc = 1;
-        (() => {
-            myfunc = 1;
-        })();
-        return myfunc;
-    };
-    assert(f(), f);
+    f = function(a) {
+            return a;
+        }(3.14);    
+    assert(f == 3.14, "function call 2");
 
-    f = function myfunc() {
-        eval("myfunc = 1");
-        return myfunc;
-    };
-    assert(f(), f);
-    
-    /* strict mode test : assignment to the function name raises a
-       TypeError exception */
-
-    f = function myfunc() {
-        "use strict";
-        myfunc = 1;
-    };
-    assert_throws(TypeError, f);
-
-    f = function myfunc() {
-        "use strict";
-        (() => {
-            myfunc = 1;
-        })();
-    };
-    assert_throws(TypeError, f);
-
-    f = function myfunc() {
-        "use strict";
-        eval("myfunc = 1");
-    };
-    assert_throws(TypeError, f);
+    println("-------- END TESTING -----------");
 }
 
 test_op1();
@@ -378,8 +273,5 @@ test_op2();
 test_delete();
 test_arguments();
 test_object_literal();
-
 test_labels();
-test_function_length();
-test_argument_scope();
 test_function_expr_name();

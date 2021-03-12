@@ -199,7 +199,7 @@ impl JsRuntime {
 
 	// get value from the proptery of object
 	fn getproperty(&mut self, target_: SharedObject, name: &str) -> Result<bool, JsException> {		
-		let target = target_.borrow_mut();
+		let target = target_.borrow();
 		let target_ = target_.clone();
 
 		// get value from index
@@ -1489,6 +1489,7 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 		rt.cenv.borrow_mut().init_var(name, rt.stack[bot-1].clone());
 	}
 
+	
 	jsrun(rt, vmf, 0)?;
 
 	/* clear stack */
