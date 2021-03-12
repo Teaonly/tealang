@@ -82,6 +82,7 @@ impl AstNode {
         return false;
     }
 
+    /*
     fn is_loop(&self) -> bool {        
         let at = self.ast_type;
         if at == AstType::STM_DO || at == AstType::STM_WHILE || 
@@ -91,6 +92,7 @@ impl AstNode {
         }
         return false;
     }
+    */
 
     fn is_func(&self) -> bool {
         let at = self.ast_type;
@@ -1225,20 +1227,11 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
 
         AstType::STM_LABEL => {
             let a = stm.a.as_ref().unwrap();
-            f.new_scope(VMJumpScope::LabelSection(a.str().to_string()));
-           
+            f.new_scope(VMJumpScope::LabelSection(a.str().to_string()));           
+            
             compile_stm(f, stm.b.as_ref().unwrap());
-            /* skip consecutive labels */
-            let mut node = stm;
-            while node.ast_type == AstType::STM_LABEL {
-                node = stm.b.as_ref().unwrap();
-            }
-
-            /* loops and switches have already been labelled */
-            if !node.is_loop() && node.ast_type != AstType::STM_SWITCH {
-                f.fill_jumps(f.current(), f.current());
-            }
-
+            
+            f.fill_jumps(f.current(), f.current());
             f.delete_scope();
         },
 
@@ -1247,7 +1240,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             let break_scope: usize;
 
             if !a.is_null() {
-                let break_target = a.str();
+                let break_target = a.str();                
                 break_scope = f.target_scope_by_name(break_target);
             } else {
                 break_scope = f.target_break_scope();
@@ -1259,7 +1252,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             compile_exit(f, break_scope - 1, AstType::STM_BREAK);
             let from = f.emitjump(OpcodeType::OP_JUMP);
             let jump = VMJumpType::BreakJump(from);
-            f.add_jump(break_scope, jump);
+            f.add_jump(break_scope - 1, jump);
         },
         
         AstType::STM_CONTINUE => {
@@ -1279,7 +1272,7 @@ fn compile_stm(f: &mut VMFunction, stm: &AstNode) {
             compile_exit(f, continue_scope - 1, AstType::STM_CONTINUE);
             let from = f.emitjump(OpcodeType::OP_JUMP);
             let jump = VMJumpType::ContinueJump(from);
-            f.add_jump(continue_scope, jump);
+            f.add_jump(continue_scope - 1, jump);
         },
         
         AstType::STM_RETURN => {

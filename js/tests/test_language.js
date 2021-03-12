@@ -240,16 +240,13 @@ function test_object_literal()
 
 function test_labels()
 {
-    do x: { break x; } while(0);
-    
-    if (1)
-        x: { break x; }
-    else
-        x: { break x; }
+    x: do {
+        y: while(1) {
+            break x;
+        }
+    } while(0);
 
-    while (0) x: { 
-        break x; 
-    };
+    println("-------- END TESTING -----------");
 }
 
 
