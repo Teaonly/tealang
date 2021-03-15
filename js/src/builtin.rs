@@ -92,7 +92,7 @@ fn array_push(rt: &mut JsRuntime) {
     let mut object = sobj.borrow_mut();
     assert!(object.is_array());
    
-    let value = rt.top(-1);
+    let value = rt.top(-1).duplicate();
     object.get_mut_array().push(value);
     
     rt.push_number(object.get_array().len() as f64);

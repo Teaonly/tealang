@@ -18,8 +18,7 @@ use runtime::*;
 
 static script: &str = r#"
 var tab = [];
-for(var i in {x:1, y:2}) {
-    println(i);
+for(var i in {x:1,y:2,z:3}) {
     tab.push(i);
 }
 println(tab);

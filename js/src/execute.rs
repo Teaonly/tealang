@@ -1048,7 +1048,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 					if target.borrow().is_iterator() {
 						let mut target = target.borrow_mut();
 						let it: &mut JsIterator = target.get_iterator();
-						if let Some(s) = it.next() {						
+						if let Some(s) = it.next() {
 							rt.push_string(s);
 							rt.push_boolean(true);
 						} else {
