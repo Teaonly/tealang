@@ -60,7 +60,7 @@ function test_for_in()
     for(i in {x:1, y: 2}) {
         tab.push(i);
     }
-    assert(tab.toString(), "x,y", "for_in");
+    println(tab);
 
     /* prototype chain test */
     a = {x:2, y: 2, "1": 3};

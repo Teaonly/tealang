@@ -291,7 +291,12 @@ fn ast_primary(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
         return Ok(obj);
     }
     if tk_accept(tkr, TokenType::TK_BRACKET_LEFT)? {
-        let a = ast_arrayliteral(tkr)?;
+        let a = if tkr.forward()?.tk_type == TokenType::TK_BRACKET_RIGHT {
+            AstNode::new(AstType::AST_NULL, tkr.line())
+        } else {
+            ast_arrayliteral(tkr)?
+        };
+
         tk_expect(tkr, TokenType::TK_BRACKET_RIGHT)?;
         let array = AstNode::new_a(AstType::EXP_ARRAY, tkr.line(), a);
         return Ok(array);

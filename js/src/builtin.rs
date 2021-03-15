@@ -85,10 +85,25 @@ fn array_tostring(rt: &mut JsRuntime) {
     rt.push_string(result);
 }
 
+fn array_push(rt: &mut JsRuntime) {
+    let target = rt.top(-2);
+    assert!(target.is_object());
+    let sobj = target.get_object();
+    let mut object = sobj.borrow_mut();
+    assert!(object.is_array());
+
+    let mut v = object.get_mut_array();
+
+    let value = rt.top(-1);
+    object.get_mut_array().push(value);
+    
+    rt.push_number(object.get_array().len() as f64);
+}
+
 fn array_builtins() -> HashMap<String, JsBuiltinFunction> {
-    // TODO
     let mut builtins = HashMap::new();
-    builtins.insert("toString".to_string(), JsBuiltinFunction::new(array_tostring, 0));    
+    builtins.insert("toString".to_string(), JsBuiltinFunction::new(array_tostring, 0));
+    builtins.insert("push".to_string(), JsBuiltinFunction::new(array_push, 1));
     return builtins;
 }
 

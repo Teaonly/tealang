@@ -17,24 +17,13 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-function test_for()
-{
-    var i, c;
-    c = 0;
-    for(i = 0; i < 3; i++) {
-        c++;
-    }
-    assert(c === 3 && i === 3, "for 1");
+var i, tab, a, b;
 
-    c = 0;
-    for(var j = 0; j < 3; j++) {
-        c++;
-    }
-    assert(c === 3 && j === 3, "for 2");
+tab = [];
+for(i in {x:1, y: 2}) {
+    tab.push(i);
 }
-
-
-test_for();
+println(tab);
 "#;
 
 fn debug_runtime() {
