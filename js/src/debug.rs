@@ -21,7 +21,7 @@ var i, tab, a, b;
 
 tab = [];
 for(i in {x:1, y: 2}) {
-    tab.push(i);
+    println(i);
 }
 println(tab);
 "#;
