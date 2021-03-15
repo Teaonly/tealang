@@ -17,11 +17,10 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-var i, tab, a, b;
-
-tab = [];
-for(i in {x:1, y: 2}) {
+var tab = [];
+for(var i in {x:1, y:2}) {
     println(i);
+    tab.push(i);
 }
 println(tab);
 "#;

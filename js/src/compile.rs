@@ -1086,7 +1086,7 @@ fn compile_assignforin(f: &mut VMFunction, stm: &AstNode) {
         if lhs.has_b() {
             panic!("more than one loop variable in for-in statement");
         }
-        let var = lhs.a().str();
+        let var = lhs.a().a().str();    /* list(var-init(ident)) */
         f.emitstring(OpcodeType::OP_SETVAR, var);
         f.emitop(OpcodeType::OP_POP);
         return;

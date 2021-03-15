@@ -76,7 +76,7 @@ fn array_tostring(rt: &mut JsRuntime) {
 
     let mut result = String::new();
     let v = object.get_array();
-    for i in 0..v.len() {
+    for i in 0..v.len() {        
         result.push_str( &v[i].to_string() );
         if i != v.len() - 1 {
             result.push_str(", ");
@@ -91,9 +91,7 @@ fn array_push(rt: &mut JsRuntime) {
     let sobj = target.get_object();
     let mut object = sobj.borrow_mut();
     assert!(object.is_array());
-
-    let mut v = object.get_mut_array();
-
+   
     let value = rt.top(-1);
     object.get_mut_array().push(value);
     
