@@ -25,10 +25,35 @@ fn object_tostring(rt: &mut JsRuntime)  {
     rt.push_string( "[object]".to_string() );
 }
 
-fn object_builtins() -> HashMap<String, JsBuiltinFunction> {
+fn object_setprototypeof(rt: &mut JsRuntime) {
+    let target = rt.top(-2);
+    if !target.is_object() {
+        rt.push_undefined();    
+        return;
+    }
+
+    let proto = rt.top(-1);
+    if !proto.is_object() {
+        rt.push_undefined();
+        return;    
+    }
+
+    target.get_object().borrow_mut().__proto__ = Some(proto.get_object());
+    rt.push(target);
+}
+
+fn object_proto_builtins() -> HashMap<String, JsBuiltinFunction> {
     let mut builtins = HashMap::new();
     builtins.insert("toString".to_string(), JsBuiltinFunction::new(object_tostring, 0));
+    //builtins.insert("preventExtensions".to_string(), JsBuiltinFunction::new(object_preventextensions, 1));
+    //builtins.insert("setPrototypeOf".to_string(), JsBuiltinFunction::new(object_setprototypeof, 2));
+    return builtins;
+}
+
+fn object_builtins() -> HashMap<String, JsBuiltinFunction> {
+    let mut builtins = HashMap::new();   
     builtins.insert("preventExtensions".to_string(), JsBuiltinFunction::new(object_preventextensions, 1));
+    builtins.insert("setPrototypeOf".to_string(), JsBuiltinFunction::new(object_setprototypeof, 2));
     return builtins;
 }
 
@@ -52,7 +77,7 @@ fn string_tostring(rt: &mut JsRuntime) {
     rt.push(value);
 }
 
-fn string_builtins() -> HashMap<String, JsBuiltinFunction> {
+fn string_proto_builtins() -> HashMap<String, JsBuiltinFunction> {
     // TODO
     let mut builtins = HashMap::new();
     builtins.insert("toString".to_string(), JsBuiltinFunction::new(string_tostring, 0));    
@@ -98,7 +123,7 @@ fn array_push(rt: &mut JsRuntime) {
     rt.push_number(object.get_array().len() as f64);
 }
 
-fn array_builtins() -> HashMap<String, JsBuiltinFunction> {
+fn array_proto_builtins() -> HashMap<String, JsBuiltinFunction> {
     let mut builtins = HashMap::new();
     builtins.insert("toString".to_string(), JsBuiltinFunction::new(array_tostring, 0));
     builtins.insert("push".to_string(), JsBuiltinFunction::new(array_push, 1));
@@ -117,7 +142,7 @@ fn function_tostring(rt: &mut JsRuntime) {
     rt.push_string("function(...) {...}".to_string());
 }
 
-fn function_builtins() -> HashMap<String, JsBuiltinFunction> {
+fn function_proto_builtins() -> HashMap<String, JsBuiltinFunction> {
     // TODO
     let mut builtins = HashMap::new();
     builtins.insert("toString".to_string(), JsBuiltinFunction::new(function_tostring, 0));    
@@ -141,12 +166,28 @@ fn exception_message(rt: &mut JsRuntime) {
     rt.push_string(exp.msg);
 }
 
-fn exception_builtins() -> HashMap<String, JsBuiltinFunction> {
+fn exception_proto_builtins() -> HashMap<String, JsBuiltinFunction> {
     // TODO
     let mut builtins = HashMap::new();
     builtins.insert("toString".to_string(), JsBuiltinFunction::new(exception_tostring, 0));
     builtins.insert("message".to_string(), JsBuiltinFunction::new(exception_message, 0));
     return builtins;
+}
+
+// build class's global functions
+fn create_class_functions( target: SharedObject, properties: HashMap<String, JsBuiltinFunction>) {
+    let mut class_obj = target.borrow_mut();
+    for (k, v) in properties {
+        let f = v.f;
+        let argc = v.argc; 
+        let func_obj = JsObject::new_builtin(f, argc);
+        
+        let mut prop = JsProperty::new();
+        prop.fill_attr(JsReadonlyAttr);
+        prop.value = SharedValue::new_object(func_obj);
+
+        class_obj.properties.insert(k, prop);
+    }
 }
 
 // build prototypes chian
@@ -192,27 +233,28 @@ pub fn set_global_class(rt: &mut JsRuntime, name: &str, class_obj: SharedObject)
 }
 pub fn prototypes_init(rt: &mut JsRuntime) {
     // Object
-    let (top_class, top_prototype) = create_builtin_class(JsBuiltinFunction::new(object_constructor, 1), object_builtins(), None);     
+    let (top_class, top_prototype) = create_builtin_class(JsBuiltinFunction::new(object_constructor, 1), object_proto_builtins(), None);
+    create_class_functions(top_class.clone(), object_builtins());
     set_global_class(rt, "Object", top_class.clone());
     rt.prototypes.object_prototype = top_prototype.clone();
     
     // String
-    let (string_classs_object, string_prototype) = create_builtin_class( JsBuiltinFunction::new(string_constructor, 1), string_builtins(), Some(top_prototype.clone()));
+    let (string_classs_object, string_prototype) = create_builtin_class( JsBuiltinFunction::new(string_constructor, 1), string_proto_builtins(), Some(top_prototype.clone()));
     set_global_class(rt, "String", string_classs_object.clone());
     rt.prototypes.string_prototype = string_prototype;
 
     // Array
-    let (array_classs_object, array_prototype) = create_builtin_class( JsBuiltinFunction::new(array_constructor, 0), array_builtins(), Some(top_prototype.clone()));
+    let (array_classs_object, array_prototype) = create_builtin_class( JsBuiltinFunction::new(array_constructor, 0), array_proto_builtins(), Some(top_prototype.clone()));
     set_global_class(rt, "Array", array_classs_object.clone());
     rt.prototypes.array_prototype = array_prototype;
 
     // Function
-    let (func_classs_object, func_prototype) = create_builtin_class( JsBuiltinFunction::new(function_constructor, 0), function_builtins(), Some(top_prototype.clone()));
+    let (func_classs_object, func_prototype) = create_builtin_class( JsBuiltinFunction::new(function_constructor, 0), function_proto_builtins(), Some(top_prototype.clone()));
     set_global_class(rt, "Function", func_classs_object.clone());
     rt.prototypes.function_prototype = func_prototype;
     
     // Exception
-    let (exp_classs_object, exp_prototype) = create_builtin_class( JsBuiltinFunction::new(exception_constructor, 0), exception_builtins(), Some(top_prototype.clone()));
+    let (exp_classs_object, exp_prototype) = create_builtin_class( JsBuiltinFunction::new(exception_constructor, 0), exception_proto_builtins(), Some(top_prototype.clone()));
     set_global_class(rt, "Exception", exp_classs_object.clone());
     rt.prototypes.exception_prototype = exp_prototype;
 }

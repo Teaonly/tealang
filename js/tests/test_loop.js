@@ -60,17 +60,13 @@ function test_for_in()
     for(i in {x:1, y: 2}) {
         tab.push(i);
     }
-    println(tab);
+    assert( tab[1] == "y" && tab[0] == "x", "for in 1");
 
     /* prototype chain test */
-    a = {x:2, y: 2, "1": 3};
-    b = {"4" : 3 };
+    a = {x:1, y: 2, "1": 3};
+    b = {"4" : 4 };
     Object.setPrototypeOf(a, b);
-    tab = [];
-    for(i in a) {
-        tab.push(i);
-    }
-    assert(tab.toString(), "1,x,y,4", "for_in");
+    println(a["4"]);
 
     /* non enumerable properties hide enumerables ones in the
        prototype chain */
