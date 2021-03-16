@@ -144,7 +144,7 @@ function test_for_break()
             break L1;
         }
     }
-    assert(c === 2 && i === 1);
+    assert(c === 2 && i === 1, "for break");
 }
 
 function test_switch1()
@@ -166,7 +166,7 @@ function test_switch1()
         }
         s += a;
     }
-    assert(s === "abc" && i === 3);
+    assert(s === "abc" && i === 3, "switch 1");
 }
 
 function test_switch2()
@@ -190,7 +190,7 @@ function test_switch2()
         }
         s += a;
     }
-    assert(s === "ab3" && i === 4);
+    assert(s === "ab3" && i === 4, "switch 2");
 }
 
 function test_try_catch1()

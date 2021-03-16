@@ -17,27 +17,31 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-function test_for_in2()
+function test_switch2()
 {
-    var i;
-    tab = [];
-    for(i in {x:1, y: 2, z:3}) {
-        if (i === "y")
-            continue;
-        tab.push(i);
-    }
-    assert(tab.toString() == "x, z" || tab.toString() == "z, x", "for in 1");
-
-    tab = [];
-    for(i in {x:1, y: 2, z:3}) {
-        if (i === "z")
+    var i, a, s;
+    s = "";
+    for(i = 0; i < 4; i++) {
+        a = "?";
+        switch(i) {
+        case 0:
+            a = "a";
             break;
-        tab.push(i);
+        case 1:
+            a = "b";
+            break;
+        case 2:
+            continue;
+        default:
+            a = "" + i;
+            break;
+        }
+        s += a;
     }
-    assert(tab.toString() == "x, y" || tab.toString() == "y, x" || tab.toString() == "y" || tab.toString() == "x" || tab.toString() == "" , "for in 2");
+    assert(s === "ab3" && i === 4, "switch 2");
 }
 
-test_for_in2();
+test_switch2();
 
 "#;
 
