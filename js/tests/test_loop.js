@@ -121,7 +121,7 @@ function test_for_in2()
             continue;
         tab.push(i);
     }
-    assert(tab.toString() == "x,z");
+    assert(tab.toString() == "x, z" || tab.toString() == "z, x", "for in 1");
 
     tab = [];
     for(i in {x:1, y: 2, z:3}) {
@@ -129,7 +129,7 @@ function test_for_in2()
             break;
         tab.push(i);
     }
-    assert(tab.toString() == "x,y");
+    assert(tab.toString() == "x, y" || tab.toString() == "y, x" || tab.toString() == "y" || tab.toString() == "x" || tab.toString() == "" , "for in 2");
 }
 
 function test_for_break()
