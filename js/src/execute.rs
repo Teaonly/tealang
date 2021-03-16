@@ -1510,12 +1510,12 @@ fn jscall_builtin(rt: &mut JsRuntime, argc: usize) {
 
 	for _i in argc .. builtin.argc {
 		rt.push_undefined();
-	}
+	}	
 
 	(builtin.f)(rt);
 
 	let jv = rt.stack.pop().unwrap();
-	rt.pop(builtin.argc + 2);
+	rt.pop(argc + 2);
 	rt.push(jv);
 }
 

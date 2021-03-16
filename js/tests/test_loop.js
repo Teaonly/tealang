@@ -66,19 +66,19 @@ function test_for_in()
     a = {x:1, y: 2, "1": 3};
     b = {"4" : 4 };
     Object.setPrototypeOf(a, b);
-    println(a["4"]);
+    assert(a["4"] == 4, "prototype 1");
 
     /* non enumerable properties hide enumerables ones in the
        prototype chain */
-    a = {y: 2, "1": 3};
-    Object.defineProperty(a, "x", { value: 1 });
+    a = {y: 2, "1": 3};    
     b = {"x" : 3 };
     Object.setPrototypeOf(a, b);
     tab = [];
     for(i in a) {
         tab.push(i);
     }
-    assert(tab.toString(), "1,y", "for_in");
+    a = tab.toString();
+    assert(a == "1, y" || a == "y, 1", "for_in 2");
 
     /* array optimization */
     a = [];

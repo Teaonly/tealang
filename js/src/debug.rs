@@ -17,10 +17,15 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-    a = {x:1};
-    b = {y:2};
+    a = {y: 2, "1": 3};    
+    b = {"x" : 3 };
     Object.setPrototypeOf(a, b);
-    println(a.y);    
+    tab = [];
+    for(i in a) {
+        tab.push(i);
+    }
+    a = tab.toString();
+    assert(a == "1, y" || a == "y, 1", "for_in 2");
 "#;
 
 fn debug_runtime() {
