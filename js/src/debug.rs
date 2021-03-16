@@ -17,32 +17,29 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-function test_switch2()
+
+function test_try_catch7()
 {
-    var i, a, s;
+    var s;
     s = "";
-    for(i = 0; i < 4; i++) {
-        a = "?";
-        switch(i) {
-        case 0:
-            a = "a";
-            break;
-        case 1:
-            a = "b";
-            break;
-        case 2:
-            continue;
-        default:
-            a = "" + i;
-            break;
+
+    try {
+        try {
+            s += "t";
+            throw Exception("a");
+        } finally {
+            s += "f";
         }
-        s += a;
+    } catch(e) {
+        s += e.message();
+    } finally {
+        s += "g";
     }
-    assert(s === "ab3" && i === 4, "switch 2");
+    assert(s == "tfag", "catch 9");
+    println("-------- END TESTING -----------");
 }
 
-test_switch2();
-
+test_try_catch7();
 "#;
 
 fn debug_runtime() {

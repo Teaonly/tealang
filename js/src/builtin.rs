@@ -151,7 +151,11 @@ fn function_proto_builtins() -> HashMap<String, JsBuiltinFunction> {
 
 // The Exception class
 fn exception_constructor(rt: &mut JsRuntime) {
-    let exp = JsException::new("".to_string());
+    
+    let value = rt.top(-1);    
+    let msg = value.to_string();
+
+    let exp = JsException::new(msg);
     let value = SharedValue::new_object(JsObject::new_exception(rt.prototypes.exception_prototype.clone(), exp));
     rt.push(value);
 }
@@ -254,7 +258,7 @@ pub fn prototypes_init(rt: &mut JsRuntime) {
     rt.prototypes.function_prototype = func_prototype;
     
     // Exception
-    let (exp_classs_object, exp_prototype) = create_builtin_class( JsBuiltinFunction::new(exception_constructor, 0), exception_proto_builtins(), Some(top_prototype.clone()));
+    let (exp_classs_object, exp_prototype) = create_builtin_class( JsBuiltinFunction::new(exception_constructor, 1), exception_proto_builtins(), Some(top_prototype.clone()));
     set_global_class(rt, "Exception", exp_classs_object.clone());
     rt.prototypes.exception_prototype = exp_prototype;
 }

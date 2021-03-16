@@ -1507,15 +1507,21 @@ fn jscall_builtin(rt: &mut JsRuntime, argc: usize) {
 	let bot = rt.stack.len() - 1 - argc;
 	let fobj = rt.stack[bot-1].get_object();
 	let builtin = fobj.borrow().get_builtin();
-
-	for _i in argc .. builtin.argc {
-		rt.push_undefined();
-	}	
+	
+	if argc > builtin.argc {
+		for _i in builtin.argc .. argc {
+			rt.pop(1);
+		}	
+	} else if argc < builtin.argc {
+		for _i in argc .. builtin.argc {
+			rt.push_undefined();
+		}
+	}
 
 	(builtin.f)(rt);
 
 	let jv = rt.stack.pop().unwrap();
-	rt.pop(argc + 2);
+	rt.pop(builtin.argc + 2);
 	rt.push(jv);
 }
 

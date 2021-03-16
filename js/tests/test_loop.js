@@ -130,6 +130,8 @@ function test_for_in2()
         tab.push(i);
     }
     assert(tab.toString() == "x, y" || tab.toString() == "y, x" || tab.toString() == "y" || tab.toString() == "x" || tab.toString() == "" , "for in 2");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_for_break()
@@ -145,6 +147,8 @@ function test_for_break()
         }
     }
     assert(c === 2 && i === 1, "for break");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_switch1()
@@ -167,6 +171,8 @@ function test_switch1()
         s += a;
     }
     assert(s === "abc" && i === 3, "switch 1");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_switch2()
@@ -191,17 +197,21 @@ function test_switch2()
         s += a;
     }
     assert(s === "ab3" && i === 4, "switch 2");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_try_catch1()
 {
     try {
-        throw "hello";
+        throw Exception("Hello");
     } catch (e) {
-        assert(e, "hello", "catch");
+        assert(e.message() == "Hello", "catch 1");
         return;
     }
-    assert(false, "catch");
+    assert(false, "catch 2");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_try_catch2()
@@ -212,7 +222,9 @@ function test_try_catch2()
     } catch (e) {
         a = 2;
     }
-    assert(a, 1, "catch");
+    assert(a ==  1, "catch 3");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_try_catch3()
@@ -226,7 +238,9 @@ function test_try_catch3()
     } finally {
         s += "f";
     }
-    assert(s, "tf", "catch");
+    assert(s == "tf", "catch 4");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_try_catch4()
@@ -235,13 +249,15 @@ function test_try_catch4()
     s = "";
     try {
         s += "t";
-        throw "c";
+        throw Exception("c");
     } catch (e) {
-        s += e;
+        s += e.message();
     } finally {
         s += "f";
     }
-    assert(s, "tcf", "catch");
+    assert(s == "tcf", "catch 5");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_try_catch5()
@@ -257,7 +273,9 @@ function test_try_catch5()
             s += "f";
         }
     }
-    assert(s, "tf", "catch");
+    assert(s == "tf", "catch 6");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_try_catch6()
@@ -271,8 +289,10 @@ function test_try_catch6()
         }
     }
     var s = "";
-    assert(f() === 1);
-    assert(s, "tf", "catch6");
+    assert(f() == 1, "catch 7");
+    assert(s == "tf", "catch 8");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_try_catch7()
@@ -283,16 +303,17 @@ function test_try_catch7()
     try {
         try {
             s += "t";
-            throw "a";
+            throw Exception("a");
         } finally {
             s += "f";
         }
     } catch(e) {
-        s += e;
+        s += e.message();
     } finally {
         s += "g";
     }
-    assert(s, "tfag", "catch");
+    assert(s == "tfag", "catch 9");
+    println("-------- END TESTING -----------");
 }
 
 function test_try_catch8()
