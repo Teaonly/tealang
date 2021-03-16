@@ -8,6 +8,8 @@ function test_while()
         i++;
     }
     assert(c === 3, "while 1");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_while_break()
@@ -22,6 +24,8 @@ function test_while_break()
         i++;
     }
     assert(c === 2 && i === 1, "while break 1");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_do_while()
@@ -34,6 +38,8 @@ function test_do_while()
         i++;
     } while (i < 3);
     assert(c === 3 && i === 3, "do while 1");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_for()
@@ -50,6 +56,8 @@ function test_for()
         c++;
     }
     assert(c === 3 && j === 3, "for 2");
+
+    println("-------- END TESTING -----------");
 }
 
 function test_for_in()
@@ -79,8 +87,10 @@ function test_for_in()
     }
     a = tab.toString();
     assert(a == "1, y" || a == "y, 1", "for_in 2");
-
+    
+    // TODO
     /* array optimization */
+    /* 
     a = [];
     for(i = 0; i < 10; i++)
         a.push(i);
@@ -89,36 +99,17 @@ function test_for_in()
         tab.push(i);
     }
     assert(tab.toString(), "0,1,2,3,4,5,6,7,8,9", "for_in");
+    */
 
-    /* iterate with a field */
-    a={x:0};
-    tab = [];
-    for(a.x in {x:1, y: 2}) {
-        tab.push(a.x);
-    }
-    assert(tab.toString(), "x,y", "for_in");
-
-    /* iterate with a variable field */
-    a=[0];
-    tab = [];
-    for(a[0] in {x:1, y: 2}) {
-        tab.push(a[0]);
-    }
-    assert(tab.toString(), "x,y", "for_in");
 
     /* variable definition in the for in */
     tab = [];
     for(var j in {x:1, y: 2}) {
         tab.push(j);
     }
-    assert(tab.toString(), "x,y", "for_in");
+    assert(tab.toString() == "x, y" || tab.toString() == "y, x", "for_in 3");
 
-    /* variable assigment in the for in */
-    tab = [];
-    for(var k = 2 in {x:1, y: 2}) {
-        tab.push(k);
-    }
-    assert(tab.toString(), "x,y", "for_in");
+    println("-------- END TESTING -----------");
 }
 
 function test_for_in2()
