@@ -758,19 +758,32 @@ impl JsRuntime {
 }
 
 
+
 fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsException> {
 	assert!(rt.stack.len() > 0);
 	let mut pc:usize = pc;
 	let bot:usize = rt.stack.len() - 1;
 
-	let mut with_exception: Option<JsException> = None;
 	let mut catch_scopes: Vec<(usize, usize)> = Vec::new();
+
+	macro_rules! handle_exception {
+		// `()` indicates that the macro takes no argument.
+		($e:ident) => {
+			if let Some((new_pc, new_top)) = catch_scopes.pop() {
+				let dropped = rt.stack.len() - new_top;
+				rt.pop(dropped);
+	
+				rt.new_exception($e);
+				pc = new_pc;
+				continue;
+			} else {
+				break;
+			}
+		}
+	}
 
 	loop {
 		let opcode = func.opcode(&mut pc);
-
-		//println!(">>>>{} -> {:?}", pc, opcode);
-		
 		match opcode {
 			OpcodeType::OP_POP => {
 				rt.pop(1);
@@ -862,8 +875,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 						e
 					},
 				};
-				with_exception = Some(excp);
-				break;
+				handle_exception!(excp);
 			},
 			OpcodeType::OP_HASVAR => {
 				let s = func.string(&mut pc);
@@ -878,16 +890,14 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 					Err(e) => {
 						e
 					},
-				};
-				with_exception = Some(excp);
-				break;
+				};				
+				handle_exception!(excp);
 			},
 			OpcodeType::OP_SETVAR => {
 				let s = func.string(&mut pc);
 				let result = rt.setvariable(s);
-				if let Err(e) = result {
-					with_exception = Some(e);
-					break;
+				if let Err(e) = result {					
+					handle_exception!(e);
 				}
 			},
 			OpcodeType::OP_DELVAR => {
@@ -900,15 +910,13 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				let target = rt.top(-3).get_object();
 				let name = match rt.to_string( rt.top(-2)) {
 					Ok(s) => s,
-					Err(e) => {
-						with_exception = Some(e);
-						break;
+					Err(e) => {						
+						handle_exception!(e);
 					}
 				};
 				let value = rt.top(-1);
 				if let Err(e) = rt.setproperty(target, &name, value) {
-					with_exception = Some(e);
-					break;
+					handle_exception!(e);
 				}
 				rt.pop(2);
 			},
@@ -917,16 +925,14 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				let name = match rt.to_string( rt.top(-2)) {
 					Ok(s) => s,
 					Err(e) => {
-						with_exception = Some(e);
-						break;
+						handle_exception!(e);
 					}
 				};
 				let func = rt.top(-1);
 				if func.is_object() {
 					let result = rt.defproperty(target, &name, SharedValue::new_undefined(), JsDefaultAttr, Some(func.get_object()), None);
 					if let Err(e) = result {
-						with_exception = Some(e);
-						break;
+						handle_exception!(e);
 					}
 				} else {
 					println!("getter should be a object!");
@@ -938,16 +944,14 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				let name = match rt.to_string( rt.top(-2)) {
 					Ok(s) => s,
 					Err(e) => {
-						with_exception = Some(e);
-						break;
+						handle_exception!(e);
 					}
 				};
 				let func = rt.top(-1);
 				if func.is_object() {
 					let result = rt.defproperty(target, &name, SharedValue::new_undefined(), JsDefaultAttr, None, Some(func.get_object()));
 					if let Err(e) = result {
-						with_exception = Some(e);
-						break;
+						handle_exception!(e);
 					}
 				} else {
 					println!("setter should be a object!");
@@ -960,27 +964,24 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				let name = match rt.to_string( rt.top(-1)) {
 					Ok(s) => s,
 					Err(e) => {
-						with_exception = Some(e);
-						break;
+						handle_exception!(e);
 					}
 				};
 				if let Err(e) = rt.getproperty(target, &name) {
-					with_exception = Some(e);
-					break;
+					handle_exception!(e);
 				}
 				rt.rot3pop2();
 			},
 			OpcodeType::OP_GETPROP_S => {
 				let target = rt.top(-1);
 				if !target.is_object() {
-					with_exception = Some( JsException::new("Access none objects's property!".to_string()) );
-					break;
+					let e = JsException::new("Access none objects's property!".to_string());					
+					handle_exception!(e);
 				}
 				let target = target.get_object();
 				let name = func.string(&mut pc);
 				if let Err(e) = rt.getproperty(target, &name) {
-					with_exception = Some(e);
-					break;
+					handle_exception!(e);
 				}
 				rt.rot2pop1();
 			},
@@ -989,8 +990,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				let name = rt.to_string( rt.top(-2))?;
 				let value = rt.top(-1);
 				if let Err(e) = rt.setproperty(target, &name, value) {
-					with_exception = Some(e);
-					break;
+					handle_exception!(e);
 				}
 				rt.rot3pop2();
 			},
@@ -999,8 +999,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				let value = rt.top(-1);
 				let name = func.string(&mut pc);
 				if let Err(e) = rt.setproperty(target, &name, value) {
-					with_exception = Some(e);
-					break;
+					handle_exception!(e);
 				}
 				rt.rot2pop1();
 			},
@@ -1009,8 +1008,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				let name = match rt.to_string( rt.top(-1)) {
 					Ok(s) => s,
 					Err(e) => {
-						with_exception = Some(e);
-						break;
+						handle_exception!(e);
 					}
 				};
 				let b = rt.delproperty(target, &name);
@@ -1026,9 +1024,8 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 					rt.pop(1);
 					rt.push_boolean(b);
 				} else {					
-					let exp = JsException::new("Can't delete none object's proptery".to_string());
-					with_exception = Some(exp);
-					break;
+					let e = JsException::new("Can't delete none object's proptery".to_string());
+					handle_exception!(e);
 				}
 			},
 
@@ -1065,16 +1062,14 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 			/* Function calls */
 			OpcodeType::OP_CALL => {
 				let n = func.int(&mut pc) as usize;
-				if let Err(e) = jscall(rt, n) {
-					with_exception = Some(e);
-					break;
+				if let Err(e) = jscall(rt, n) {					
+					handle_exception!(e);
 				}
 			},
 			OpcodeType::OP_NEW => {
 				let n = func.int(&mut pc) as usize;
 				if let Err(e) = rt.new_call(n) {
-					with_exception = Some(e);
-					break;
+					handle_exception!(e);
 				}
 			},
 
@@ -1246,15 +1241,13 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 
 			OpcodeType::OP_IN => {
 				if let Err(e) = rt.in_operator() {
-					with_exception = Some(e);
-					break;
+					handle_exception!(e);
 				}
 			},
 
 			OpcodeType::OP_INSTANCEOF => {
 				if let Err(e) = rt.instanceof() {
-					with_exception = Some(e);
-					break;
+					handle_exception!(e);
 				}
 			},
 
@@ -1328,10 +1321,10 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				catch_scopes.push((pc, rt.stack.len()));
 				pc = catch_block;
 			},
-			OpcodeType::OP_ENDTRY => {				
+			OpcodeType::OP_ENDTRY => {
 				catch_scopes.pop();
 			},
-			OpcodeType::OP_CATCH => {				
+			OpcodeType::OP_CATCH => {
 				let str = func.string(&mut pc);
 				let eobj = rt.top(-1);
 				rt.pop(1);
@@ -1348,8 +1341,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				let evalue = rt.top(-1);
 				rt.pop(1);
 				let e = evalue.get_object().borrow().get_exception();
-				with_exception = Some(e);
-				break;		
+				handle_exception!(e);		
 			},
 			
 			/* Branching & Flow control */			
@@ -1399,18 +1391,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 		}
 	}
 
-	// handle exception
-	if let Some(e) = with_exception {
-		if let Some((new_pc, new_top)) = catch_scopes.pop() {
-			let dropped = rt.stack.len() - new_top;
-			rt.pop(dropped);
-
-			rt.new_exception(e);
-			return jsrun(rt, func, new_pc);
-		}
-		
-		return Err(e);
-	} 
+	// breaked from loop, return to caller
 	return Ok(());
 }
 

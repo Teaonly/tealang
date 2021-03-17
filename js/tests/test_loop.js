@@ -324,14 +324,15 @@ function test_try_catch8()
     for(var i in {x:1, y:2}) {
         try {
             s += i;
-            throw "a";
+            throw Exception("a");
         } catch (e) {
-            s += e;
+            s += e.message();
         } finally {
             s += "f";
         }
     }
-    assert(s === "xafyaf");
+    assert(s == "xafyaf" || s == "yafxaf", "catch 10");    
+    println("-------- END TESTING -----------");
 }
 
 test_while();
