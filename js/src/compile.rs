@@ -111,7 +111,7 @@ impl AstNode {
         let mut thiz = self;
         while thiz.b.is_some() {
             l = l + 1;
-            thiz = self.b.as_ref().unwrap();
+            thiz = thiz.b.as_ref().unwrap();
         }
         return l;
     }

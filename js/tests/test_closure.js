@@ -47,7 +47,7 @@ function f(a, b, c)
 var g1 = f(1, 2, 3);
 g1(5);
 
-assert(log_str, "a=1,b=2,c=3,d=4,x=10,b=2,c=3,d=5,x=10,", "closure1");
+assert(log_str == "a=1,b=2,c=3,d=4,x=10,b=2,c=3,d=5,x=10,", "closure 1");
 
 function test_closure1()
 {
