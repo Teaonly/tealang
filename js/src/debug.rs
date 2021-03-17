@@ -19,11 +19,11 @@ use runtime::*;
 static script: &str = r#"
 
 function Hello() {
-    this.x = 'haha';
+    this.msg = 'hello world!';
 }
 
 var a = new Hello();
-println(a.x);
+println(a.msg);
 
 "#;
 
