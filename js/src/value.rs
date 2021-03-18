@@ -102,7 +102,9 @@ impl JsValue {
 
 impl SharedValue {
 	pub fn replace(&mut self, other: SharedValue) {
-		self.v.borrow_mut().copyfrom( &other.v.borrow());
+		if self.v.as_ptr() != other.v.as_ptr() {	
+			self.v.borrow_mut().copyfrom( &other.v.borrow());
+		}
 	}
 	pub fn duplicate(&self) -> SharedValue {
 		let sv = SharedValue::new_null();

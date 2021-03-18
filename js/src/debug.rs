@@ -15,14 +15,16 @@ use compile::*;
 use runtime::*;
 
 static script: &str = r#"
-
-function Hello() {
-    this.msg = 'hello world!';
-}
-
-var a = new Hello();
-println(a.msg);
-
+var Greeting = /** @class */ (function () {
+    function Greeting() {
+    }
+    Greeting.prototype.greet = function () {
+        println("Hello World!!!");
+    };
+    return Greeting;
+}());
+var obj = new Greeting();
+obj.greet();
 "#;
 
 fn debug_runtime() {
@@ -60,8 +62,8 @@ fn debug_token() {
 }
 
 pub fn main() {
-    debug_token();
-    debug_ast();
+    //debug_token();
+    //debug_ast();
     debug_compile();
     debug_runtime();
 }
