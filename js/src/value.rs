@@ -4,7 +4,6 @@ use std::convert::TryFrom;
 use std::rc::Rc;
 
 use crate::common::*;
-use crate::compile::*;
 
 /* implementation for VMFunction/SharedValue/JsValue/JsObject */
 
@@ -78,7 +77,7 @@ impl VMFunction {
 
 impl Clone for JsValue {
 	fn clone(&self) -> JsValue {
-        match(self) {
+        match self {
 			JsValue::JSUndefined => JsValue::JSUndefined,
 			JsValue::JSNULL => JsValue::JSNULL,
 			JsValue::JSBoolean(b) => JsValue::JSBoolean(*b),

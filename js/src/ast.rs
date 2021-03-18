@@ -894,7 +894,7 @@ fn ast_statement_list(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
 }
 
 fn ast_block(tkr: &mut Tokenlizer) -> Result<AstNode, String> {
-    let leftbrace = tk_expect(tkr, TokenType::TK_BRACE_LEFT)?;
+    let _leftbrace = tk_expect(tkr, TokenType::TK_BRACE_LEFT)?;
     let a = ast_statement_list(tkr)?;
     tk_expect(tkr, TokenType::TK_BRACE_RIGHT)?;
     return Ok( AstNode::new_a(AstType::STM_BLOCK, tkr.line(), a) );

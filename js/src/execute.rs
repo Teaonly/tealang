@@ -2,7 +2,6 @@ use std::rc::Rc;
 use std::cmp;
 
 use crate::common::*;
-use crate::value::*;
 
 /* implementation for JsEnvironment, partly JsRuntime and jscall */
 
@@ -1403,7 +1402,7 @@ fn jscall_script(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 	let vmf = &rfobj.get_func().vmf;
 
 	/* init var in current env*/
-	for i in (0..vmf.numvars) {
+	for i in 0..vmf.numvars {
 		let jv = SharedValue::new_undefined();
 		let var = &vmf.str_tab[i];
 		rt.cenv.borrow_mut().init_var(var, jv);
@@ -1435,7 +1434,7 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 
 	/* create arguments */
 	{
-		let mut arg_obj = JsObject::new_with( rt.prototypes.object_prototype.clone(), JsClass::object);		
+		let arg_obj = JsObject::new_with( rt.prototypes.object_prototype.clone(), JsClass::object);		
 		let arg_value = SharedValue::new_object(arg_obj);
 
 		let jv = SharedValue::new_number(argc as f64);
