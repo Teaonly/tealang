@@ -229,7 +229,7 @@ fn create_builtin_class(constructor: JsBuiltinFunction, properties: HashMap<Stri
     
     return (class_obj, prototype_obj);
 }
-pub fn set_global_class(rt: &mut JsRuntime, name: &str, class_obj: SharedObject) {
+fn set_global_class(rt: &mut JsRuntime, name: &str, class_obj: SharedObject) {
     let mut prop = JsProperty::new();
     prop.fill_attr(JsReadonlyAttr);
     prop.value = SharedValue::new_sobject(class_obj);

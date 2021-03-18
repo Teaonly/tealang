@@ -6,7 +6,7 @@ use std::rc::Rc;
 use crate::common::*;
 use crate::compile::*;
 
-/* implementation for VMFunction/JsValue/JsObject */
+/* implementation for VMFunction/SharedValue/JsValue/JsObject */
 
 impl VMFunction {
 	pub fn new_anonymous() -> Self {
