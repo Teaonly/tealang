@@ -17,6 +17,7 @@ use runtime::*;
 static script: &str = r#"
 var Greeting = /** @class */ (function () {
     function Greeting() {
+        this.message = "KaKa";
     }
     Greeting.prototype.greet = function () {
         println("Hello World!!!");
@@ -25,6 +26,7 @@ var Greeting = /** @class */ (function () {
 }());
 var obj = new Greeting();
 obj.greet();
+println(obj.message);
 "#;
 
 fn debug_runtime() {
