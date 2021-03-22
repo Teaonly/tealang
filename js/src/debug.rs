@@ -19,8 +19,10 @@ var Greeting = /** @class */ (function () {
     function Greeting() {
         this.message = "KaKa";
     }
-    Greeting.prototype.greet = function () {
+    Greeting.prototype.greet = function () {        
         println("Hello World!!!");
+        println(this.message);
+        this.message = "XaXa";
     };
     return Greeting;
 }());
