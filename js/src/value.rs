@@ -326,10 +326,8 @@ impl JsProperty {
 			getter: None,
 			setter: None,
 		}
-	}	
-	pub fn attr(&self) -> JsPropertyAttr {
-		(self.attr_writable, self.attr_enumerable, self.attr_configurable)
 	}
+	
 	pub fn writeable(&self) -> bool {
 		if self.setter.is_none() {
 			return self.attr_writable;
@@ -497,9 +495,6 @@ impl JsObject {
 		}
 	}
 
-	pub fn is_extensible(&self) -> bool {
-		return self.extensible;
-	}
 	pub fn is_vanilla(&self) -> bool {
 		if let JsClass::object = self.value {
 			return true;

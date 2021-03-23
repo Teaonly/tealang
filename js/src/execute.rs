@@ -1341,8 +1341,12 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 			OpcodeType::OP_THROW => {
 				let evalue = rt.top(-1);
 				rt.pop(1);
-				let e = evalue.get_object().borrow().get_exception();
-				handle_exception!(e);		
+				if evalue.is_exception() {
+					let e = evalue.get_object().borrow().get_exception();
+					handle_exception!(e);
+				} else {
+					panic!("Throw a none exception object!");
+				}
 			},
 			
 			/* Branching & Flow control */			
