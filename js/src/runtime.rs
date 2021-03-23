@@ -4,12 +4,10 @@ use std::rc::Rc;
 
 use std::ffi::c_void;
 
-use crate::common::*;
 use crate::bytecode::*;
 
 use crate::execute::*;
 use crate::builtin::*;
-use crate::value::*;
 
 // runtime stuff
 pub type SharedObject = Rc<RefCell<JsObject>>;
@@ -107,6 +105,7 @@ pub struct JsProperty {
 	pub attr_enumerable: 	bool,
 	pub attr_configurable:	bool,
 }
+
 pub type JsPropertyAttr = (bool, bool, bool);	//writeable, enumerable, configurable 
 pub const JsDefaultAttr: JsPropertyAttr = (true, false, true);
 pub const JsReadonlyAttr: JsPropertyAttr = (false, false, false);

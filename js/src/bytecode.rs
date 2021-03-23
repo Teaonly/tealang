@@ -1,7 +1,6 @@
 use std::convert::TryFrom;
 use std::rc::Rc;
 
-use crate::common::*;
 use crate::ast::*;
 
 /* bytecode stuff */
@@ -189,6 +188,7 @@ impl TryFrom<u16> for OpcodeType {
 			x if x == OpcodeType::OP_JFALSE as u16 => Ok(OpcodeType::OP_JFALSE),
 			x if x == OpcodeType::OP_RETURN as u16 => Ok(OpcodeType::OP_RETURN),
 			x if x == OpcodeType::OP_DEBUG as u16 => Ok(OpcodeType::OP_DEBUG),
+			x if x == OpcodeType::OP_LAST as u16 => Err(()),
 			_ => Err(()),
         }
     }
