@@ -14,6 +14,7 @@ pub type SharedObject = Rc<RefCell<JsObject>>;
 pub type SharedScope = Rc<RefCell<JsEnvironment>>;
 pub type SharedFunction = Rc<Box<VMFunction>>;
 
+#[allow(non_snake_case)]
 pub fn SharedObject_new(obj: JsObject) -> SharedObject {
 	Rc::new(RefCell::new(obj))
 }
