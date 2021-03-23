@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::rc::Rc;
+use std::ffi::c_void;
 
 use crate::common::*;
 
@@ -235,7 +236,7 @@ impl SharedValue {
 		}
 		if self.is_string() {
 			let s = self.to_string();
-			if let Some(v) = Token::str_to_number(&s) {
+			if let Some(v) = str_to_number(&s) {
 				return v;
 			}			
 		}
@@ -413,6 +414,15 @@ impl JsObject {
         }
 	}
 	
+	pub fn new_expand(ptr:*const c_void) -> JsObject {
+		JsObject {
+			extensible:	false,
+			__proto__: None,
+			properties: HashMap::new(),
+			value: JsClass::expand(JsExpander{ptr: ptr}),
+		}
+	}
+
 	pub fn new_exception(prototype: SharedObject, e: JsException) -> JsObject {		
 		JsObject {
 			extensible:	false,

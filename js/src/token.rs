@@ -2,6 +2,113 @@ use std::char;
 use std::collections::LinkedList;
 use crate::common::*;
 
+/* token stuff */
+#[allow(non_camel_case_types)]
+#[derive(Clone, Debug, PartialEq)]
+pub enum TokenType {
+	TK_NEWLN = -2,
+	TK_EOF = -1,
+
+	/* immedial primitive */
+	TK_IDENTIFIER = 0,
+    TK_NUMBER,
+	TK_STRING,
+
+	/* keywords */
+	TK_BREAK,
+	TK_CASE,
+	TK_CATCH,
+	TK_CONTINUE,
+	TK_DEFAULT,
+	TK_DELETE,
+	TK_DO,
+	TK_ELSE,
+	TK_FALSE,
+	TK_FINALLY,
+	TK_FOR,
+	TK_FUNCTION,
+	TK_IF,
+	TK_IN,
+	TK_INSTANCEOF,
+	TK_NEW,
+	TK_NULL,
+	TK_RETURN,
+	TK_UNDEF,
+	TK_SWITCH,
+	TK_THIS,
+	TK_THROW,
+	TK_TRUE,
+	TK_TRY,
+	TK_TYPEOF,
+	TK_VAR,
+	TK_VOID,
+	TK_WHILE,
+	TK_DEBUG,
+
+	/* single-character punctuators */
+    TK_BRACE_LEFT,		// {}
+    TK_BRACE_RIGHT,
+    TK_PAREN_LEFT,		// ()
+    TK_PAREN_RIGHT,
+    TK_BRACKET_LEFT,	// []
+    TK_BRACKET_RIGHT,
+
+    TK_SEMICOLON,
+    TK_COMMA,
+	TK_POINT,
+	TK_QUEST,
+	TK_COLON,
+
+    TK_ASS,
+    TK_ADD,
+    TK_SUB,
+    TK_MUL,
+    TK_DIV,
+    TK_MOD,
+    TK_NOT,
+    TK_AND,
+    TK_OR,
+	TK_XOR,
+	TK_BITNOT,
+    TK_LT,
+	TK_GT,
+
+	/* multi-character punctuators */
+	TK_LE,
+	TK_GE,
+	TK_EQ,
+	TK_NE,
+	TK_STRICTEQ,
+	TK_STRICTNE,
+	TK_SHL,
+	TK_SHR,
+	TK_USHR,
+	TK_AND_AND,
+	TK_OR_OR,
+	TK_ADD_ASS,
+	TK_SUB_ASS,
+	TK_MUL_ASS,
+	TK_DIV_ASS,
+	TK_MOD_ASS,
+	TK_SHL_ASS,
+	TK_SHR_ASS,
+	TK_USHR_ASS,
+	TK_AND_ASS,
+	TK_OR_ASS,
+	TK_XOR_ASS,
+	TK_INC,
+	TK_DEC
+}
+
+#[derive(Clone, Debug)]
+pub struct Token {
+    pub tk_type:    TokenType,
+    pub tk_value:   Option<String>,
+    pub src_line:   u32,
+}
+
+
+
 #[allow(non_camel_case_types)]
 #[derive(Clone, Debug, PartialEq)]
 enum GeneralTokenType {
@@ -342,34 +449,9 @@ impl Token {
         }
     }
 
-    pub fn str_to_number(symbol: &str) -> Option<f64> {
-        if let Ok(v) = symbol.parse::<f64>() {
-            return Some(v);
-        }
-        if symbol.starts_with("0x") {
-            let symbol:&str = &symbol[2..];
-            if let Ok(v) = u64::from_str_radix(&symbol, 16) {
-                return Some(v as f64);
-            }
-        }
-        if symbol.starts_with("bx") {
-            let symbol:&str = &symbol[2..];
-            if let Ok(v) = u64::from_str_radix(&symbol, 2) {
-                return Some(v as f64);
-            }
-        }
-        if symbol == "NaN" {
-            return Some(f64::NAN);
-        }
-        if symbol == "Infinity" {
-            return Some(f64::INFINITY);
-        }
-        return None;
-    }
-
     pub fn to_number(&self) -> f64 {
         let symbol: &str = &self.tk_value.as_ref().unwrap();
-        return Token::str_to_number(symbol).unwrap();
+        return str_to_number(symbol).unwrap();
     }
 }
 
