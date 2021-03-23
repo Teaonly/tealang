@@ -33,7 +33,7 @@ println(obj.message);
 
 fn debug_runtime() {
     let vmf = SharedFunction_new(build_function_from_code(SCRIPT).unwrap());    
-    let mut rt = new_runtime();    
+    let mut rt = new_runtime();
     run_script(&mut rt, vmf.clone());
 }
 

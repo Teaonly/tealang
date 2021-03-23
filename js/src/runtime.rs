@@ -107,8 +107,8 @@ pub struct JsProperty {
 }
 
 pub type JsPropertyAttr = (bool, bool, bool);	//writeable, enumerable, configurable 
-pub const JsDefaultAttr: JsPropertyAttr = (true, false, true);
-pub const JsReadonlyAttr: JsPropertyAttr = (false, false, false);
+pub const JS_DEFAULT_ATTR: JsPropertyAttr = (true, false, true);
+pub const JS_READONLY_ATTR: JsPropertyAttr = (false, false, false);
 
 #[allow(non_camel_case_types)]
 pub struct JsEnvironment {
@@ -163,6 +163,8 @@ pub fn new_runtime() -> JsRuntime {
 	
 	return runtime;
 }
+
+
 
 pub fn run_script(rt: &mut JsRuntime, vmf: SharedFunction) {
 	assert!( vmf.script == true);

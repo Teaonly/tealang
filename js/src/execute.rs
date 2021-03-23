@@ -27,7 +27,7 @@ impl JsEnvironment {
 
 	pub fn init_var(&mut self, name: &str, jv: SharedValue) {
 		let mut prop = JsProperty::new();
-		prop.fill(jv, JsDefaultAttr, None, None);
+		prop.fill(jv, JS_DEFAULT_ATTR, None, None);
 		
 		if self.variables.borrow_mut().put_property(name) {
 			self.variables.borrow_mut().set_property(name, prop);
@@ -193,7 +193,7 @@ impl JsRuntime {
 		} 
 
 		/* Property not found on this object, so create one with default attr*/
-		self.defproperty(target_, name, value, JsDefaultAttr, None, None)?;
+		self.defproperty(target_, name, value, JS_DEFAULT_ATTR, None, None)?;
 		return Ok(());	
 	}	
 
@@ -608,7 +608,7 @@ impl JsRuntime {
 		
 		// prototype object self		
 		let mut prop = JsProperty::new();
-		prop.fill_attr(JsReadonlyAttr);
+		prop.fill_attr(JS_READONLY_ATTR);
 		prop.value = SharedValue::new_sobject(fobj.clone());
 		let mut prototype_obj = JsObject::new();
     	prototype_obj.extensible = true;
@@ -931,7 +931,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				};
 				let func = rt.top(-1);
 				if func.is_object() {
-					let result = rt.defproperty(target, &name, SharedValue::new_undefined(), JsDefaultAttr, Some(func.get_object()), None);
+					let result = rt.defproperty(target, &name, SharedValue::new_undefined(), JS_DEFAULT_ATTR, Some(func.get_object()), None);
 					if let Err(e) = result {
 						handle_exception!(e);
 					}
@@ -950,7 +950,7 @@ fn jsrun(rt: &mut JsRuntime, func: &VMFunction, pc: usize) -> Result<(), JsExcep
 				};
 				let func = rt.top(-1);
 				if func.is_object() {
-					let result = rt.defproperty(target, &name, SharedValue::new_undefined(), JsDefaultAttr, None, Some(func.get_object()));
+					let result = rt.defproperty(target, &name, SharedValue::new_undefined(), JS_DEFAULT_ATTR, None, Some(func.get_object()));
 					if let Err(e) = result {
 						handle_exception!(e);
 					}
@@ -1444,12 +1444,12 @@ fn jscall_function(rt: &mut JsRuntime, argc: usize) -> Result<(), JsException> {
 		let arg_value = SharedValue::new_object(arg_obj);
 
 		let jv = SharedValue::new_number(argc as f64);
-		rt.defproperty(arg_value.get_object(), "length", jv,  JsReadonlyAttr, None, None)?;
+		rt.defproperty(arg_value.get_object(), "length", jv,  JS_READONLY_ATTR, None, None)?;
 
 		for i in 0..argc {
 			let name = i.to_string();
 			let jv = rt.stack[bot+1+i].clone();
-			rt.defproperty(arg_value.get_object(), &name, jv, JsDefaultAttr, None, None)?;
+			rt.defproperty(arg_value.get_object(), &name, jv, JS_DEFAULT_ATTR, None, None)?;
 		}
 
 		arg_value.get_object().borrow_mut().extensible = false;

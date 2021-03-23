@@ -186,7 +186,7 @@ fn create_class_functions( target: SharedObject, properties: HashMap<String, JsB
         let func_obj = JsObject::new_builtin(f, argc);
         
         let mut prop = JsProperty::new();
-        prop.fill_attr(JsReadonlyAttr);
+        prop.fill_attr(JS_READONLY_ATTR);
         prop.value = SharedValue::new_object(func_obj);
 
         class_obj.properties.insert(k, prop);
@@ -208,13 +208,13 @@ fn create_builtin_class(constructor: JsBuiltinFunction, properties: HashMap<Stri
         let func_obj = JsObject::new_builtin(f, argc);
         
         let mut prop = JsProperty::new();
-        prop.fill_attr(JsReadonlyAttr);
+        prop.fill_attr(JS_READONLY_ATTR);
         prop.value = SharedValue::new_object(func_obj);
 
         prototype_obj.properties.insert(k, prop);
     }
     let mut prop = JsProperty::new();
-    prop.fill_attr(JsReadonlyAttr);
+    prop.fill_attr(JS_READONLY_ATTR);
     prop.value = SharedValue::new_sobject(class_obj.clone());
     prototype_obj.properties.insert("constructor".to_string(), prop);
     prototype_obj.__proto__ = top;
@@ -222,7 +222,7 @@ fn create_builtin_class(constructor: JsBuiltinFunction, properties: HashMap<Stri
     let prototype_obj = SharedObject_new(prototype_obj);
 
     let mut prop = JsProperty::new();
-    prop.fill_attr(JsReadonlyAttr);
+    prop.fill_attr(JS_READONLY_ATTR);
     prop.value = SharedValue::new_sobject(prototype_obj.clone());
     class_obj.borrow_mut().properties.insert("prototype".to_string(), prop);
     
@@ -230,7 +230,7 @@ fn create_builtin_class(constructor: JsBuiltinFunction, properties: HashMap<Stri
 }
 fn set_global_class(rt: &mut JsRuntime, name: &str, class_obj: SharedObject) {
     let mut prop = JsProperty::new();
-    prop.fill_attr(JsReadonlyAttr);
+    prop.fill_attr(JS_READONLY_ATTR);
     prop.value = SharedValue::new_sobject(class_obj);
     rt.genv.borrow_mut().target().borrow_mut().set_property(name, prop);
 }
