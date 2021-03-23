@@ -1,9 +1,3 @@
-//
-// common/shared/public struct/enum
-//
-
-
-
 pub fn str_to_number(symbol: &str) -> Option<f64> {
 	if let Ok(v) = symbol.parse::<f64>() {
 		return Some(v);

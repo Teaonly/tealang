@@ -669,6 +669,7 @@ impl JsRuntime {
 		let jv = SharedValue::clone( &self.stack[from] );
 		self.stack.push(jv);
 	}
+	
 	/* opcode helper*/
 	fn pop(&mut self, mut n: usize) {
 		if n > self.stack.len() {

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use crate::common::*;
 use crate::bytecode::*;
 use crate::runtime::*;
 
@@ -235,6 +234,7 @@ fn set_global_class(rt: &mut JsRuntime, name: &str, class_obj: SharedObject) {
     prop.value = SharedValue::new_sobject(class_obj);
     rt.genv.borrow_mut().target().borrow_mut().set_property(name, prop);
 }
+
 pub fn prototypes_init(rt: &mut JsRuntime) {
     // Object
     let (top_class, top_prototype) = create_builtin_class(JsBuiltinFunction::new(object_constructor, 1), object_proto_builtins(), None);
@@ -261,4 +261,33 @@ pub fn prototypes_init(rt: &mut JsRuntime) {
     let (exp_classs_object, exp_prototype) = create_builtin_class( JsBuiltinFunction::new(exception_constructor, 1), exception_proto_builtins(), Some(top_prototype.clone()));
     set_global_class(rt, "Exception", exp_classs_object.clone());
     rt.prototypes.exception_prototype = exp_prototype;
+}
+
+pub fn builtin_init(runtime: &mut JsRuntime) {
+    // global functions for runtime 
+    fn assert(rt: &mut JsRuntime) {    
+        let b = rt.top(-2).to_boolean();
+        if !b {
+            let info = rt.top(-1).to_string();
+            panic!("ASSERT: {}", info);
+        }
+        rt.push_undefined();
+    }
+
+    fn println(rt: &mut JsRuntime) {
+        let info = rt.to_string( rt.top(-1) );
+        if let Ok(msg) = info {
+            println!("{}", msg);
+            rt.push_undefined();
+            return;
+        } 
+        if let Err(e) = info {
+            rt.new_exception(e);
+        }
+    }
+    // TODO : isFinite() isNaN() parseFloat() parseInt()
+
+    // register some basic builtin functions
+    runtime.genv.borrow_mut().init_var("assert", SharedValue::new_object(JsObject::new_builtin(assert, 2)) );
+    runtime.genv.borrow_mut().init_var("println", SharedValue::new_object(JsObject::new_builtin(println, 1)) );
 }

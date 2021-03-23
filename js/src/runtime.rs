@@ -139,31 +139,6 @@ pub struct JsRuntime {
 	pub stack:			Vec<SharedValue>,
 }
 
-
-// global functions for runtime 
-fn assert(rt: &mut JsRuntime) {    
-    let b = rt.top(-2).to_boolean();
-    if !b {
-        let info = rt.top(-1).to_string();
-        panic!("ASSERT: {}", info);
-    }
-    rt.push_undefined();
-}
-
-fn println(rt: &mut JsRuntime) {
-	let info = rt.to_string( rt.top(-1) );
-	if let Ok(msg) = info {
-    	println!("{}", msg);
-    	rt.push_undefined();
-		return;
-	} 
-	if let Err(e) = info {
-		rt.new_exception(e);
-	}
-}
-
-// TODO : isFinite() isNaN() parseFloat() parseInt()
-
 pub fn new_runtime() -> JsRuntime {	
 	let prototypes = JsPrototype {
 		object_prototype:		SharedObject_new(JsObject::new()),
@@ -185,11 +160,8 @@ pub fn new_runtime() -> JsRuntime {
 
 	// init prototypes
 	prototypes_init(&mut runtime);
-
-	// some basic utilities
-	runtime.genv.borrow_mut().init_var("assert", SharedValue::new_object(JsObject::new_builtin(assert, 2)) );
-    runtime.genv.borrow_mut().init_var("println", SharedValue::new_object(JsObject::new_builtin(println, 1)) );
-
+	builtin_init(&mut runtime);
+	
 	return runtime;
 }
 
