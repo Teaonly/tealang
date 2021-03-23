@@ -2,6 +2,8 @@ use std::rc::Rc;
 use std::cmp;
 
 use crate::common::*;
+use crate::bytecode::*;
+use crate::runtime::*;
 
 /* implementation for JsEnvironment, partly JsRuntime and jscall */
 

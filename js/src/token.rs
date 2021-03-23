@@ -107,8 +107,6 @@ pub struct Token {
     pub src_line:   u32,
 }
 
-
-
 #[allow(non_camel_case_types)]
 #[derive(Clone, Debug, PartialEq)]
 enum GeneralTokenType {

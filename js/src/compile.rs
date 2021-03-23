@@ -1,7 +1,9 @@
 use std::convert::TryFrom;
 use std::rc::Rc;
+
 use crate::common::*;
 use crate::ast::*;
+use crate::bytecode::*;
 
 /* Local help function and struct */
 struct AstListIterator<'a> {

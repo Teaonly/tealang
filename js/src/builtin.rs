@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
 use crate::common::*;
+use crate::bytecode::*;
+use crate::runtime::*;
 
 // The Object class 
 fn object_constructor(rt: &mut JsRuntime) {

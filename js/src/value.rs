@@ -5,6 +5,8 @@ use std::rc::Rc;
 use std::ffi::c_void;
 
 use crate::common::*;
+use crate::bytecode::*;
+use crate::runtime::*;
 
 /* implementation for VMFunction/SharedValue/JsValue/JsObject */
 
