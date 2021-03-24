@@ -9,8 +9,5 @@ description = "ezjs is a simple and micro Javascript (ES5) engine is Rust."
 name = "ezjs"
 path = "src/lib.rs"
 
-[[bin]]
-name = "debug"
-path = "src/debug.rs"
-
 [dependencies]
+rustyline = "5.0.2"

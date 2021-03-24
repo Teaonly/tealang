@@ -6,9 +6,6 @@ use std::ffi::c_void;
 
 use crate::bytecode::*;
 
-use crate::execute::*;
-use crate::builtin::*;
-
 // runtime stuff
 pub type SharedObject = Rc<RefCell<JsObject>>;
 pub type SharedScope = Rc<RefCell<JsEnvironment>>;
@@ -141,55 +138,4 @@ pub struct JsRuntime {
 	pub stack:			Vec<SharedValue>,
 }
 
-pub fn new_runtime() -> JsRuntime {	
-	let prototypes = JsPrototype {
-		object_prototype:		SharedObject_new(JsObject::new()),
-		string_prototype:		SharedObject_new(JsObject::new()),
-		array_prototype:		SharedObject_new(JsObject::new()),
-		function_prototype:		SharedObject_new(JsObject::new()),
-		exception_prototype:	SharedObject_new(JsObject::new()),
-	};
-
-	let genv = JsEnvironment::new();
-	let cenv = genv.clone();
-
-	let mut runtime = JsRuntime {
-		prototypes:	prototypes,
-		genv:		genv,
-		cenv:		cenv,
-		stack:		Vec::new(),
-	};
-
-	// init prototypes
-	prototypes_init(&mut runtime);
-	builtin_init(&mut runtime);
-	
-	return runtime;
-}
-
-pub fn run_script(rt: &mut JsRuntime, vmf: SharedFunction) -> Result<SharedValue, String> {
-	assert!( vmf.script == true);
-	let fobj = SharedObject_new(JsObject::new_function(vmf, rt.genv.clone()));
-	let thiz = rt.genv.borrow().target(); 
-
-	rt.push_object(fobj);	// function object
-	rt.push_object(thiz);	// this
-
-	let result = jscall(rt, 0);
-	if result.is_err() {
-		let err_msg = format!("Exceptions: {:?}", result.err().unwrap());
-		println!("{}", err_msg);
-		rt.stack.clear();
-		return Err(err_msg);
-	}
-
-	if rt.stack.len() != 1 {
-		let err_msg = format!("stack len should be 1 but get {}", rt.stack.len());
-		panic!(err_msg);
-	}
-
-	let value = rt.stack[0].clone();
-	rt.stack.clear();
-	return Ok(value);
-}
 

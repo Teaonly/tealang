@@ -28,6 +28,22 @@ g1(5);
 
 assert(log_str == "a=1,b=2,c=3,d=4,x=10,b=2,c=3,d=5,x=10,", "closure 1");
 
+
+var Greeting = /** @class */ (function () {
+    function Greeting() {
+        this.message = "KaKa";
+    }
+    Greeting.prototype.greet = function () {         
+        this.message = "XaXa";
+    };
+    return Greeting;
+}());
+var obj = new Greeting();
+assert(obj.message == "KaKa", " prototype 1");
+obj.greet();
+assert(obj.message == "XaXa", " prototype 2");
+
+
 function test_closure1()
 {
     function f2()

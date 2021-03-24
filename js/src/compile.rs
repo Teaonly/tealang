@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use std::rc::Rc;
 
 use crate::ast::*;
@@ -1333,7 +1332,7 @@ fn compile_stmlist(f: &mut VMFunction, lst: &AstNode) {
     }
 }
 
-fn compile_func(name: &AstNode, params: &AstNode, body: &AstNode, script: bool) -> Result<VMFunction, String> {
+pub fn compile_func(name: &AstNode, params: &AstNode, body: &AstNode, script: bool) -> Result<VMFunction, String> {
     let mut f = VMFunction::new(script);
 
     // parsing params
@@ -1371,43 +1370,4 @@ fn compile_func(name: &AstNode, params: &AstNode, body: &AstNode, script: bool) 
     }
 
     return Ok(f);
-}
-
-pub fn build_function_from_code(script: &str) -> Result<VMFunction, String> {
-    let ast = build_ast_from_script(script).unwrap();
-
-    let null = AstNode::null();
-    let func = compile_func(&null, &null, &ast, true)?;
-    return Ok(func);
-}
-
-pub fn dump_function(f: &VMFunction) {
-    println!("-------------------------------");
-    println!("script: {}", f.script);
-    println!("functions: {}", f.func_tab.len());
-    println!("---num----");
-    for n in &f.num_tab {
-        println!("{}", n);
-    }
-    println!("---str----");
-    for n in &f.str_tab {
-        println!("{}", n);
-    }
-    println!("---code----");
-    
-    let mut addr = 0;
-    for i in &f.code {
-        if let Ok(op) = OpcodeType::try_from(*i) {
-			println!("{}\t\tOP: {:?} V: {}", addr, op, i);
-		} else {
-            println!("{}\t\tV: {}", addr, i);
-        }
-        addr = addr + 1;
-    }
-
-    println!("---functions---");
-    for i in &f.func_tab {
-        dump_function( i );
-    }
-    println!("----------END-----------");
 }
