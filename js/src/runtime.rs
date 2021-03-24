@@ -18,9 +18,11 @@ pub type SharedFunction = Rc<Box<VMFunction>>;
 pub fn SharedObject_new(obj: JsObject) -> SharedObject {
 	Rc::new(RefCell::new(obj))
 }
+#[allow(non_snake_case)]
 pub fn SharedScope_new(scope: JsEnvironment) -> SharedScope {
 	Rc::new(RefCell::new(scope))
 }
+#[allow(non_snake_case)]
 pub fn SharedFunction_new(vmf: VMFunction) -> SharedFunction {
 	Rc::new(Box::new(vmf))
 }
@@ -108,7 +110,7 @@ pub struct JsProperty {
 }
 
 pub type JsPropertyAttr = (bool, bool, bool);	//writeable, enumerable, configurable 
-pub const JS_DEFAULT_ATTR: JsPropertyAttr = (true, false, true);
+pub const JS_DEFAULT_ATTR: JsPropertyAttr = (true, true, true);
 pub const JS_READONLY_ATTR: JsPropertyAttr = (false, false, false);
 
 #[allow(non_camel_case_types)]

@@ -379,8 +379,13 @@ impl JsException {
 impl JsIterator {
 	pub fn new(target_: SharedObject) -> Self {
 		let target = target_.borrow();
-
-		let keys = (*target).properties.keys().cloned().collect();
+	
+		let mut keys: Vec<String> = Vec::new();
+		for x in (*target).properties.keys() {
+			if target.properties.get(x).unwrap().enumerable() {
+				keys.push(x.to_string());
+			}
+		}
 		JsIterator {
 			keys: keys,
 			index: 0,
@@ -439,7 +444,6 @@ impl JsObject {
 			__proto__: None,
 			properties: HashMap::new(),
 			value: JsClass::iterator(it),
-
 		}
 	}
 	
