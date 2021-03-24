@@ -1,13 +1,11 @@
 use ezjs;
 
-extern crate rustyline;
-
 use std::env;
 use std::fs;
+use std::io;
+use std::io::Write;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use rustyline::error::ReadlineError;
-use rustyline::Editor;
 
 pub fn main() {
     let mut rt = ezjs::new_runtime();
@@ -20,29 +18,22 @@ pub fn main() {
         ezjs::run_script(&mut rt, vmf).unwrap();
     }
 
-    let mut rl = Editor::<()>::new();
     loop {
-        let readline = rl.readline("=>");
-        match readline {
-            Ok(line) => {
+        print!("=>");
+        io::stdout().flush().unwrap();
+        let mut line = String::new();
+        match io::stdin().read_line(&mut line) {
+            Ok(_n) => {
                 if line != "" {
                     let begin = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
                     
                     let vmf = ezjs::build_function_from_code(&line).unwrap();
-                    let ret = ezjs::run_script(&mut rt, vmf).unwrap();
+                    let _ret = ezjs::run_script(&mut rt, vmf).unwrap();
                     let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
 
                     println!("<{}>", end - begin);
                 }
-            },
-            Err(ReadlineError::Interrupted) => {
-                println!("CTRL-C");
-                break
-            },
-            Err(ReadlineError::Eof) => {
-                println!("CTRL-D");
-                break
-            },
+            },            
             Err(err) => {
                 println!("Error: {:?}", err);
                 break
