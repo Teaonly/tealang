@@ -21,13 +21,12 @@ use crate::runtime::*;
 use crate::execute::*;
 use crate::builtin::*;
 
-
-pub fn build_function_from_code(script: &str) -> Result<VMFunction, String> {
+pub fn build_function_from_code(script: &str) -> Result<SharedFunction, String> {
     let ast = build_ast_from_script(script).unwrap();
 
     let null = AstNode::null();
     let func = compile_func(&null, &null, &ast, true)?;
-    return Ok(func);
+    return Ok(SharedFunction_new(func));
 }
 
 pub fn dump_function(f: &VMFunction) {
