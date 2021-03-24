@@ -167,9 +167,7 @@ pub fn new_runtime() -> JsRuntime {
 	return runtime;
 }
 
-
-
-pub fn run_script(rt: &mut JsRuntime, vmf: SharedFunction) {
+pub fn run_script(rt: &mut JsRuntime, vmf: SharedFunction) -> Result<SharedValue, String> {
 	assert!( vmf.script == true);
 	let fobj = SharedObject_new(JsObject::new_function(vmf, rt.genv.clone()));
 	let thiz = rt.genv.borrow().target(); 
@@ -179,13 +177,19 @@ pub fn run_script(rt: &mut JsRuntime, vmf: SharedFunction) {
 
 	let result = jscall(rt, 0);
 	if result.is_err() {
-		println!("Exceptions: {:?}", result.err().unwrap());
+		let err_msg = format!("Exceptions: {:?}", result.err().unwrap());
+		println!("{}", err_msg);
 		rt.stack.clear();
-		return;
+		return Err(err_msg);
 	}
 
 	if rt.stack.len() != 1 {
-		println!("stack len should be 1 but get {}", rt.stack.len());
+		let err_msg = format!("stack len should be 1 but get {}", rt.stack.len());
+		panic!(err_msg);
 	}
+
+	let value = rt.stack[0].clone();
+	rt.stack.clear();
+	return Ok(value);
 }
 

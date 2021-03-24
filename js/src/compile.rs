@@ -10,7 +10,7 @@ struct AstListIterator<'a> {
 }
 
 impl<'a> AstListIterator<'a> {
-    pub fn new(lst: &'a AstNode ) -> Self {
+    fn new(lst: &'a AstNode ) -> Self {
         assert!(lst.ast_type == AstType::AST_LIST);
         return AstListIterator {
             cursor: Some(lst),
@@ -124,7 +124,7 @@ impl AstNode {
 
 /* component stuff */
 impl VMFunction {
-    pub fn new(script: bool) -> Self {
+    fn new(script: bool) -> Self {
         VMFunction {
             name:   None,
             script: script,

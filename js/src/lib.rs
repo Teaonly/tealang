@@ -3,7 +3,7 @@ mod token;
 mod ast;
 mod bytecode;
 
-mod compile;
+pub mod compile;
 mod optimizer;
 
 mod value;

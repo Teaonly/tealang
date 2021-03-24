@@ -12,7 +12,18 @@ use crate::runtime::*;
 
 impl VMFunction {
 	pub fn new_anonymous() -> Self {
-		let mut anonymous = VMFunction::new(false);
+		let mut anonymous = VMFunction {
+            name:   None,
+            script: false,
+            numparams: 0,
+            numvars: 0,
+            code:       Vec::new(),
+            num_tab:    Vec::new(),
+            str_tab:    Vec::new(),           
+            func_tab:   Vec::new(),
+
+            jumps:      Vec::new(),
+        };
 		anonymous.code.push( OpcodeType::OP_UNDEF as u16);
 		anonymous.code.push( OpcodeType::OP_RETURN as u16);
 		return anonymous;
