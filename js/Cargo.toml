@@ -10,4 +10,3 @@ name = "ezjs"
 path = "src/lib.rs"
 
 [dependencies]
-rustyline = "5.0.2"
