@@ -40,5 +40,6 @@ pub fn main() {
             }
         }
     }
-
+        
+    rt.push_undefined();
 }
