@@ -11,19 +11,20 @@
 #include <sstream>
 #include <cstring>
 
+#include "debug.hpp"
+
 namespace tea {
 
-using SPEXTEND = std::weak_ptr<int>;
 using SPFLOAT = float;
+using SPEXTEND = std::weak_ptr<int>;
 
 struct CellStack;
-
 struct Cell {
     enum CellType {
         T_Number = -3,
         T_String = -2,
         T_Extend = -1,
-        T_TUPLE = 0,
+        T_Tuple = 0,
     };
 
     const int type_;
@@ -32,7 +33,7 @@ struct Cell {
         const SPFLOAT*    _tuple;
         const char*       _str;
     } v;
-    SPEXTEND                _ext;
+    SPEXTEND              ext_;
 
     Cell() : type_(T_Number) {
         v._float = 0.0;
@@ -40,9 +41,12 @@ struct Cell {
     Cell(SPFLOAT value): type_(T_Number) {
         v._float = value;
     }
+    Cell(SPEXTEND ext): type_(T_Extend) {
+        ext_ = ext;
+    }
 
 private:
-    Cell(SPFLOAT* t, int len) : type_( len ) {
+    Cell(SPFLOAT* t, size_t len) : type_( len ) {
         v._tuple = t;
     }
     Cell(const char* str): type_(T_String) {
@@ -87,7 +91,7 @@ public:
     virtual const char* pop_string() = 0;
     virtual const SPFLOAT* pop_tuple();
     virtual void push_extend(SPEXTEND ext) = 0;
-    virtual SPEXTEND pop_ext() = 0;
+    virtual SPEXTEND pop_extend() = 0;
     virtual void push_cell(Cell& c);
     virtual Cell pop_cell();
 
@@ -145,15 +149,35 @@ public:
         tt_assert(c.type_ == Cell::T_String, "cell is not string!");
         return c.v._str;
     }
-    virtual size_t pop_tensor_id() {
+    virtual const SPFLOAT* pop_tuple() {
         if (stack_.size() == 0) {
             tt_panic("Can't pop from empty stack!");
         }
         auto c = stack_.back();
         stack_.pop_back();
-        tt_assert(c.type_ == Cell::T_Tensor, "cell is not tensor!");
-        tt_assert(c.v._id < all_tensors.size(), "Tensor id is not of size!");
-        return c.v._id;
+        tt_assert(c.type_ >= Cell::T_Tuple, "cell is not tuple!");
+        return c.v._tuple;
+    }
+    virtual void push_extend(SPEXTEND ext) {
+        Cell c(ext);
+        stack_.push_back(c);
+    }
+    virtual SPEXTEND pop_extend() {
+        if (stack_.size() == 0) {
+            tt_panic("Can't pop from empty stack!");
+        }
+        auto c = stack_.back();
+        stack_.pop_back();
+        tt_assert(c.type_ == Cell::T_Extend, "cell is not extend!");
+        return c.ext_;
+    }
+    virtual void push_cell(Cell& c) {
+        stack_.push_back(c);
+    }
+    virtual Cell pop_cell() {
+        auto c = stack_.back();
+        stack_.pop_back();
+        return c;
     }
 
     virtual void drop() {
